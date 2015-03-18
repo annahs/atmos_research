@@ -7,7 +7,6 @@ import SP2B_ini_file_parser_UTC
 import SP2B_hk_analysis_UTC
 import SP2B_parser_UTC
 import SP2B_time_binning_UTC
-import SP2B_size_distributions_UTC
 import sys
 from pprint import pprint
 import os
@@ -32,7 +31,6 @@ constant_sample_rate = 1.0
 run_hk_analysis = False
 run_SP2B_parser = False
 run_time_binning = True
-run_size_distrbution = False
 
   
 #5. set the parameters in the parameters dictionary
@@ -71,17 +69,9 @@ parameters = {
 #the following parameters are a hack I added to retrieve the original peak heights from files that I had analyzed with a wrong calibration.  I now write the original peak heights to file, so this shouldn't be needed going forward
 'use_new_calib':True, 
 'BC_calib1_new':  0.24826, #0 order term
-'BC_calib1_new_err': 0.24826, #0 order term +- uncertainty
+'BC_calib1_new_err': 0.05668, #0 order term +- uncertainty
 'BC_calib2_new': 0.003043,   #1st order term
 'BC_calib2_new_err': 0.0002323, #1st order term +- uncertainty
-
-#size distrs
-'binning_interval_VED': 5, #number distribution bin size in nm
-'VED_start_size': 65, #starting size bin in nm
-'VED_end_size':205, #ending size bin in nm
-'analysis_start': datetime.strptime('2012-04-06 00:00:00', '%Y-%m-%d %H:%M:%S'), #start time for generating size distributions local time
-'analysis_end': datetime.strptime('2012-04-08 12:00:00', '%Y-%m-%d %H:%M:%S'), #end time for generating size distributions local time
-'number_distr':False, #get a number distribution (default is a mass distribution)
 
 #parameter to find bad flow and yag durations, this is for the hk analysis 
 'flow_min' : 112,
@@ -162,10 +152,7 @@ for directory in os.listdir(data_dir):
             
             if run_time_binning == True:
                 SP2B_time_binning_UTC.bin_data_by_time(parameters)
-            
-            if run_size_distrbution == True:
-                SP2B_size_distributions_UTC.size_distribution(parameters)
-            
+                     
             #back to the data dir for the next round
             os.chdir(data_dir)
         
