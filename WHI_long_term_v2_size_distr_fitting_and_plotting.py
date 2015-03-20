@@ -16,13 +16,13 @@ data_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/size_distrs
 os.chdir(data_dir)
 
 
-fileFR = 'AD_corr - size distr - FRlessFT - FR 2009-2010only.sdbinpickl'
-fileBB = 'AD_corr - size distr - FRlessFT - BB 2009-2010only.sdbinpickl'
-fileCont = 'AD_corr - size distr - FRlessFT - Cont 2009-2010only.sdbinpickl'
-fileNPac = 'AD_corr - size distr - FRlessFT - NPac 2009-2010only.sdbinpickl'
-fileSPac = 'AD_corr - size distr - FRlessFT - SPac 2009-2010only.sdbinpickl'
-fileLRT = 'AD_corr - size distr - FRlessFT - LRT 2009-2010only.sdbinpickl'
-fileGBPS = 'AD_corr - size distr - FRlessFT - GBPS 2009-2010only.sdbinpickl'
+fileFR = 'AD_corr - size distr - FRlessFT - FR with BB.sdbinpickl'
+fileBB = 'AD_corr - size distr - FRlessFT - BB with BB.sdbinpickl'
+fileCont = 'AD_corr - size distr - FRlessFT - Cont with BB.sdbinpickl'
+fileNPac = 'AD_corr - size distr - FRlessFT - NPac .sdbinpickl'
+fileSPac = 'AD_corr - size distr - FRlessFT - SPac .sdbinpickl'
+fileLRT = 'AD_corr - size distr - FRlessFT - LRT with BB.sdbinpickl'
+fileGBPS = 'AD_corr - size distr - FRlessFT - GBPS with BB.sdbinpickl'
 
 #fileFR = 'AD_corr - size distr - FR.sdbinpickl'
 #fileBB = 'AD_corr - size distr - BB.sdbinpickl'
