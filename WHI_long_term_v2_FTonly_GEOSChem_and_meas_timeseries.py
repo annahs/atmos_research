@@ -9,7 +9,6 @@ from datetime import timedelta
 import pickle
 import copy
 
-
 timezone = -8
 calib_stability_uncertainty = 0.1
 
@@ -678,10 +677,11 @@ fire_color = '#990000'
 ###################plotting#####################
 
 
-fig = plt.figure(figsize=(14,8))
+fig = plt.figure(figsize=(11.5,7.5))
 
 hfmt = dates.DateFormatter('%b')
-hfmt = dates.DateFormatter('%m-%d-%H')
+#hfmt = dates.DateFormatter('%m-%d-%H')
+
 display_month_interval = 1
 max_display_conc = 750
 
@@ -712,7 +712,6 @@ ax7.errorbar(SP2_6h_LRT_date,SP2_6h_LRT_mass_conc,yerr = SP2_6h_LRT_abs_err, col
 ax7.errorbar(SP2_6h_GBPS_date,SP2_6h_GBPS_mass_conc,yerr = SP2_6h_GBPS_abs_err, color='red', alpha = 1, fmt = 'o')
 ax7.errorbar(SP2_6h_BB_date,SP2_6h_BB_mass_conc,yerr = SP2_6h_BB_abs_err, color='black', alpha = 1, fmt = 'o')
 ax7.errorbar(GC_6h_2009_date,GC_6h_2009_mass_conc,yerr=[GC_6h_2009_neg_err,GC_6h_2009_pos_err], color = 'k', alpha = 1, marker = '+')
-ax7.xaxis.set_major_formatter(hfmt)
 ax7.xaxis.set_major_locator(dates.MonthLocator(interval = display_month_interval))
 ax7.xaxis.set_visible(False)
 ax7.yaxis.set_visible(True)
@@ -723,17 +722,17 @@ ax7.axvspan(dates.date2num(fire_span2_09s),dates.date2num(fire_span2_09f), facec
 ax7.text(0.1, 0.9,'2009', transform=ax7.transAxes)
 
 
-ax8.errorbar(SP2_6h_NPac_date,SP2_6h_NPac_mass_conc,yerr = SP2_6h_NPac_abs_err, color='cyan', alpha = 1, fmt = 'o')
-ax8.errorbar(SP2_6h_SPac_date,SP2_6h_SPac_mass_conc,yerr = SP2_6h_SPac_abs_err, color='green', alpha = 1, fmt = 'o')
-ax8.errorbar(SP2_6h_Cont_date,SP2_6h_Cont_mass_conc,yerr = SP2_6h_Cont_abs_err, color='magenta', alpha = 1, fmt = 'o')
-ax8.errorbar(SP2_6h_LRT_date,SP2_6h_LRT_mass_conc,yerr = SP2_6h_LRT_abs_err, color='blue', alpha = 1, fmt = 'o')
-ax8.errorbar(SP2_6h_GBPS_date,SP2_6h_GBPS_mass_conc,yerr = SP2_6h_GBPS_abs_err, color='red', alpha = 1, fmt = 'o')
-ax8.errorbar(SP2_6h_BB_date,SP2_6h_BB_mass_conc,yerr = SP2_6h_BB_abs_err, color='black', alpha = 1, fmt = 'o')
+ax8.errorbar(SP2_6h_NPac_date,SP2_6h_NPac_mass_conc,yerr = SP2_6h_NPac_abs_err, color='cyan', alpha = 1, fmt = 'o', label = 'N. Pacific')
+ax8.errorbar(SP2_6h_SPac_date,SP2_6h_SPac_mass_conc,yerr = SP2_6h_SPac_abs_err, color='green', alpha = 1, fmt = 'o', label = 'S. Pacific')
+ax8.errorbar(SP2_6h_Cont_date,SP2_6h_Cont_mass_conc,yerr = SP2_6h_Cont_abs_err, color='magenta', alpha = 1, fmt = 'o', label = 'N. Canada')
+ax8.errorbar(SP2_6h_LRT_date,SP2_6h_LRT_mass_conc,yerr = SP2_6h_LRT_abs_err, color='blue', alpha = 1, fmt = 'o', label = 'W. Pacific/Asia')
+ax8.errorbar(SP2_6h_GBPS_date,SP2_6h_GBPS_mass_conc,yerr = SP2_6h_GBPS_abs_err, color='red', alpha = 1, fmt = 'o', label = 'Georgia Basin/Puget Sound')
+ax8.errorbar(SP2_6h_BB_date,SP2_6h_BB_mass_conc,yerr = SP2_6h_BB_abs_err, color='black', alpha = 1, fmt = 'o', label = 'Biomass Burning')
 ax8.errorbar(GC_6h_2010_date,GC_6h_2010_mass_conc,yerr=[GC_6h_2010_neg_err,GC_6h_2010_pos_err], color = 'k', alpha = 1, marker = '+')
 ax8.xaxis.set_major_formatter(hfmt)
 ax8.xaxis.set_major_locator(dates.MonthLocator(interval = display_month_interval))
 ax8.xaxis.set_visible(False)
-ax8.yaxis.set_visible(True)
+ax8.yaxis.set_visible(False)
 ax8.set_xlabel('month')
 ax8.set_ylim(0, max_display_conc)
 ax8.set_xlim(dates.date2num(datetime.strptime(startdate_2010, '%Y/%m/%d')), dates.date2num(datetime.strptime(enddate_2010, '%Y/%m/%d')))
@@ -752,11 +751,14 @@ ax9.xaxis.set_major_formatter(hfmt)
 ax9.xaxis.set_major_locator(dates.MonthLocator(interval = display_month_interval))
 ax9.xaxis.set_visible(False)
 ax9.yaxis.set_visible(True)
-#ax9.yaxis.tick_right()
+ax9.yaxis.tick_right()
 ax9.set_ylim(0, max_display_conc)
 ax9.set_xlim(dates.date2num(datetime.strptime(startdate_2012, '%Y/%m/%d')), dates.date2num(datetime.strptime(enddate_2012, '%Y/%m/%d')))
 ax9.text(0.1, 0.9,'2012', transform=ax9.transAxes)
-legend = ax9.legend(loc='upper right', numpoints=1)
+
+
+legend = ax8.legend(loc='upper center', bbox_to_anchor=(0.5, 1.275), ncol=3, numpoints=1)
+
 
 #ratios
 
@@ -768,6 +770,7 @@ ax10.errorbar(ratio_dates_GBPS,ratio_mass_conc_GBPS,yerr = ratio_err_GBPS, color
 ax10.errorbar(ratio_dates_BB,ratio_mass_conc_BB,yerr = ratio_err_BB, color='black', alpha = 1, fmt = 'o')
 ax10.xaxis.set_major_formatter(hfmt)
 ax10.xaxis.set_major_locator(dates.MonthLocator(interval = display_month_interval))
+ax10.xaxis.set_minor_locator(dates.DayLocator(interval = 2))
 ax10.xaxis.set_visible(True)
 ax10.yaxis.set_visible(True)
 ax10.set_ylabel('GEOS-Chem/Measurements')
@@ -786,8 +789,9 @@ ax11.errorbar(ratio_dates_GBPS,ratio_mass_conc_GBPS,yerr = ratio_err_GBPS, color
 ax11.errorbar(ratio_dates_BB,ratio_mass_conc_BB,yerr = ratio_err_BB, color='black', alpha = 1, fmt = 'o')
 ax11.xaxis.set_major_formatter(hfmt)
 ax11.xaxis.set_major_locator(dates.MonthLocator(interval = display_month_interval))
+ax11.xaxis.set_minor_locator(dates.DayLocator(interval = 2))
 ax11.xaxis.set_visible(True)
-ax11.yaxis.set_visible(True)
+ax11.yaxis.set_visible(False)
 ax11.set_xlabel('month')
 ax11.set_xlim(dates.date2num(datetime.strptime(startdate_2010, '%Y/%m/%d')), dates.date2num(datetime.strptime(enddate_2010, '%Y/%m/%d')))
 ax11.axhline(y=1,color = 'grey', linestyle = '--')
@@ -802,22 +806,24 @@ ax12.errorbar(ratio_dates_GBPS,ratio_mass_conc_GBPS,yerr = ratio_err_GBPS, color
 ax12.errorbar(ratio_dates_BB,ratio_mass_conc_BB,yerr = ratio_err_BB, color='black', alpha = 1, fmt = 'o')
 ax12.xaxis.set_major_formatter(hfmt)
 ax12.xaxis.set_major_locator(dates.MonthLocator(interval = display_month_interval))
+ax12.xaxis.set_minor_locator(dates.DayLocator(interval = 2))
 ax12.xaxis.set_visible(True)
 ax12.yaxis.set_visible(True)
 ax12.yaxis.tick_right()
 #ax12.spines['top'].set_visible(False)
-ax12.xaxis.tick_bottom()
+#ax12.xaxis.tick_bottom()
 ax12.set_xlim(dates.date2num(datetime.strptime(startdate_2012, '%Y/%m/%d')), dates.date2num(datetime.strptime(enddate_2012, '%Y/%m/%d')))
 ax12.axhline(y=1,color = 'grey', linestyle = '--')
 ax12.set_yscale('log')
 
-legend = ax12.legend(loc='upper right', shadow=False)
+#legend = ax12.legend(loc='upper right', shadow=False)
 
-plt.subplots_adjust(hspace=0.05)
-plt.subplots_adjust(wspace=0.14)
+plt.subplots_adjust(hspace=0.08)
+plt.subplots_adjust(wspace=0.05)
+
 
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/')
-plt.savefig('timeseries - FT only GEOS-Chem v measurements.png',bbox_inches='tight',dpi=600)
+plt.savefig('timeseries - FT only GEOS-Chem v measurements.png', bbox_extra_artists=(legend,), bbox_inches='tight',dpi=600)
 
 
 
