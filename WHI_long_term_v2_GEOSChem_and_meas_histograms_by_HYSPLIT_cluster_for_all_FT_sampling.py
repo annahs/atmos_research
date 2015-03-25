@@ -184,6 +184,7 @@ SP2_6h_Cont = []
 SP2_6h_LRT  = [] 
 SP2_6h_GBPS = [] 
 SP2_6h_BB = [] 
+SP2_6h_all_non_BB = []
 		
 #24h avgd data 
 for date, mass_data in rBC_24h_data.iteritems():
@@ -214,6 +215,7 @@ for date, mass_data in rBC_FT_data_cluster_NPac.iteritems():
 	date_mean = np.mean(mass_concs)
 	date_mean_err = np.mean(mass_concs_abs_err)/date_mean	
 	SP2_6h_NPac.append([date_mean,date_mean_err])
+	SP2_6h_all_non_BB.append([date_mean,date_mean_err])
 	
 for date, mass_data in rBC_FT_data_cluster_SPac.iteritems():
 	mass_concs = [row[0] for row in mass_data]
@@ -222,6 +224,7 @@ for date, mass_data in rBC_FT_data_cluster_SPac.iteritems():
 	date_mean = np.mean(mass_concs)
 	date_mean_err = np.mean(mass_concs_abs_err)/date_mean	
 	SP2_6h_SPac.append([date_mean,date_mean_err])
+	SP2_6h_all_non_BB.append([date_mean,date_mean_err])
 	
 for date, mass_data in rBC_FT_data_cluster_Cont.iteritems():
 	mass_concs = [row[0] for row in mass_data]
@@ -230,6 +233,7 @@ for date, mass_data in rBC_FT_data_cluster_Cont.iteritems():
 	date_mean = np.mean(mass_concs)
 	date_mean_err = np.mean(mass_concs_abs_err)/date_mean	
 	SP2_6h_Cont.append([date_mean,date_mean_err])
+	SP2_6h_all_non_BB.append([date_mean,date_mean_err])
 
 for date, mass_data in rBC_FT_data_cluster_LRT.iteritems():
 	mass_concs = [row[0] for row in mass_data]
@@ -237,8 +241,8 @@ for date, mass_data in rBC_FT_data_cluster_LRT.iteritems():
 	
 	date_mean = np.mean(mass_concs)
 	date_mean_err = np.mean(mass_concs_abs_err)/date_mean	
-	
 	SP2_6h_LRT.append([date_mean,date_mean_err])
+	SP2_6h_all_non_BB.append([date_mean,date_mean_err])
 
 for date, mass_data in rBC_FT_data_cluster_GBPS.iteritems():
 	mass_concs = [row[0] for row in mass_data]
@@ -247,6 +251,7 @@ for date, mass_data in rBC_FT_data_cluster_GBPS.iteritems():
 	date_mean = np.mean(mass_concs)
 	date_mean_err = np.mean(mass_concs_abs_err)/date_mean	
 	SP2_6h_GBPS.append([date_mean,date_mean_err])	
+	SP2_6h_all_non_BB.append([date_mean,date_mean_err])
 	
 for date, mass_data in rBC_FT_data_cluster_BB.iteritems():
 	mass_concs = [row[0] for row in mass_data]
@@ -346,7 +351,8 @@ GC_6h_SPac = []
 GC_6h_Cont = [] 
 GC_6h_LRT  = [] 
 GC_6h_GBPS = [] 	
-GC_6h_BB = []				
+GC_6h_BB = []	
+GC_6h_all_non_BB = []			
 
 for file in os.listdir('.'):
 	if file.endswith('N.txt'):  #these are the night files (2-4 and 5-7 PST)
@@ -429,20 +435,24 @@ for file in os.listdir('.'):
 						
 					if cluslist_current_cluster_no == 9:
 						GC_6h_GBPS.append([BC_conc_ngm3,mean_rel_err])
+						GC_6h_all_non_BB.append([BC_conc_ngm3,mean_rel_err])
 							
 					if cluslist_current_cluster_no == 4:
 						GC_6h_Cont.append([BC_conc_ngm3,mean_rel_err])
-							
+						GC_6h_all_non_BB.append([BC_conc_ngm3,mean_rel_err])
+						
 					if cluslist_current_cluster_no in [6,8]:
 						GC_6h_SPac.append([BC_conc_ngm3,mean_rel_err])
-							
+						GC_6h_all_non_BB.append([BC_conc_ngm3,mean_rel_err])
+						
 					if cluslist_current_cluster_no in [2,7]:
 						GC_6h_LRT.append([BC_conc_ngm3,mean_rel_err])
-							
+						GC_6h_all_non_BB.append([BC_conc_ngm3,mean_rel_err])
+						
 					if cluslist_current_cluster_no in [1,3,5,10]:
 						GC_6h_NPac.append([BC_conc_ngm3,mean_rel_err])
-
-			
+						GC_6h_all_non_BB.append([BC_conc_ngm3,mean_rel_err])
+					
 
 			
 #print out percentile data and uncertainties
@@ -455,6 +465,7 @@ stats_SP2 = {
 'SP2_6h_LRT':[SP2_6h_LRT],
 'SP2_6h_GBPS':[SP2_6h_GBPS],
 'SP2_6h_BB':[SP2_6h_BB],
+'SP2_6h_all_non_BB':[SP2_6h_all_non_BB],
 }
 
 file_list = []
@@ -488,6 +499,7 @@ stats_GC = {
 'GC_6h_LRT':[GC_6h_LRT],
 'GC_6h_GBPS':[GC_6h_GBPS],
 'GC_6h_BB':[GC_6h_BB],
+'GC_6h_all_non_BB':[GC_6h_all_non_BB],
 }
 	
 	
@@ -509,6 +521,7 @@ SP2_6h_Cont_m = [row[0] for row in SP2_6h_Cont]
 SP2_6h_LRT_m =  [row[0] for row in SP2_6h_LRT]
 SP2_6h_GBPS_m = [row[0] for row in SP2_6h_GBPS]
 SP2_6h_BB_m = [row[0] for row in SP2_6h_BB]
+SP2_6h_all_non_BB_m = [row[0] for row in SP2_6h_all_non_BB]
 
 SP2_24h_FR_m = [row[0] for row in SP2_24h_FR]
 SP2_24h_BB_m = [row[0] for row in SP2_24h_BB]
@@ -519,6 +532,7 @@ GC_6h_Cont_m = [row[0] for row in GC_6h_Cont]
 GC_6h_LRT_m =  [row[0] for row in GC_6h_LRT]
 GC_6h_GBPS_m = [row[0] for row in GC_6h_GBPS]
 GC_6h_BB_m = [row[0] for row in GC_6h_BB]
+GC_6h_all_non_BB_m = [row[0] for row in GC_6h_all_non_BB]
 
 GC_24h_FR_m = [row[0] for row in GC_24h_FR]
 GC_24h_BB_m = [row[0] for row in GC_24h_BB]
@@ -624,7 +638,7 @@ ax7.axvline(stats_GC['GC_6h_SPac'][1], color= 'black', linestyle = '--')
 ax8.hist(GC_6h_GBPS_m,bins = bin_number, range = bin_range, color = 'green')
 ax8.xaxis.set_visible(True)
 ax8.yaxis.set_visible(False)
-ax8.set_xlabel('rBC mass concentration (ng/m3 - STP)')
+ax8.set_xlabel('6h rBC mass concentration (ng/m3 - STP)')
 ax8.xaxis.set_ticks(np.arange(0, FT_UL, incr))
 ax8.axvline(stats_GC['GC_6h_GBPS'][1], color= 'black', linestyle = '--')
 
@@ -650,7 +664,7 @@ plt.subplots_adjust(hspace=0.05)
 plt.subplots_adjust(wspace=0.05)
 
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/')
-plt.savefig('histograms -clustered GEOS-Chem and measurements - FT.png',bbox_inches='tight')
+plt.savefig('histograms -clustered GEOS-Chem and measurements - 6h FT.png',bbox_inches='tight')
 
 plt.show()
 	
@@ -713,11 +727,58 @@ ax7.yaxis.set_visible(False)
 ax7.xaxis.set_ticks(np.arange(0, UL_BB, 100))
 ax7.axvline(stats_GC['GC_24h_BB'][1], color= 'black', linestyle = '--')
 
-plt.figtext(0.35,0.06, 'rBC mass concentration (ng/m3 - STP)')
+plt.figtext(0.35,0.06, '24h rBC mass concentration (ng/m3 - STP)')
 
 plt.subplots_adjust(hspace=0.07)
 plt.subplots_adjust(wspace=0.07)
 
-plt.savefig('histograms - GEOS-Chem and measurements - BB and FR(lessBB).png')#,bbox_inches='tight')
+plt.savefig('histograms - GEOS-Chem and measurements - BB and FR(lessBB) - 24h.png')#,bbox_inches='tight')
 
 plt.show()
+
+###################plotting 3
+fig = plt.figure(figsize=(6,8))
+
+bin_number_all_FT = 30
+UL_all_FT = 300
+bin_range_all_FT = (0,UL_all_FT)
+
+ax1 = plt.subplot2grid((2,1), (0,0), colspan=1)				
+ax2 = plt.subplot2grid((2,1), (1,0), colspan=1)
+
+
+
+
+#SP2
+ax1.hist(SP2_6h_all_non_BB_m,bins = bin_number_all_FT, range = bin_range_all_FT)
+ax1.xaxis.set_visible(True)
+ax1.yaxis.set_visible(True)
+ax1.set_ylabel('frequency - Measurements')
+#ax1.text(0.25, 0.80,'All nighttime measurements \n(not including biomass burning periods)', transform=ax1.transAxes)
+#ax1.set_ylim(0,40)
+ax1.xaxis.tick_top()
+ax1.xaxis.set_label_position('top') 
+ax1.xaxis.set_ticks(np.arange(0, UL_all_FT, 50))
+ax1.axvline(stats_SP2['SP2_6h_all_non_BB'][1], color= 'black', linestyle = '--')
+
+
+#GC
+ax2.hist(GC_6h_all_non_BB_m,bins = bin_number_all_FT, range = bin_range_all_FT, color = 'green')
+ax2.xaxis.set_visible(True)
+ax2.yaxis.set_visible(True)
+ax2.set_ylabel('frequency - GEOS-Chem')
+ax2.xaxis.set_ticks(np.arange(0, UL_FR, 50))
+ax2.axvline(stats_GC['GC_6h_all_non_BB'][1], color= 'black', linestyle = '--')
+ax2.set_xlabel('6h rBC mass concentration (ng/m3 - STP)')
+
+#plt.figtext(0.35,0.06, '6h rBC mass concentration (ng/m3 - STP)')
+
+plt.subplots_adjust(hspace=0.07)
+plt.subplots_adjust(wspace=0.07)
+
+plt.savefig('histograms - GEOS-Chem and measurements - all non-BB FT - 6h.png',bbox_inches='tight')
+
+plt.show()
+
+
+SP2_6h_all_non_BB
