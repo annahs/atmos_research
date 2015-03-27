@@ -361,6 +361,7 @@ rBC_FT_data_cluster_SPac_l = []
 rBC_FT_data_cluster_Cont_l = []
 rBC_FT_data_cluster_LRT_l = []
 rBC_FT_data_cluster_GBPS_l = []
+rBC_FT_data_cluster_BB_l = []
 
 #put lists etc in array
 binned_data_lists = [
