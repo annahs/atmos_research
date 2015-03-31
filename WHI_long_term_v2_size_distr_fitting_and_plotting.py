@@ -16,13 +16,22 @@ data_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/size_distrs
 os.chdir(data_dir)
 
 
-fileFR = 'AD_corr - size distr - FRlessFT - FR with BB.sdbinpickl'
-fileBB = 'AD_corr - size distr - FRlessFT - BB with BB.sdbinpickl'
-fileCont = 'AD_corr - size distr - FRlessFT - Cont with BB.sdbinpickl'
-fileNPac = 'AD_corr - size distr - FRlessFT - NPac .sdbinpickl'
-fileSPac = 'AD_corr - size distr - FRlessFT - SPac .sdbinpickl'
-fileLRT = 'AD_corr - size distr - FRlessFT - LRT with BB.sdbinpickl'
-fileGBPS = 'AD_corr - size distr - FRlessFT - GBPS with BB.sdbinpickl'
+#fileFR = 'AD_corr - size distr - FRlessFT - FR.sdbinpickl'
+#fileBB = 'AD_corr - size distr - FRlessFT - BB.sdbinpickl'
+#fileCont = 'AD_corr - size distr - FRlessFT - Cont.sdbinpickl'
+#fileNPac = 'AD_corr - size distr - FRlessFT - NPac.sdbinpickl'
+#fileSPac = 'AD_corr - size distr - FRlessFT - SPac.sdbinpickl'
+#fileLRT = 'AD_corr - size distr - FRlessFT - LRT.sdbinpickl'
+#fileGBPS = 'AD_corr - size distr - FRlessFT - GBPS.sdbinpickl'
+
+fileFR = 'AD_corr - size distr - FRlessFT - FR.sdbinpickl'
+fileBB = 'AD_corr - size distr - FRlessFT - BB.sdbinpickl'
+fileCont = 'AD_corr - size distr - FT - Cont.sdbinpickl'
+fileNPac = 'AD_corr - size distr - FT - NPac.sdbinpickl'
+fileSPac = 'AD_corr - size distr - FT - SPac.sdbinpickl'
+fileLRT = 'AD_corr - size distr - FT - LRT.sdbinpickl'
+fileGBPS = 'AD_corr - size distr - FT - GBPS.sdbinpickl'
+fileallFT = 'AD_corr - size distr - FT - all_FT.sdbinpickl'
 
 #fileFR = 'AD_corr - size distr - FR.sdbinpickl'
 #fileBB = 'AD_corr - size distr - BB.sdbinpickl'
@@ -40,6 +49,8 @@ distributions = {
 'SPac':[fileSPac],
 'LRT':[fileLRT],
 'GBPS':[fileGBPS],
+'All_FT':[fileallFT],
+
 }
 
 fit_bins = []
@@ -74,7 +85,7 @@ for distribution, distribution_data in distributions.iteritems():
 		norm_1_masses = distribution_data[3]
 		#print mass_bins
 		
-		popt, pcov = curve_fit(lognorm, mass_bins, norm_log_masses)	
+		popt, pcov = curve_fit(lognorm, mass_bins, norm_1_masses)	
 		perr = np.sqrt(np.diag(pcov)) #from docs:  To compute one standard deviation errors on the parameters use perr = np.sqrt(np.diag(pcov))
 		err_variables =  [popt[0]-perr[0], popt[1]-perr[1], popt[2]-perr[2]]
 		
@@ -91,9 +102,9 @@ for distribution, distribution_data in distributions.iteritems():
 		distribution_data.append(fit_y_vals)
 		distribution_data.append(fit_bins)
 		
-		max_percent_of_distr_measured = sum(norm_log_masses)*100./sum(err_fit_y_vals)
+		max_percent_of_distr_measured = sum(norm_1_masses)*100./sum(err_fit_y_vals)
 		
-		percent_of_distr_measured = sum(norm_log_masses)*100./sum(fit_y_vals)
+		percent_of_distr_measured = sum(norm_1_masses)*100./sum(fit_y_vals)
 		print distribution, percent_of_distr_measured,max_percent_of_distr_measured, 2*(max_percent_of_distr_measured-percent_of_distr_measured)
 
 		
@@ -101,12 +112,12 @@ for distribution, distribution_data in distributions.iteritems():
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
 
-data = 2
+data = 3
 fit = 4 
 fit_bins = 5
 
 bins = []
-colors = ['k','grey','magenta','grey','g','b','r']
+colors = ['k','grey','magenta','cyan','g','b','r']
 ticks = [50,60,70,80,100,120,160,200,300,400,600,800]
 
 
@@ -121,33 +132,35 @@ for distribution, distribution_data in distributions.iteritems():
 #ax1.plot	(distributions['FR'][1]		,distributions['FR'][fit], 		color = colors[0], label = 'FR')
 #ax1.scatter	(distributions['BB'][1]		,distributions['BB'][data],		color = colors[1], )
 #ax1.plot	(distributions['BB'][1]		,distributions['BB'][fit], 		color = colors[1], label = 'BB')
-ax1.scatter	(distributions['LRT'][1]	,distributions['LRT'][data],	color = colors[5], marker = 'o' , label = 'LRT')
+ax1.plot	(distributions['LRT'][1]	,distributions['LRT'][data],	'sb-', linewidth=0,label = 'W. Pacific/Asia')
 ax1.plot	(distributions['LRT'][5]	,distributions['LRT'][fit],	 	color = colors[5],   linewidth = 1.5)
-ax1.scatter	(distributions['SPac'][1]	,distributions['SPac'][data],	color = colors[4], marker = '>' , label = 'SPac')
-ax1.plot	(distributions['SPac'][5]	,distributions['SPac'][fit],	color = colors[4], linewidth = 1.5)
-ax1.scatter	(distributions['GBPS'][1]	,distributions['GBPS'][data],	color = colors[6], marker = '*' ,label = 'GBPS')
-ax1.plot	(distributions['GBPS'][5]	,distributions['GBPS'][fit],	color = colors[6],  linewidth = 1.5)
-ax1.scatter	(distributions['NPac'][1]	,distributions['NPac'][data],	color = colors[3], marker = 's' ,label = 'NPac')
-ax1.plot	(distributions['NPac'][5]	,distributions['NPac'][fit],	color = colors[3],  linewidth = 1.5)
-ax1.scatter	(distributions['Cont'][1]	,distributions['Cont'][data],	color = colors[2], marker = '<' ,label = 'Cont')
-ax1.plot	(distributions['Cont'][5]	,distributions['Cont'][fit],	color = colors[2],  linewidth = 1.5)
+ax1.plot	(distributions['SPac'][1]	,distributions['SPac'][data],	'og-', linewidth=0,label = 'S. Pacific')
+ax1.plot	(distributions['SPac'][5]	,distributions['SPac'][fit],	color = colors[4], linewidth =  1.5)
+ax1.plot	(distributions['GBPS'][1]	,distributions['GBPS'][data],	'^r-', linewidth=0,label = 'Georgia Basin/Puget Sound')
+ax1.plot	(distributions['GBPS'][5]	,distributions['GBPS'][fit],	color = colors[6],  linewidth =  1.5)
+ax1.plot	(distributions['NPac'][1]	,distributions['NPac'][data],	'*c-', linewidth=0,label = 'N. Pacific')
+ax1.plot	(distributions['NPac'][5]	,distributions['NPac'][fit],	color = colors[3],  linewidth =  1.5)
+ax1.plot	(distributions['Cont'][1]	,distributions['Cont'][data],	'>m-', linewidth=0,label = 'N. Canada')
+ax1.plot	(distributions['Cont'][5]	,distributions['Cont'][fit],	color = colors[2],  linewidth =  1.5)
+ax1.plot	(distributions['All_FT'][1]	,distributions['All_FT'][data],	'dk-', linewidth=0,label = 'All nighttime data')
+ax1.plot	(distributions['All_FT'][5]	,distributions['All_FT'][fit],	color = colors[0],  linewidth = 1.5)
 
 
+legend = ax1.legend(loc='upper center', numpoints=1, bbox_to_anchor=(0.5, 1.18), ncol=3)
 
-ax1.legend(numpoints=1)
 ax1.set_xscale('log')
-ax1.set_xlim(40,750)
-ax1.set_ylim(0,15)
+ax1.set_xlim(60,400)
+ax1.set_ylim(0,1.1)
 ax1.set_xlabel('VED (nm)')
 ax1.set_ylabel('dM/dlogVED')
 ax1.xaxis.set_major_formatter(plt.FormatStrFormatter('%d'))
 ax1.xaxis.set_major_locator(plt.FixedLocator(ticks))
 #plt.text(0.9,0.9, '(b)',transform=ax1.transAxes)
-#plt.savefig('FT mass distributions - by cluster.png', bbox_inches = 'tight')
+plt.savefig('FT mass distributions - by cluster -t.png', bbox_inches = 'tight',bbox_extra_artists=(legend,))
 
 plt.show()
 
-
+sys.exit()
 ##
 fig = plt.figure()
 ax1 = fig.add_subplot(111)

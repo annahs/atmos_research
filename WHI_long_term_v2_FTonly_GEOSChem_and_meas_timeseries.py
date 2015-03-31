@@ -680,7 +680,7 @@ fire_color = '#990000'
 fig = plt.figure(figsize=(11.5,7.5))
 
 hfmt = dates.DateFormatter('%b')
-#hfmt = dates.DateFormatter('%m-%d-%H')
+#hfmt = dates.DateFormatter('%m-%d')
 
 display_month_interval = 1
 max_display_conc = 750
@@ -705,12 +705,12 @@ ax12 = plt.subplot2grid((4,3), (2,2), colspan=1,rowspan = 2, sharey=ax10)
 											
 #combo
 
-ax7.errorbar(SP2_6h_NPac_date,SP2_6h_NPac_mass_conc,yerr = SP2_6h_NPac_abs_err, color='cyan', alpha = 1, fmt = 'o')
+ax7.errorbar(SP2_6h_NPac_date,SP2_6h_NPac_mass_conc,yerr = SP2_6h_NPac_abs_err, color='cyan', alpha = 1, fmt = '*')
 ax7.errorbar(SP2_6h_SPac_date,SP2_6h_SPac_mass_conc,yerr = SP2_6h_SPac_abs_err, color='green', alpha = 1, fmt = 'o')
-ax7.errorbar(SP2_6h_Cont_date,SP2_6h_Cont_mass_conc,yerr = SP2_6h_Cont_abs_err, color='magenta', alpha = 1, fmt = 'o')
-ax7.errorbar(SP2_6h_LRT_date,SP2_6h_LRT_mass_conc,yerr = SP2_6h_LRT_abs_err, color='blue', alpha = 1, fmt = 'o')
-ax7.errorbar(SP2_6h_GBPS_date,SP2_6h_GBPS_mass_conc,yerr = SP2_6h_GBPS_abs_err, color='red', alpha = 1, fmt = 'o')
-ax7.errorbar(SP2_6h_BB_date,SP2_6h_BB_mass_conc,yerr = SP2_6h_BB_abs_err, color='black', alpha = 1, fmt = 'o')
+ax7.errorbar(SP2_6h_Cont_date,SP2_6h_Cont_mass_conc,yerr = SP2_6h_Cont_abs_err, color='magenta', alpha = 1, fmt = '>')
+ax7.errorbar(SP2_6h_LRT_date,SP2_6h_LRT_mass_conc,yerr = SP2_6h_LRT_abs_err, color='blue', alpha = 1, fmt = 's')
+ax7.errorbar(SP2_6h_GBPS_date,SP2_6h_GBPS_mass_conc,yerr = SP2_6h_GBPS_abs_err, color='red', alpha = 1, fmt = '^')
+ax7.errorbar(SP2_6h_BB_date,SP2_6h_BB_mass_conc,yerr = SP2_6h_BB_abs_err, color='grey', alpha = 1, fmt = '<')
 ax7.errorbar(GC_6h_2009_date,GC_6h_2009_mass_conc,yerr=[GC_6h_2009_neg_err,GC_6h_2009_pos_err], color = 'k', alpha = 1, marker = '+')
 ax7.xaxis.set_major_locator(dates.MonthLocator(interval = display_month_interval))
 ax7.xaxis.set_visible(False)
@@ -722,12 +722,12 @@ ax7.axvspan(dates.date2num(fire_span2_09s),dates.date2num(fire_span2_09f), facec
 ax7.text(0.1, 0.9,'2009', transform=ax7.transAxes)
 
 
-ax8.errorbar(SP2_6h_NPac_date,SP2_6h_NPac_mass_conc,yerr = SP2_6h_NPac_abs_err, color='cyan', alpha = 1, fmt = 'o', label = 'N. Pacific')
+ax8.errorbar(SP2_6h_NPac_date,SP2_6h_NPac_mass_conc,yerr = SP2_6h_NPac_abs_err, color='cyan', alpha = 1, fmt = '*', label = 'N. Pacific')
 ax8.errorbar(SP2_6h_SPac_date,SP2_6h_SPac_mass_conc,yerr = SP2_6h_SPac_abs_err, color='green', alpha = 1, fmt = 'o', label = 'S. Pacific')
-ax8.errorbar(SP2_6h_Cont_date,SP2_6h_Cont_mass_conc,yerr = SP2_6h_Cont_abs_err, color='magenta', alpha = 1, fmt = 'o', label = 'N. Canada')
-ax8.errorbar(SP2_6h_LRT_date,SP2_6h_LRT_mass_conc,yerr = SP2_6h_LRT_abs_err, color='blue', alpha = 1, fmt = 'o', label = 'W. Pacific/Asia')
-ax8.errorbar(SP2_6h_GBPS_date,SP2_6h_GBPS_mass_conc,yerr = SP2_6h_GBPS_abs_err, color='red', alpha = 1, fmt = 'o', label = 'Georgia Basin/Puget Sound')
-ax8.errorbar(SP2_6h_BB_date,SP2_6h_BB_mass_conc,yerr = SP2_6h_BB_abs_err, color='black', alpha = 1, fmt = 'o', label = 'Biomass Burning')
+ax8.errorbar(SP2_6h_Cont_date,SP2_6h_Cont_mass_conc,yerr = SP2_6h_Cont_abs_err, color='magenta', alpha = 1, fmt = '>', label = 'N. Canada')
+ax8.errorbar(SP2_6h_LRT_date,SP2_6h_LRT_mass_conc,yerr = SP2_6h_LRT_abs_err, color='blue', alpha = 1, fmt = 's', label = 'W. Pacific/Asia')
+ax8.errorbar(SP2_6h_GBPS_date,SP2_6h_GBPS_mass_conc,yerr = SP2_6h_GBPS_abs_err, color='red', alpha = 1, fmt = '^', label = 'Georgia Basin/Puget Sound')
+ax8.errorbar(SP2_6h_BB_date,SP2_6h_BB_mass_conc,yerr = SP2_6h_BB_abs_err, color='grey', alpha = 1, fmt = '<', label = 'Biomass Burning')
 ax8.errorbar(GC_6h_2010_date,GC_6h_2010_mass_conc,yerr=[GC_6h_2010_neg_err,GC_6h_2010_pos_err], color = 'k', alpha = 1, marker = '+')
 ax8.xaxis.set_major_formatter(hfmt)
 ax8.xaxis.set_major_locator(dates.MonthLocator(interval = display_month_interval))
@@ -740,12 +740,12 @@ ax8.axvspan(dates.date2num(fire_span1_10s),dates.date2num(fire_span1_10f), facec
 ax8.text(0.1, 0.9,'2010', transform=ax8.transAxes)
 
 
-ax9.errorbar(SP2_6h_NPac_date,SP2_6h_NPac_mass_conc,yerr = SP2_6h_NPac_abs_err, color='cyan', alpha = 1, fmt = 'o', label = 'NPac')
+ax9.errorbar(SP2_6h_NPac_date,SP2_6h_NPac_mass_conc,yerr = SP2_6h_NPac_abs_err, color='cyan', alpha = 1, fmt = '*', label = 'NPac')
 ax9.errorbar(SP2_6h_SPac_date,SP2_6h_SPac_mass_conc,yerr = SP2_6h_SPac_abs_err, color='green', alpha = 1, fmt = 'o', label = 'SPac')
-ax9.errorbar(SP2_6h_Cont_date,SP2_6h_Cont_mass_conc,yerr = SP2_6h_Cont_abs_err, color='magenta', alpha = 1, fmt = 'o', label = 'Cont')
-ax9.errorbar(SP2_6h_LRT_date,SP2_6h_LRT_mass_conc,yerr = SP2_6h_LRT_abs_err, color='blue', alpha = 1, fmt = 'o', label = 'LRT')
-ax9.errorbar(SP2_6h_GBPS_date,SP2_6h_GBPS_mass_conc,yerr = SP2_6h_GBPS_abs_err, color='red', alpha = 1, fmt = 'o', label = 'GBPS')
-ax9.errorbar(SP2_6h_BB_date,SP2_6h_BB_mass_conc,yerr = SP2_6h_BB_abs_err, color='black', alpha = 1, fmt = 'o', label = 'BB')
+ax9.errorbar(SP2_6h_Cont_date,SP2_6h_Cont_mass_conc,yerr = SP2_6h_Cont_abs_err, color='magenta', alpha = 1, fmt = '>', label = 'Cont')
+ax9.errorbar(SP2_6h_LRT_date,SP2_6h_LRT_mass_conc,yerr = SP2_6h_LRT_abs_err, color='blue', alpha = 1, fmt = 's', label = 'LRT')
+ax9.errorbar(SP2_6h_GBPS_date,SP2_6h_GBPS_mass_conc,yerr = SP2_6h_GBPS_abs_err, color='red', alpha = 1, fmt = '^', label = 'GBPS')
+ax9.errorbar(SP2_6h_BB_date,SP2_6h_BB_mass_conc,yerr = SP2_6h_BB_abs_err, color='grey', alpha = 1, fmt = '<', label = 'BB')
 ax9.errorbar(GC_6h_2012_date,GC_6h_2012_mass_conc,yerr=[GC_6h_2012_neg_err,GC_6h_2012_pos_err], color = 'k', alpha = 1, marker = '+')
 ax9.xaxis.set_major_formatter(hfmt)
 ax9.xaxis.set_major_locator(dates.MonthLocator(interval = display_month_interval))
@@ -756,18 +756,17 @@ ax9.set_ylim(0, max_display_conc)
 ax9.set_xlim(dates.date2num(datetime.strptime(startdate_2012, '%Y/%m/%d')), dates.date2num(datetime.strptime(enddate_2012, '%Y/%m/%d')))
 ax9.text(0.1, 0.9,'2012', transform=ax9.transAxes)
 
-
 legend = ax8.legend(loc='upper center', bbox_to_anchor=(0.5, 1.275), ncol=3, numpoints=1)
 
 
 #ratios
 
 ax10.errorbar(ratio_dates_SPac,ratio_mass_conc_SPac,yerr = ratio_err_SPac, color='green', alpha = 1, fmt = 'o')
-ax10.errorbar(ratio_dates_NPac,ratio_mass_conc_NPac,yerr = ratio_err_NPac, color='cyan', alpha = 1, fmt = 'o')
-ax10.errorbar(ratio_dates_Cont,ratio_mass_conc_Cont,yerr = ratio_err_Cont, color='magenta', alpha = 1, fmt = 'o')
-ax10.errorbar(ratio_dates_LRT,ratio_mass_conc_LRT,yerr = ratio_err_LRT, color='blue', alpha = 1, fmt = 'o')
-ax10.errorbar(ratio_dates_GBPS,ratio_mass_conc_GBPS,yerr = ratio_err_GBPS, color='red', alpha = 1, fmt = 'o')
-ax10.errorbar(ratio_dates_BB,ratio_mass_conc_BB,yerr = ratio_err_BB, color='black', alpha = 1, fmt = 'o')
+ax10.errorbar(ratio_dates_NPac,ratio_mass_conc_NPac,yerr = ratio_err_NPac, color='cyan', alpha = 1, fmt = '*')
+ax10.errorbar(ratio_dates_Cont,ratio_mass_conc_Cont,yerr = ratio_err_Cont, color='magenta', alpha = 1, fmt = '>')
+ax10.errorbar(ratio_dates_LRT,ratio_mass_conc_LRT,yerr = ratio_err_LRT, color='blue', alpha = 1, fmt = 's')
+ax10.errorbar(ratio_dates_GBPS,ratio_mass_conc_GBPS,yerr = ratio_err_GBPS, color='red', alpha = 1, fmt = '^')
+ax10.errorbar(ratio_dates_BB,ratio_mass_conc_BB,yerr = ratio_err_BB, color='grey', alpha = 1, fmt = '<')
 ax10.xaxis.set_major_formatter(hfmt)
 ax10.xaxis.set_major_locator(dates.MonthLocator(interval = display_month_interval))
 ax10.xaxis.set_minor_locator(dates.DayLocator(interval = 2))
@@ -782,11 +781,11 @@ ax10.set_yscale('log')
 
 
 ax11.errorbar(ratio_dates_SPac,ratio_mass_conc_SPac,yerr = ratio_err_SPac, color='green', alpha = 1, fmt = 'o')
-ax11.errorbar(ratio_dates_NPac,ratio_mass_conc_NPac,yerr = ratio_err_NPac, color='cyan', alpha = 1, fmt = 'o')
-ax11.errorbar(ratio_dates_Cont,ratio_mass_conc_Cont,yerr = ratio_err_Cont, color='magenta', alpha = 1, fmt = 'o')
-ax11.errorbar(ratio_dates_LRT,ratio_mass_conc_LRT,yerr = ratio_err_LRT, color='blue', alpha = 1, fmt = 'o')
-ax11.errorbar(ratio_dates_GBPS,ratio_mass_conc_GBPS,yerr = ratio_err_GBPS, color='red', alpha = 1, fmt = 'o')
-ax11.errorbar(ratio_dates_BB,ratio_mass_conc_BB,yerr = ratio_err_BB, color='black', alpha = 1, fmt = 'o')
+ax11.errorbar(ratio_dates_NPac,ratio_mass_conc_NPac,yerr = ratio_err_NPac, color='cyan', alpha = 1, fmt = '*')
+ax11.errorbar(ratio_dates_Cont,ratio_mass_conc_Cont,yerr = ratio_err_Cont, color='magenta', alpha = 1, fmt = '>')
+ax11.errorbar(ratio_dates_LRT,ratio_mass_conc_LRT,yerr = ratio_err_LRT, color='blue', alpha = 1, fmt = 's')
+ax11.errorbar(ratio_dates_GBPS,ratio_mass_conc_GBPS,yerr = ratio_err_GBPS, color='red', alpha = 1, fmt = '^')
+ax11.errorbar(ratio_dates_BB,ratio_mass_conc_BB,yerr = ratio_err_BB, color='grey', alpha = 1, fmt = '<')
 ax11.xaxis.set_major_formatter(hfmt)
 ax11.xaxis.set_major_locator(dates.MonthLocator(interval = display_month_interval))
 ax11.xaxis.set_minor_locator(dates.DayLocator(interval = 2))
@@ -799,11 +798,11 @@ ax11.axvspan(dates.date2num(fire_span1_10s),dates.date2num(fire_span1_10f), face
 ax11.set_yscale('log')
 
 ax12.errorbar(ratio_dates_SPac,ratio_mass_conc_SPac,yerr = ratio_err_SPac, color='green', alpha = 1, fmt = 'o')
-ax12.errorbar(ratio_dates_NPac,ratio_mass_conc_NPac,yerr = ratio_err_NPac, color='cyan', alpha = 1, fmt = 'o')
-ax12.errorbar(ratio_dates_Cont,ratio_mass_conc_Cont,yerr = ratio_err_Cont, color='magenta', alpha = 1, fmt = 'o')
-ax12.errorbar(ratio_dates_LRT,ratio_mass_conc_LRT,yerr = ratio_err_LRT, color='blue', alpha = 1, fmt = 'o')
-ax12.errorbar(ratio_dates_GBPS,ratio_mass_conc_GBPS,yerr = ratio_err_GBPS, color='red', alpha = 1, fmt = 'o')
-ax12.errorbar(ratio_dates_BB,ratio_mass_conc_BB,yerr = ratio_err_BB, color='black', alpha = 1, fmt = 'o')
+ax12.errorbar(ratio_dates_NPac,ratio_mass_conc_NPac,yerr = ratio_err_NPac, color='cyan', alpha = 1, fmt = '*')
+ax12.errorbar(ratio_dates_Cont,ratio_mass_conc_Cont,yerr = ratio_err_Cont, color='magenta', alpha = 1, fmt = '>')
+ax12.errorbar(ratio_dates_LRT,ratio_mass_conc_LRT,yerr = ratio_err_LRT, color='blue', alpha = 1, fmt = 's')
+ax12.errorbar(ratio_dates_GBPS,ratio_mass_conc_GBPS,yerr = ratio_err_GBPS, color='red', alpha = 1, fmt = '^')
+ax12.errorbar(ratio_dates_BB,ratio_mass_conc_BB,yerr = ratio_err_BB, color='grey', alpha = 1, fmt = '<')
 ax12.xaxis.set_major_formatter(hfmt)
 ax12.xaxis.set_major_locator(dates.MonthLocator(interval = display_month_interval))
 ax12.xaxis.set_minor_locator(dates.DayLocator(interval = 2))

@@ -160,42 +160,42 @@ for key, value in GC_GBPS.iteritems():
 	P =  [row[0] for row in value]
 	BC = [row[1] for row in value]
 	avg_p = np.mean(P)
-	avg_BCconc = np.mean(BC)
+	avg_BCconc = np.median(BC)
 	GC_GBPS_data.append([avg_p,avg_BCconc])
 	
 for key, value in GC_Cont.iteritems():
 	P =  [row[0] for row in value]
 	BC = [row[1] for row in value]
 	avg_p = np.mean(P)
-	avg_BCconc = np.mean(BC)
+	avg_BCconc = np.median(BC)
 	GC_Cont_data.append([avg_p,avg_BCconc])
 	
 for key, value in GC_SPac.iteritems():
 	P =  [row[0] for row in value]
 	BC = [row[1] for row in value]
 	avg_p = np.mean(P)
-	avg_BCconc = np.mean(BC)
+	avg_BCconc = np.median(BC)
 	GC_SPac_data.append([avg_p,avg_BCconc])
 	
 for key, value in GC_NPac.iteritems():
 	P =  [row[0] for row in value]
 	BC = [row[1] for row in value]
 	avg_p = np.mean(P)
-	avg_BCconc = np.mean(BC)
+	avg_BCconc = np.median(BC)
 	GC_NPac_data.append([avg_p,avg_BCconc])
 	
 for key, value in GC_LRT.iteritems():
 	P =  [row[0] for row in value]
 	BC = [row[1] for row in value]
 	avg_p = np.mean(P)
-	avg_BCconc = np.mean(BC)
+	avg_BCconc = np.median(BC)
 	GC_LRT_data.append([avg_p,avg_BCconc])
 	
 for key, value in GC_all.iteritems():
 	P =  [row[0] for row in value]
 	BC = [row[1] for row in value]
 	avg_p = np.mean(P)
-	avg_BCconc = np.mean(BC)
+	avg_BCconc = np.median(BC)
 	GC_all_data.append([avg_p,avg_BCconc])
 
 GC_GBPS_P = [row[0] for row in GC_GBPS_data]
@@ -228,12 +228,12 @@ alpha_val = 1
 
 #GC_2009
 ax1 = fig.add_subplot(111)
-ax1.plot(GC_all_BC, GC_all_P,   '<k-', markerfacecolor='none', label = 'All nighttime data')
-ax1.plot(GC_SPac_BC, GC_SPac_P, 'og-', markerfacecolor='none', label = 'S. Pacific')
-ax1.plot(GC_NPac_BC, GC_NPac_P, '*c-', markerfacecolor='none', label = 'N. Pacific')
-ax1.plot(GC_GBPS_BC, GC_GBPS_P, '^r-', markerfacecolor='none', label = 'Georgia Basin/Puget Sound')
-ax1.plot(GC_LRT_BC, GC_LRT_P,   'sb-', markerfacecolor='none', label = 'W. Pacific/Asia')
-ax1.plot(GC_Cont_BC, GC_Cont_P, '>m-', markerfacecolor='none', label = 'N. Canada')
+ax1.plot(GC_all_BC, GC_all_P,   'Dk-', label = 'All nighttime data')
+ax1.plot(GC_SPac_BC, GC_SPac_P, 'og-', label = 'S. Pacific')
+ax1.plot(GC_NPac_BC, GC_NPac_P, '*c-', label = 'N. Pacific')
+ax1.plot(GC_GBPS_BC, GC_GBPS_P, '^r-', label = 'Georgia Basin/Puget Sound')
+ax1.plot(GC_LRT_BC, GC_LRT_P,   'sb-', label = 'W. Pacific/Asia')
+ax1.plot(GC_Cont_BC, GC_Cont_P, '>m-', label = 'N. Canada')
 
 
 #ax1.axhline(782, color= 'black', linestyle = '--')
