@@ -49,7 +49,9 @@ sampling_duration_SPac = 0
 sampling_duration_Cont = 0
 sampling_duration_LRT  = 0 
 sampling_duration_GBPS = 0
-sampling_duration_BB_FT = 0
+sampling_duration_allFT = 0
+
+
 
 #create list of size bins
 while start_size < end_size:    
@@ -70,7 +72,7 @@ rBC_FT_data_cluster_SPac = copy.deepcopy(binned_data)
 rBC_FT_data_cluster_Cont = copy.deepcopy(binned_data)
 rBC_FT_data_cluster_LRT = copy.deepcopy(binned_data)
 rBC_FT_data_cluster_GBPS = copy.deepcopy(binned_data)
-rBC_FT_data_cluster_BB = copy.deepcopy(binned_data)
+rBC_FT_data_all = copy.deepcopy(binned_data)
 
 
 ######get spike times
@@ -241,7 +243,7 @@ for directory in directory_list:
 									continue				
 
 							###
-							#if in a BB time, put this data in BB dict and allow to go in FT BB dict as well
+							#if in a BB time, put this data in BB dict
 							if (fire_time1[0] <= end_time_obj <= fire_time1[1]) or (fire_time2[0] <= end_time_obj <= fire_time2[1]):
 								sampling_duration_BB = sampling_duration_BB + end_time - start_time #need duration to calc sampled volume later for concs
 								for key in rBC_BB_24h_data:
@@ -250,6 +252,7 @@ for directory in directory_list:
 									if BC_VED >= key_value and BC_VED < interval_end:
 										rBC_BB_24h_data[key][0] = rBC_BB_24h_data[key][0] + BC_mass
 										rBC_BB_24h_data[key][1] = rBC_BB_24h_data[key][1] + 1
+								continue #do not go on to put this data into a cluster dictionary or the FR dictionary
 							
 							
 
@@ -269,62 +272,67 @@ for directory in directory_list:
 							#add data to list in cluster dictionaries (1 list per cluster time early night/late night)
 							if ((cluslist_current_datetime-timedelta(hours=3)) <= end_time_obj <= (cluslist_current_datetime+timedelta(hours=3))):
 
-								#if in a BB time, put this data in BB FT dict
-								if (fire_time1[0] <= end_time_obj <= fire_time1[1]) or (fire_time2[0] <= end_time_obj <= fire_time2[1]):
-									sampling_duration_BB_FT = sampling_duration_BB_FT + end_time - start_time #need duration to calc sampled volume later for concs
-									for key in rBC_FT_data_cluster_BB:
-										key_value = float(key)
-										interval_end = key_value + interval_length
-										if BC_VED >= key_value and BC_VED < interval_end:
-											rBC_FT_data_cluster_BB[key][0] = rBC_FT_data_cluster_BB[key][0] + BC_mass
-											rBC_FT_data_cluster_BB[key][1] = rBC_FT_data_cluster_BB[key][1] + 1
-									continue #do not go on to put this data into a cluster dictionary or the FR dictionary
-
-							
 								if cluslist_current_cluster_no == 9:
 									sampling_duration_GBPS = sampling_duration_GBPS + end_time - start_time #need duration to calc sampled volume later for concs
+									sampling_duration_allFT = sampling_duration_allFT + end_time - start_time 
 									for key in rBC_FT_data_cluster_GBPS:
 										key_value = float(key)
 										interval_end = key_value + interval_length
 										if BC_VED >= key_value and BC_VED < interval_end:
 											rBC_FT_data_cluster_GBPS[key][0] = rBC_FT_data_cluster_GBPS[key][0] + BC_mass
 											rBC_FT_data_cluster_GBPS[key][1] = rBC_FT_data_cluster_GBPS[key][1] + 1
+											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
+											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
+											
+											
 												
 								if cluslist_current_cluster_no == 4:
 									sampling_duration_Cont = sampling_duration_Cont + end_time - start_time #need duration to calc sampled volume later for concs
+									sampling_duration_allFT = sampling_duration_allFT + end_time - start_time 
 									for key in rBC_FT_data_cluster_Cont:
 										key_value = float(key)
 										interval_end = key_value + interval_length
 										if BC_VED >= key_value and BC_VED < interval_end:
 											rBC_FT_data_cluster_Cont[key][0] = rBC_FT_data_cluster_Cont[key][0] + BC_mass
 											rBC_FT_data_cluster_Cont[key][1] = rBC_FT_data_cluster_Cont[key][1] + 1
+											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
+											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
 											
 								if cluslist_current_cluster_no in [6,8]:
 									sampling_duration_SPac = sampling_duration_SPac + end_time - start_time #need duration to calc sampled volume later for concs
+									sampling_duration_allFT = sampling_duration_allFT + end_time - start_time 
 									for key in rBC_FT_data_cluster_SPac:
 										key_value = float(key)
 										interval_end = key_value + interval_length
 										if BC_VED >= key_value and BC_VED < interval_end:
 											rBC_FT_data_cluster_SPac[key][0] = rBC_FT_data_cluster_SPac[key][0] + BC_mass
 											rBC_FT_data_cluster_SPac[key][1] = rBC_FT_data_cluster_SPac[key][1] + 1
+											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
+											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
 											
 								if cluslist_current_cluster_no in [2,7]:
 									sampling_duration_LRT = sampling_duration_LRT + end_time - start_time #need duration to calc sampled volume later for concs
+									sampling_duration_allFT = sampling_duration_allFT + end_time - start_time 
 									for key in rBC_FT_data_cluster_LRT:
 										key_value = float(key)
 										interval_end = key_value + interval_length
 										if BC_VED >= key_value and BC_VED < interval_end:
 											rBC_FT_data_cluster_LRT[key][0] = rBC_FT_data_cluster_LRT[key][0] + BC_mass
 											rBC_FT_data_cluster_LRT[key][1] = rBC_FT_data_cluster_LRT[key][1] + 1
+											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
+											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
 											
 								if cluslist_current_cluster_no in [1,3,5,10]:
 									sampling_duration_NPac = sampling_duration_NPac + end_time - start_time #need duration to calc sampled volume later for concs
+									sampling_duration_allFT = sampling_duration_allFT + end_time - start_time 
 									for key in rBC_FT_data_cluster_NPac:
 										key_value = float(key)
 										interval_end = key_value + interval_length
 										if BC_VED >= key_value and BC_VED < interval_end:
 											rBC_FT_data_cluster_NPac[key][0] = rBC_FT_data_cluster_NPac[key][0] + BC_mass
 											rBC_FT_data_cluster_NPac[key][1] = rBC_FT_data_cluster_NPac[key][1] + 1
+											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
+											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
 											
 							#get all 24hr data  (could make it less FT times if we put this after the FT data extraction code)
 							else:
@@ -351,7 +359,7 @@ total_sampled_volume_SPac = sampling_duration_SPac*average_flow/60
 total_sampled_volume_Cont = sampling_duration_Cont*average_flow/60
 total_sampled_volume_LRT  = sampling_duration_LRT *average_flow/60
 total_sampled_volume_GBPS = sampling_duration_GBPS*average_flow/60
-total_sampled_volume_BB_FT   = sampling_duration_BB_FT*average_flow/60 
+total_sampled_volume_allFT = sampling_duration_allFT*average_flow/60
 
 #v=create lists
 rBC_BB_24h_data_l = []
@@ -361,21 +369,21 @@ rBC_FT_data_cluster_SPac_l = []
 rBC_FT_data_cluster_Cont_l = []
 rBC_FT_data_cluster_LRT_l = []
 rBC_FT_data_cluster_GBPS_l = []
-rBC_FT_data_cluster_BB_l = []
+rBC_FT_data_all_l = []
 
 #put lists etc in array
 binned_data_lists = [
-[rBC_BB_24h_data		  ,rBC_BB_24h_data_l		  , total_sampled_volume_BB  ,'BB 24h'],
-[rBC_24h_data			  ,rBC_24h_data_l			  , total_sampled_volume_FR  ,'FR 24h'],
+[rBC_BB_24h_data		  ,rBC_BB_24h_data_l		  , total_sampled_volume_BB  ,'BB'],
+[rBC_24h_data			  ,rBC_24h_data_l			  , total_sampled_volume_FR  ,'FR'],
 [rBC_FT_data_cluster_NPac ,rBC_FT_data_cluster_NPac_l , total_sampled_volume_NPac,'NPac'],
 [rBC_FT_data_cluster_SPac ,rBC_FT_data_cluster_SPac_l , total_sampled_volume_SPac,'SPac'],
 [rBC_FT_data_cluster_Cont ,rBC_FT_data_cluster_Cont_l , total_sampled_volume_Cont,'Cont'],
 [rBC_FT_data_cluster_LRT  ,rBC_FT_data_cluster_LRT_l  , total_sampled_volume_LRT ,'LRT'],
-[rBC_FT_data_cluster_GBPS ,rBC_FT_data_cluster_GBPS_l , total_sampled_volume_GBPS,'GBPS']
-[rBC_FT_data_cluster_BB , rBC_FT_data_cluster_BB_l , total_sampled_volume_BB_FT,'BB']
+[rBC_FT_data_cluster_GBPS ,rBC_FT_data_cluster_GBPS_l , total_sampled_volume_GBPS,'GBPS'],
+[rBC_FT_data_all ,rBC_FT_data_all_l , total_sampled_volume_allFT,'all_FT'],
 ]
    
-rBC_FT_data_cluster_BB
+
 #fiddle with data (sort, normalize, etc)   
 for line in binned_data_lists:
 	dict = line[0]
@@ -431,15 +439,16 @@ VED_bin_GBPS = [row[0] for row in rBC_FT_data_cluster_GBPS_l]
 mass_GBPS = [row[1] for row in rBC_FT_data_cluster_GBPS_l]
 numb_GBPS = [row[2] for row in rBC_FT_data_cluster_GBPS_l]
 
-VED_bin_BB_FT = [row[0] for row in rBC_FT_data_cluster_BB_l]
-mass_BB_FT = [row[1] for row in rBC_FT_data_cluster_BB_l]
-numb_BB_FT = [row[2] for row in rBC_FT_data_cluster_BB_l]
+VED_bin_allFT = [row[0] for row in rBC_FT_data_all_l]
+mass_allFT = [row[1] for row in rBC_FT_data_all_l]
+numb_allFT = [row[2] for row in rBC_FT_data_all_l]
+
 
 #write final list of interval data to file and pickle
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/size_distrs')
 
 for list in binned_data_lists:
-	file = open('AD_corr - size distr - FRlessFT - ' + list[3] + ' with BB.txt', 'w')
+	file = open('AD_corr - size distr - FT - ' + list[3] + '.txt', 'w')
 	file.write('size_bin_midpoint(VEDnm)' + '\t'+ 'dM/dlog(VED)_(ng/cm3)' + '\t'+ 'd#/dlog(VED)_(#/cm3)' +  '\t' + 'dM(VED)_(ng/cm3)' +  '\t'+  'd#(VED)_(#/cm3)' + '\n')
 	file.write('total sampled volume:' + str(list[2]) + 'cc' + '\n')
 	for row in list[1]:
@@ -447,7 +456,7 @@ for list in binned_data_lists:
 		file.write(line + '\n')
 	file.close()
 
-	file = open('AD_corr - size distr - FRlessFT - ' + list[3] + ' with BB.sdbinpickl', 'w')
+	file = open('AD_corr - size distr - FT - ' + list[3] + '.sdbinpickl', 'w')
 	pickle.dump(list[1], file)
 	file.close()
 
@@ -465,7 +474,7 @@ ax1.semilogx(VED_bin_SPac,mass_SPac	, label = 'SPac')
 ax1.semilogx(VED_bin_Cont,mass_Cont	, label = 'Cont')
 ax1.semilogx(VED_bin_LRT,mass_LRT	, label = 'LRT')
 ax1.semilogx(VED_bin_GBPS,mass_GBPS	, label = 'GBPS')
-ax1.semilogx(VED_bin_BB_FT,mass_BB_FT	, label = 'BB FT')
+ax1.semilogx(VED_bin_allFT,mass_allFT, label = 'all FT')
 plt.xlabel('VED (nm)')
 plt.ylabel('dM/dlog(VED)')
 
@@ -485,8 +494,7 @@ ax1.semilogx(VED_bin_SPac,numb_SPac	, label = 'SPac')
 ax1.semilogx(VED_bin_Cont,numb_Cont	, label = 'Cont')
 ax1.semilogx(VED_bin_LRT ,numb_LRT	, label = 'LRT')
 ax1.semilogx(VED_bin_GBPS,numb_GBPS	, label = 'GBPS')
-ax1.semilogx(VED_bin_BB_FT,numb_BB_FT	, label = 'BB FT')
-
+ax1.semilogx(VED_bin_allFT,numb_allFT	, label = 'all FT')
 plt.xlabel('VED (nm)')
 plt.ylabel('d#/dlog(VED)')
 
