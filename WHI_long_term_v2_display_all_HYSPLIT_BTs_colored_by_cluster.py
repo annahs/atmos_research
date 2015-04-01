@@ -17,11 +17,19 @@ endpointsWHI = []
 fire_time1 = [datetime.strptime('2009/07/27 00:00', '%Y/%m/%d %H:%M'), datetime.strptime('2009/08/08 00:00', '%Y/%m/%d %H:%M')] #row_datetimes follwing Takahama et al (2011) doi:10.5194/acp-11-6367-2011 #PST
 fire_time2 = [datetime.strptime('2010/07/26 09:00', '%Y/%m/%d %H:%M'), datetime.strptime('2010/07/28 09:30', '%Y/%m/%d %H:%M')] #jason's BC clear report #PST
 
+endpoints_GBPS = []
+endpoints_LRT  = []
+endpoints_SPac = []
+endpoints_NPac = []
+endpoints_Cont = []
+
+
+
 CLUSLIST_file = 'C:/hysplit4/working/WHI/CLUSLIST_10'
 with open(CLUSLIST_file,'r') as f:
 	for line in f:
 		newline = line.split()
-		cluster_no = int(newline[0])
+		cluster = int(newline[0])
 		file = newline[7]
 
 		tdump_file = open(file, 'r')
@@ -43,8 +51,17 @@ with open(CLUSLIST_file,'r') as f:
 		
 		tdump_file.close() 
 		
-		endpointsWHI.append([endpoints,cluster_no]) 
-
+		if cluster in [4]: #N Can (Cont)
+			endpoints_Cont.append(endpoints)
+		if cluster in [6,8]: #S Pac
+			endpoints_SPac.append(endpoints)
+		if cluster in [2,7]: # W Pac/Asia (LRT)
+			endpoints_LRT.append(endpoints)
+		if cluster in [1,3,5,10]: #N Pac
+			endpoints_NPac.append(endpoints)
+		if cluster in [9]: #GBPS
+			endpoints_GBPS.append(endpoints)
+	
 
 
 		
@@ -63,65 +80,89 @@ m = Basemap(width=9000000,height=7000000,
 			lat_1=45.,lat_2=55,lat_0=lat_pt,lon_0=lon_pt)
 	
 	
-fig = plt.figure(figsize=(10,10))
-ax = fig.add_subplot(111)
-m.drawmapboundary(fill_color='white') 
+fig = plt.figure(figsize=(10,11))
 
-#rough shapes 
+
+
+ax1 = fig.add_subplot(321)
+ax1.set_xlabel('Northern Pacific')
+ax1.xaxis.set_label_position('top')
+m.drawmapboundary(fill_color='white') 
 m.drawcoastlines()
 m.fillcontinents(color='#FFFFBF',lake_color='#ABD9E9',zorder=0)
 m.drawcountries()
-
-####other data
-
-#label WHI
-WHI_lon = -122.96
-WHI_lat = 50.06
-WHI_x,WHI_y = m(WHI_lon, WHI_lat)
-plt.text(WHI_x-33000,WHI_y-17000,'WHI')
-m.plot(WHI_x,WHI_y, color='black', marker='o')
-
-
-##draw map scale
-#scale_lat = lat_pt-7
-#scale_lon = lon_pt-6
-##m.drawmapscale(scale_lon, scale_lat, -118, 32, 100, barstyle='simple', units='km', fontsize=9, yoffset=None, labelstyle='simple', fontcolor='k', fillcolor1='w', fillcolor2='k', ax=None, format='%d', zorder=None)
-#parallels = np.arange(0.,81,10.)
-## labels = [left,right,top,bottom]
-#m.drawparallels(parallels,labels=[False,True,True,False])
-#meridians = np.arange(10.,351.,20.)
-#m.drawmeridians(meridians,labels=[True,False,False,True])
-
-colors = ['r','#6600FF','#996633','b','m','c','k','#663300','grey','y','#336699']
-labels = ['Western Pacific/Asia (15%)','Southern Pacific (19%)','Georgia Basin/Puget Sound (4%)','Northern Pacific (48%)','Northern Canada (5%)']
-for row in endpointsWHI:
-	np_endpoints = np.array(row[0])
-	cluster = row[1]
-	if cluster == 9:
-		BT_color = 'r'
-	if cluster == 4:
-		BT_color = 'm'
-	if cluster in [6,8]:
-		BT_color = 'g'
-	if cluster in [2,7]:
-		BT_color = 'b'
-	if cluster in [1,3,5,10]:
-		BT_color = 'c'
+for row in endpoints_NPac:
+	np_endpoints = np.array(row)
 	lats = np_endpoints[:,0] 
 	lons = np_endpoints[:,1]
 	x,y = m(lons,lats)
-	bt = m.plot(x,y,color=BT_color)
+	bt = m.plot(x,y,color='c')	
 	
-	
-red_line = mlines.Line2D([], [], color='r')
-mag_line = mlines.Line2D([], [], color='m')
-gre_line = mlines.Line2D([], [], color='g')
-blu_line = mlines.Line2D([], [], color='b')
-cya_line = mlines.Line2D([], [], color='c')
+ax2 = fig.add_subplot(322)
+ax2.set_xlabel('Southern Pacific')
+ax2.xaxis.set_label_position('top') 
+m.drawmapboundary(fill_color='white') 
+m.drawcoastlines()
+m.fillcontinents(color='#FFFFBF',lake_color='#ABD9E9',zorder=0)
+m.drawcountries()
+for row in endpoints_SPac:
+	np_endpoints = np.array(row)
+	lats = np_endpoints[:,0] 
+	lons = np_endpoints[:,1]
+	x,y = m(lons,lats)
+	bt = m.plot(x,y,color='g')
 
-legend = plt.legend([blu_line,gre_line,red_line,cya_line,mag_line,],['W. Pacific/Asia','S. Pacific','Georgia Basin/Puget Sound','N. Pacific','N. Canada'], loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=3,)
 	
+ax3 = fig.add_subplot(323)
+ax3.set_xlabel('Georgia Basin/Puget Sound')
+ax3.xaxis.set_label_position('top') 
+m.drawmapboundary(fill_color='white') 
+m.drawcoastlines()
+m.fillcontinents(color='#FFFFBF',lake_color='#ABD9E9',zorder=0)
+m.drawcountries()
+for row in endpoints_GBPS:
+	np_endpoints = np.array(row)
+	lats = np_endpoints[:,0] 
+	lons = np_endpoints[:,1]
+	x,y = m(lons,lats)
+	bt = m.plot(x,y,color='r')
+
+ax4 = fig.add_subplot(324)
+ax4.set_xlabel('Western Pacific/Asia')
+ax4.xaxis.set_label_position('top') 
+m.drawmapboundary(fill_color='white') 
+m.drawcoastlines()
+m.fillcontinents(color='#FFFFBF',lake_color='#ABD9E9',zorder=0)
+m.drawcountries()
+for row in endpoints_LRT:
+	np_endpoints = np.array(row)
+	lats = np_endpoints[:,0] 
+	lons = np_endpoints[:,1]
+	x,y = m(lons,lats)
+	bt = m.plot(x,y,color='b')	
+	
+ax5 = fig.add_subplot(325)
+ax5.set_xlabel('Northern Canada')
+ax5.xaxis.set_label_position('top') 
+m.drawmapboundary(fill_color='white') 
+m.drawcoastlines()
+m.fillcontinents(color='#FFFFBF',lake_color='#ABD9E9',zorder=0)
+m.drawcountries()
+for row in endpoints_Cont:
+	np_endpoints = np.array(row)
+	lats = np_endpoints[:,0] 
+	lons = np_endpoints[:,1]
+	x,y = m(lons,lats)
+	bt = m.plot(x,y,color='m')
+	
+	
+plt.subplots_adjust(hspace=0.15)
+plt.subplots_adjust(wspace=0.1)
+
+#labels = ['Western Pacific/Asia (15%)','Southern Pacific (19%)','Georgia Basin/Puget Sound (4%)','Northern Pacific (48%)','Northern Canada (5%)']
+
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/')
-plt.savefig('WHI_FT_all_6h_HYSPLIT_BTs_colored_by_cluster.png', bbox_extra_artists=(legend,), bbox_inches='tight') 
+#plt.savefig('WHI_FT_all_6h_HYSPLIT_BTs_SPac.png', bbox_extra_artists=(legend,), bbox_inches='tight') 
+plt.savefig('WHI_FT_all_6h_HYSPLIT_BTs_sep_maps_by_cluster.png', bbox_inches='tight') 
 
 plt.show()
