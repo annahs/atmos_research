@@ -132,7 +132,14 @@ for stn in stations:
 		
 		print 'wet seasons data points', len(wet_season_avgs)
 		print 'dry seasons data points', len(dry_season_avgs)
+print day_count, night_count
+print '\n'
+print 'median all: ', np.median(combined_seasonal_and_station_data)
+print '10th and 90th ptile: ', np.percentile(combined_seasonal_and_station_data, 10), np.percentile(combined_seasonal_and_station_data, 90)
 
+
+		
+		
 #Plotting
 
 fig1 = plt.figure(figsize=(12,12))
