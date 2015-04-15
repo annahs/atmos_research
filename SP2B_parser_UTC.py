@@ -88,7 +88,7 @@ def parse_sp2b_files(parameters):
 				particle_record = min(record_queue, key=lambda x: x.timestamp)     
 				record_queue.pop(record_queue.index(particle_record))               
 				
-				#UTC eventtime (raw event times from particle_record class are in local time)
+				#UTC eventtime 
 				event_time = particle_record.timestamp
 				
 				number_bad_durations = len(bad_durations)
