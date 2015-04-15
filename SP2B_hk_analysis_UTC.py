@@ -1,4 +1,4 @@
-#look through hk files to find periods of bad sample flow or laser power. Log these so incandesence data collected during these times can be ignored.
+#look through hk files to find periods of bad sample flow or laser power also need to add sample flow and Yag temp. Log these so incandesence data collected during these times can be ignored.
 #hk files using seconds from midnight are in local time, but are converted to UTC here
 
 import sys
