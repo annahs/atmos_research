@@ -19,7 +19,7 @@ import sqlite3
 current_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'
 os.chdir(current_dir)
 
-num_records_to_analyse = 10000
+num_records_to_analyse = 1000
 LEO_factor = 20  # fit up to 1/this_value of max peak height (ie 1/20 is 5%)
 show_LEO_fit = False
 instrument = 'WHI_UBCSP2'
@@ -59,7 +59,8 @@ mean_zeroX_to_peak = np.mean([row[1] for row in result])
 HWxM = math.sqrt(2*math.log(LEO_factor))*(mean_gauss_width)
 zeroX_to_LEO_limit = HWxM + mean_zeroX_to_peak
 
-print zeroX_to_LEO_limit
+print zeroX_to_LEO_limit,mean_gauss_width,mean_zeroX_to_peak
+sys.exit()
 
 #**********parameters dictionary**********
 
