@@ -54,8 +54,9 @@ result = c.fetchall()
 mean_gauss_width = np.mean([row[0] for row in result])
 mean_zeroX_to_peak = np.mean([row[1] for row in result]) 
 
+
 #calculate half-width at x% point (eg 5% for factor 20)  
-HWxM = math.sqrt(2*math.log(LEO_factor))*mean_gauss_width
+HWxM = math.sqrt(2*math.log(LEO_factor))*(mean_gauss_width)
 zeroX_to_LEO_limit = HWxM + mean_zeroX_to_peak
 
 print zeroX_to_LEO_limit
@@ -113,80 +114,41 @@ for file in os.listdir('.'):
 			particle_record.scatteringPeakInfo()
 			
 			#get the zero-crossing with the appropriate method
-			zero_crossing_pt_LEO = int(round(particle_record.zeroCrossing()))
+			zero_crossing_pt_LEO = particle_record.zeroCrossing()
 								
 			#grab those records that are in the table 
 			c.execute('''SELECT * FROM SP2_coating_analysis WHERE instr=? and instr_locn=? and particle_type=? and sp2b_file=? and file_index=?''', (instrument,instrument_locn,type_particle, file, record_index))
 			result = c.fetchone()
 			if result is not None:
-
-				#set params for fitting 
-				scatteringBaseline = particle_record.scatteringBaseline
 				
-				#LEO max index sets the x-limit for fitting based on the desired magnification factor
-				LEO_max_index = int(round(zero_crossing_pt_LEO-zeroX_to_LEO_limit))
-				LEO_min_index = 0
+				particle_record.leoGaussFit(zeroX_to_LEO_limit,mean_zeroX_to_peak,mean_gauss_width)
 				
-				x_vals_all = particle_record.getAcqPoints()
-				x_vals_to_use = x_vals_all[LEO_min_index:LEO_max_index]
-
-				y_vals_all = particle_record.getScatteringSignal()
-				y_vals_to_use = y_vals_all[LEO_min_index:LEO_max_index]
-
-				center_pos = zero_crossing_pt_LEO-(mean_zeroX_to_peak)
+				LEO_amp = particle_record.LF_scattering_amp	
 				
-				#split detector signal
-				y_vals_split = particle_record.getSplitDetectorSignal()
-								
-				def LEOGauss(x, a, b):
-					return b+a*np.exp((-(x-center_pos)**2)/(2*mean_gauss_width**2))
-
-				#run the fitting
-				try:
-					popt, pcov = curve_fit(LEOGauss, x_vals_to_use, y_vals_to_use)
-					
-				except:
-					popt, pcov = None, None 
-					print 'LEO fail'
-
-				if popt != None:
-					if popt[0] != None and popt[1] != None:
-						LEO_amp = popt[0] 
-						LEO_baseline = popt[1]
-						
-						c.execute('''UPDATE SP2_coating_analysis SET 
-							LF_scat_amp=? 
-							WHERE sp2b_file=? and file_index=? and instr=?''', 
-							(LEO_amp,
-							file, record_index, instrument))
-			
-						
-						##only uae data with reasonable LEO amps adn baselines
-						#max_allowable_fit_amp = max_peakheight#scat_sat_amp - scatteringBaseline
-						#min_allowable_fit_amp = min_peakheight
-						#max_baseline_diff = 10
-						#baseline_diff = math.fabs(LEO_baseline-scatteringBaseline)
-						#
-						#if LEO_amp < max_allowable_fit_amp and LEO_amp >= min_allowable_fit_amp and baseline_diff <= max_baseline_diff:
-			
-						
-						if show_LEO_fit == True:
-						
-							fit_result = LEOGauss(x_vals_all,LEO_amp,LEO_baseline)
-							LEO_used = LEOGauss(x_vals_to_use,LEO_amp,LEO_baseline)
-									
-							print '\n'
-							print 'record: ',record_index
-							#print particle_record.splitBaseline, particle_record.zeroCrossingPos, particle_record.scatteringMax
-							fig = plt.figure()
-							ax1 = fig.add_subplot(111)
-							ax1.plot(x_vals_all,y_vals_all,'o', markerfacecolor='None')   
-							ax1.plot(x_vals_all,fit_result, 'red')
-							ax1.plot(x_vals_to_use,y_vals_to_use, color = 'black',linewidth=3)
-							#ax1.plot(x_vals_all, y_vals_split, 'o', color ='green')
-							plt.axvline(x=zero_crossing_pt_LEO, ymin=0, ymax=1)
-							plt.axvline(x=center_pos, ymin=0, ymax=1, color='red')
-							plt.show()
+				c.execute('''UPDATE SP2_coating_analysis SET 
+					LF_scat_amp=? 
+					WHERE sp2b_file=? and file_index=? and instr=?''', 
+					(LEO_amp,
+					file, record_index, instrument))
+	
+				#plot particle fit if desired				
+				if show_LEO_fit == True:
+				
+					x_vals_all = particle_record.getAcqPoints()
+					y_vals_all = particle_record.getScatteringSignal()	
+					y_vals_split = particle_record.getSplitDetectorSignal()
+					fit_result = particle_record.LF_results		
+										
+					print 'record: ',record_index
+					fig = plt.figure()
+					ax1 = fig.add_subplot(111)
+					ax1.plot(x_vals_all,y_vals_all,'o', markerfacecolor='None')   
+					ax1.plot(x_vals_all,fit_result, 'red')
+					ax1.plot(particle_record.LF_x_vals_to_use,particle_record.LF_y_vals_to_use, color = 'black',linewidth=3)
+					ax1.plot(x_vals_all, y_vals_split, 'o', color ='green')
+					plt.axvline(x=zero_crossing_pt_LEO, ymin=0, ymax=1)
+					plt.axvline(x=particle_record.beam_center_pos, ymin=0, ymax=1, color='red')
+					plt.show()
 
 					
 			record_index+=1    

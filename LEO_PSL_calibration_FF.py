@@ -20,7 +20,7 @@ import sqlite3
 current_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'
 instrument = 'WHI_UBCSP2'
 instrument_locn = 'WHI'
-PSL_size = 200.
+PSL_size = 200
 type_particle = 'PSL'
 os.chdir(current_dir)
 
@@ -30,10 +30,10 @@ show_full_fit = False
 
 #pararmeters used to reject invalid particle records based on scattering peak attributes
 min_peakheight = 20
-max_peakheight = 1750 #= no limit
+max_peakheight = 3500
 min_peakpos = 20
 max_peakpos = 125
-scat_sat_amp = 1750
+
 
 
 #**********parameters dictionary**********
@@ -95,8 +95,7 @@ parameters['avg_flow'] = avg_flow
 #parameters['avg_flow'] = avg_flow
 
 #*************LEO routine************
-
-
+		
 for file in os.listdir('.'):
 	
 	if file.endswith('.sp2b'):
@@ -112,7 +111,7 @@ for file in os.listdir('.'):
 		else:
 			number_records_toshow = num_records_to_analyse    
 		
-		##************This is the full-gauss prefit for PSLs************
+		##************This is the full-gauss prefit************
 		
 		f = open(file, 'rb')
 		
@@ -157,6 +156,8 @@ for file in os.listdir('.'):
 
 				#run the scatteringPeakInfo method to retrieve various peak attributes 
 				particle_record.scatteringPeakInfo()		
+				actual_max_value = particle_record.scatteringMax
+				actual_max_pos = particle_record.scatteringMaxPos
 				
 				#check for a double peak
 				particle_record.isSingleParticle()
@@ -164,77 +165,50 @@ for file in os.listdir('.'):
 				#note: zero-crossing calc will depend on the slope of the zero-crossing from the split detector
 				zero_crossing_pt = particle_record.zeroCrossing()
 				
+				
 				#check to see if scattering signal is over threshold, is in a reasonable position, and no double peaks
-				if particle_record.scatteringMax > min_peakheight and particle_record.scatteringMax < max_peakheight and particle_record.scatteringMaxPos > min_peakpos and particle_record.scatteringMaxPos < max_peakpos and particle_record.doublePeak==False and zero_crossing_pt > 0 : 
-										
-					#set parameters for fitting
-					baseline = particle_record.scatteringBaseline
-					x_vals = particle_record.getAcqPoints()
-					y_vals = particle_record.getScatteringSignal()
-										
-					#initial values for amplitude(a) center(u) and gauss width(sig)
-					guess_a = particle_record.scatteringMax  
-					guess_u = particle_record.scatteringMaxPos
-					guess_sig = 17
-					p_guess = [guess_a,guess_u,guess_sig]
+				if actual_max_value > min_peakheight and actual_max_value < max_peakheight and actual_max_pos > min_peakpos and actual_max_pos < max_peakpos and particle_record.doublePeak==False and zero_crossing_pt > 0 : 
 					
-					def fullGauss(x, a, u, sig):
-						return baseline+a*np.exp((-(x-u)**2)/(2*sig**2))
+					particle_record.fullGaussFit()
 					
-					#run the fitting
-					try:
-						popt, pcov = curve_fit(fullGauss, x_vals, y_vals, p0=p_guess)
-					except:
-						popt, pcov = None, None   
-						print 'full fail'
+					fit_peak_pos = particle_record.FF_peak_pos
+					fit_gauss_width = particle_record.FF_gauss_width
+					fit_scattering_amp = particle_record.FF_scattering_amp
+					zero_cross_to_peak = (zero_crossing_pt - fit_peak_pos)
 					
-					if popt[0] != None:           
-						#parameters to save
-						scattering_amp = popt[0]
-						fit_peak_pos = popt[1]          
-						gauss_width = popt[2]
-						actual_max_value = particle_record.scatteringMax
-						actual_max_pos = particle_record.scatteringMaxPos
+					#put particle into database or update record
+					c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr, instr_locn, particle_type, particle_dia) VALUES (?,?,?,?,?,?)''', (file, record_index,instrument, instrument_locn,type_particle,PSL_size))
+					c.execute('''UPDATE SP2_coating_analysis SET 
+					date=?, 
+					actual_scat_amp=?, 
+					actual_peak_pos=?, 
+					FF_scat_amp=?, 
+					FF_peak_pos=?, 
+					FF_gauss_width=?, 
+					zeroX_to_peak=?
+					WHERE sp2b_file=? and file_index=? and instr=?''', 
+					(event_time,
+					actual_max_value,
+					actual_max_pos,
+					fit_scattering_amp,
+					fit_peak_pos,
+					fit_gauss_width,
+					zero_cross_to_peak,
+					file, record_index,instrument))
+									
+					#plot particle fit if desired
+					if show_full_fit == True:
+						x_vals = particle_record.getAcqPoints()
+						y_vals = particle_record.getScatteringSignal()	
+						fit_result = particle_record.FF_results
 						
-						#a neg zero-crossing value means an exception was thrown when zero crossing calculated (see particle_record class methods)
-						if zero_crossing_pt >=0:
-							zero_cross_to_peak = (zero_crossing_pt - fit_peak_pos)
-						else:  
-							zero_cross_to_peak = np.nan
+						print record_index, actual_max_value
 						
-						#put particle into database or update record
-						c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr, instr_locn, particle_type, particle_dia) VALUES (?,?,?,?,?,?)''', (file, record_index,instrument, instrument_locn,type_particle,PSL_size))
-						c.execute('''UPDATE SP2_coating_analysis SET 
-						date=?, 
-						actual_scat_amp=?, 
-						actual_peak_pos=?, 
-						FF_scat_amp=?, 
-						FF_peak_pos=?, 
-						FF_gauss_width=?, 
-						zeroX_to_peak=?
-						WHERE sp2b_file=? and file_index=? and instr=?''', 
-						(event_time,
-						actual_max_value,
-						actual_max_pos,
-						scattering_amp,
-						fit_peak_pos,
-						gauss_width,
-						zero_cross_to_peak,
-						file, record_index,instrument))
-										
-						#plot particle fit if desired
-						fit_result = []
-						if show_full_fit == True:
-							for x in range(0,180):
-								fit_result.append(fullGauss(x,popt[0],popt[1],popt[2]))
-								
-							print record_index, particle_record.scatteringMax
-							
-							fig = plt.figure()
-							ax1 = fig.add_subplot(111)
-							ax1.plot(x_vals,y_vals,'o', markerfacecolor='None')   
-							ax1.plot(x_vals,fit_result, 'red')
-							plt.show()
+						fig = plt.figure()
+						ax1 = fig.add_subplot(111)
+						ax1.plot(x_vals,y_vals,'o', markerfacecolor='None')   
+						ax1.plot(x_vals,fit_result, 'red')
+						plt.show()
 
 						
 

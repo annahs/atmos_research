@@ -64,7 +64,7 @@ label2 = [row[3] for row in result]
 conn.close()
 
 
-#plots
+###plots
 #labels = []
 #i = 0
 #for file in label1:
@@ -91,8 +91,13 @@ conn.close()
 #ax.set_xlim([0,1000])
 #ax.set_ylim([0,1000])
 
+
+#######hist
+
 fig = plt.figure()
 ax = fig.add_subplot(111)
 ax.hist(x, bins=100,range=(0,1000), histtype='step', color = 'black',linewidth=1.5)
 ax.hist(y, bins=100,range=(0,1000), histtype='step', color = 'red',linewidth=1.5)
+
+
 plt.show()
