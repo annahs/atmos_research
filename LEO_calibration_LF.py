@@ -15,22 +15,27 @@ from scipy import linspace, polyval, polyfit, sqrt, stats
 import math
 import sqlite3
 from datetime import datetime
+import calendar
 
 
 
-
+#analysis parameters
 data_dir = 'D:/2012/WHI_UBCSP2/Binary/' #'D:/2009/WHI_ECSP2/Binary/'# 'D:/2010/WHI_ECSP2/Binary/'  #'D:/2012/WHI_UBCSP2/Binary/' 
 #analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'
 multiple_directories = True
 num_records_to_analyse = 100
-LEO_factor = 20  # fit up to 1/this_value of max peak height (ie 1/20 is 5%)
-show_LEO_fit = False
+LEO_factor = 16  # fit up to 1/this_value of max peak height (ie 1/20 is 5%)
+show_LEO_fit = True
 instrument = 'WHI_UBCSP2'
 instrument_locn = 'WHI'
-type_particle = 'nonincand' #PSL, nonincand, incand
-start_analysis_at = datetime.strptime('20080601','%Y%m%d')
-end_analysis_at = datetime.strptime('20120410','%Y%m%d')
-
+type_particle = 'incand' #PSL, nonincand, incand
+start_analysis_at = datetime.strptime('20120520','%Y%m%d')
+end_analysis_at = datetime.strptime('20120525','%Y%m%d')
+FF = 0
+#parameters for settign values of fixed variables in Gaussian fitting
+calib_instrument = 'WHI_UBCSP2'
+calib_instrument_locn = 'WHI'
+calib_type_particle = 'nonincand'
 
 #pararmeters used to reject invalid particle records based on scattering peak attributes
 min_peakheight = 20
@@ -38,43 +43,14 @@ max_peakheight = 3500
 min_peakpos = 20
 max_peakpos = 125
 
+#pararmeters used to assess incandescent peak
+min_incand_amp = 20
 
-#setup database
+#parameters for calculating rBC mass
+
+#connect to database
 conn = sqlite3.connect('C:/projects/dbs/SP2_data.db')
 c = conn.cursor()
-
-c.execute('''CREATE TABLE if not exists SP2_coating_analysis(
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-sp2b_file TEXT, 
-file_index INT, 
-instr TEXT,
-instr_locn TEXT,
-particle_type TEXT,		
-particle_dia FLOAT,				
-date TIMESTAMP,
-actual_scat_amp FLOAT,
-actual_peak_pos INT,
-FF_scat_amp FLOAT,
-FF_peak_pos INT,
-FF_gauss_width FLOAT,
-zeroX_to_peak FLOAT,
-LF_scat_amp FLOAT,
-incand_amp FLOAT,
-UNIQUE (sp2b_file, file_index, instr)
-)''')
-
-c.execute('''SELECT FF_gauss_width, zeroX_to_peak FROM SP2_coating_analysis WHERE instr=? and instr_locn=? and particle_type=? and FF_gauss_width is not null and zeroX_to_peak is not null''', (instrument,instrument_locn,type_particle))
-result = c.fetchall()
-
-mean_gauss_width = np.nanmean([row[0] for row in result]) 
-mean_zeroX_to_peak = np.nanmean([row[1] for row in result]) 
-
-
-#calculate half-width at x% point (eg 5% for factor 20)  
-HWxM = math.sqrt(2*math.log(LEO_factor))*(mean_gauss_width)
-zeroX_to_LEO_limit = HWxM + mean_zeroX_to_peak
-
-print zeroX_to_LEO_limit,mean_gauss_width,mean_zeroX_to_peak
 
 
 #**********parameters dictionary**********
@@ -96,7 +72,28 @@ parameters = {
 
 
 def gaussLEOFit(parameters_dict):
+	print parameters['folder']
 	
+	#**********get LEO calib parameters
+	file_date = datetime.strptime(parameters['folder'],'%Y%m%d')
+	file_date_UNIX = calendar.timegm(file_date.timetuple())
+	time_span = 172800 #48h in secs
+	begin_calib_data = file_date_UNIX-time_span
+	end_calib_data = file_date_UNIX+time_span
+	#get parameters for fixing variables in Gaussian fitting
+	
+	c.execute('''SELECT FF_gauss_width, zeroX_to_peak FROM SP2_coating_analysis WHERE instr=? and instr_locn=? and particle_type=? and date>? and date<? and FF_gauss_width is not null and zeroX_to_peak is not null ''', (calib_instrument,calib_instrument_locn,calib_type_particle, begin_calib_data, end_calib_data))
+	result = c.fetchall()
+
+	mean_gauss_width = np.nanmean([row[0] for row in result])+FF
+	mean_zeroX_to_peak = np.nanmean([row[1] for row in result]) 
+
+
+	#calculate half-width at x% point (eg 5% for factor 20)  
+	HWxM = math.sqrt(2*math.log(LEO_factor))*(mean_gauss_width-FF)
+	zeroX_to_LEO_limit = HWxM + mean_zeroX_to_peak
+
+	print zeroX_to_LEO_limit,mean_gauss_width,mean_zeroX_to_peak
 	
 	#*******HK ANALYSIS************ 
 
@@ -115,10 +112,8 @@ def gaussLEOFit(parameters_dict):
 		
 		if file.endswith('.sp2b'):
 			
-			f2 = open(file, 'rb')
-			
-			print file
-			
+			#print file
+			f2 = open(file, 'rb')			
 			path = parameters['directory'] + '/' + str(file)
 			file_bytes = os.path.getsize(path) #size of entire file in bytes
 			record_size = 1498 #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458)
@@ -143,15 +138,43 @@ def gaussLEOFit(parameters_dict):
 				
 				#get the zero-crossing with the appropriate method
 				zero_crossing_pt_LEO = particle_record.zeroCrossing()
-									
-				#grab those records that are in the table 
-				c.execute('''SELECT * FROM SP2_coating_analysis WHERE instr=? and instr_locn=? and particle_type=? and sp2b_file=? and file_index=?''', (instrument,instrument_locn,type_particle, file, record_index))
-				result = c.fetchone()
-				if result is not None:
+					
+				analyze_this_particle = False
+				
+				#for calibration purposes we only grab files where we had a successful fullGauss fit 
+				if type_particle == 'nonincand' or type_particle == 'PSL':
+					c.execute('''SELECT * FROM SP2_coating_analysis WHERE instr=? and instr_locn=? and particle_type=? and sp2b_file=? and file_index=?''', (instrument,instrument_locn,type_particle, file, record_index))
+					result = c.fetchone()
+					if result is not None:
+						analyze_this_particle = True
+						
+				#for looking at incandescent particles we will try a LEO fit if 
+				if type_particle == 'incand':
+					
+					particle_record.incandPeakInfo() #run the incandPeakInfo method to retrieve various incandescence peak attributes
+					incand_pk_amp = particle_record.incandMax
+					scattering_pk_amp = particle_record.scatteringMax
+					
+					if incand_pk_amp > min_incand_amp and scattering_pk_amp < min_peakheight:			
+						c.execute('''UPDATE SP2_coating_analysis SET 
+						LF_scat_amp=? 
+						WHERE sp2b_file=? and file_index=? and instr=?''', 
+						(0.0,
+						file, record_index, instrument))
+					
+					if incand_pk_amp > min_incand_amp and scattering_pk_amp >= min_peakheight:			
+						analyze_this_particle = True
+					
+				if analyze_this_particle == True:
 					
 					particle_record.leoGaussFit(zeroX_to_LEO_limit,mean_zeroX_to_peak,mean_gauss_width)
 					
 					LEO_amp = particle_record.LF_scattering_amp	
+					LEO_baseline = particle_record.LF_baseline
+					actual_baseline = particle_record.scatteringBaseline
+					
+					#percent_diff_baseline = np.absolute((LEO_baseline-actual_baseline)/(0.5*LEO_baseline+0.5*actual_baseline))
+					
 					
 					c.execute('''UPDATE SP2_coating_analysis SET 
 						LF_scat_amp=? 
@@ -165,25 +188,26 @@ def gaussLEOFit(parameters_dict):
 						x_vals_all = particle_record.getAcqPoints()
 						y_vals_all = particle_record.getScatteringSignal()	
 						y_vals_split = particle_record.getSplitDetectorSignal()
+						y_vals_incand = particle_record.getWidebandIncandSignal()
 						fit_result = particle_record.LF_results		
 											
 						print 'record: ',record_index
 						fig = plt.figure()
 						ax1 = fig.add_subplot(111)
 						ax1.plot(x_vals_all,y_vals_all,'o', markerfacecolor='None')   
-						ax1.plot(x_vals_all,fit_result, 'red')
+						ax1.plot(x_vals_all,fit_result, 'blue')
 						ax1.plot(particle_record.LF_x_vals_to_use,particle_record.LF_y_vals_to_use, color = 'black',linewidth=3)
-						ax1.plot(x_vals_all, y_vals_split, 'o', color ='green')
+						#ax1.plot(x_vals_all, y_vals_split, 'o', color ='green')
+						ax1.plot(x_vals_all, y_vals_incand, color ='red')
 						plt.axvline(x=zero_crossing_pt_LEO, ymin=0, ymax=1)
 						plt.axvline(x=particle_record.beam_center_pos, ymin=0, ymax=1, color='red')
 						plt.show()
 
 						
 				record_index+=1    
-				
+			
 			f2.close()        
-
-	conn.commit()
+		conn.commit()
 
 if multiple_directories == True:
 	os.chdir(data_dir)
