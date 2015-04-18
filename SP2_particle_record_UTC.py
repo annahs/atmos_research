@@ -4,12 +4,13 @@
 import numpy as np
 from struct import *
 import sys
+from scipy.optimize import curve_fit
 
 class ParticleRecord:
 	
 	
 	def __init__(self, record, acq_rate, timezone):
-		self.timestamp = None
+		self.timestamp = np.nan
 		
 		self.acqPoints = []
 		self.scatData = []
@@ -21,27 +22,38 @@ class ParticleRecord:
 		self.lowGainNarrowBandIncandData = []
 		self.lowGainSplitData = []
 		
-		self.flag = None
+		self.flag = np.nan
 		self.scatteringIsSat = False
 		self.scatteringSatFlag = False
-		self.scatteringBaseline = None
-		self.scatteringBaselineNoiseThresh = None
-		self.scatteringMax = None
-		self.scatteringMaxPos = None
+		self.scatteringBaseline = np.nan
+		self.scatteringBaselineNoiseThresh = np.nan
+		self.scatteringMax = np.nan
+		self.scatteringMaxPos = np.nan
 		self.doublePeak = False
-		self.splitMin = None
-		self.splitMax = None
-		self.splitBaseline = None
-		self.LEOMaxIndex = None
-		self.incandBaseline = None
-		self.incandMax = None
-		self.incandMaxPos = None
+		self.splitMin = np.nan
+		self.splitMax = np.nan
+		self.splitBaseline = np.nan
+		self.LEOMaxIndex = np.nan
+		self.incandBaseline = np.nan
+		self.incandMax = np.nan
+		self.incandMaxPos = np.nan
 		self.incandIsSat = False
-		self.narrowIncandBaseline = None
-		self.narrowIncandMax = None
-		self.narrowIncandMaxPos = None
+		self.narrowIncandBaseline = np.nan
+		self.narrowIncandMax = np.nan
+		self.narrowIncandMaxPos = np.nan
 		self.narrowIncandIsSat = False
-		self.zeroCrossingPos = None
+		self.zeroCrossingPos = np.nan
+		self.FF_scattering_amp = np.nan
+		self.FF_peak_pos = np.nan     
+		self.FF_gauss_width = np.nan
+		self.FF_results = []
+		self.LF_scattering_amp = np.nan
+		self.LF_baseline = np.nan
+		self.LF_results = []
+		self.beam_center_pos = np.nan
+		self.LF_x_vals_to_use = []
+		self.LF_y_vals_to_use = []
+		
 		
 		self.importFromBinary(record, acq_rate, timezone)
 		
@@ -141,49 +153,42 @@ class ParticleRecord:
 		return self.acqPoints
 		
 	def isSingleParticle(self):
-		prev_point = 200
-		for point in range(len(self.splitData)):
-			value = self.splitData[point]
-			if value > 500:
-				gap = point - prev_point
-				if gap > 1:
-					self.doublePeak = True
-					print 'double peak detected'
-				prev_point = point
+		#determine if it's a single particle by looking at scattering profile and seeing if rising and falling slopes of teh gaussian are roughly equal. Will not be the case if shoulder, dbl pk, etc
+		index_of_maximum = np.argmax(self.scatData)  #get the peak position
+		run = 55. #define the run to use
+		
+		left_rise = self.scatData[index_of_maximum]-self.scatData[index_of_maximum-int(run)] #get the rise from posn 10 to the peak
+		left_slope = left_rise/run
+		
+		try:
+			right_rise = self.scatData[index_of_maximum]-self.scatData[index_of_maximum+int(run)] #get the rise from a point the same distance away from teh peak as position 10, but on the other side
+			right_slope = right_rise/run
+		except:
+			return
 			
+		percent_diff = np.absolute((right_slope-left_slope)/(0.5*right_slope+0.5*left_slope))
+		
+		if percent_diff > 0.1:
+			self.doublePeak = True
+					
 	
 	#Scattering methods
 		
 	def getScatteringSignal(self):
 		return self.scatData
 				
-	def scatteringPeakInfo(self, LEO_amplification_factor):
-		self.scatteringBaseline = (np.mean(self.scatData[0:10]))#+np.mean(self.scatData[150:-1]))/2
+	def scatteringPeakInfo(self):
+		self.scatteringBaseline = (np.mean(self.scatData[0:10]))
 		self.scatteringBaselineNoiseThresh = 3*np.std(self.scatData[0:10])
 
 		raw_max = np.amax(self.scatData)
 		max = raw_max - self.scatteringBaseline
 		if raw_max > 1750:
 			self.scatteringIsSat = True
-		
-		
-		max_index = np.argmax(self.scatData)
-		
+			
+		self.scatteringMaxPos = np.argmax(self.scatData)
 		self.scatteringMax = max
-		self.scatteringMaxPos = max_index
 
-		LEO_max = (self.scatteringMax/LEO_amplification_factor)+ self.scatteringBaseline
-		
-		
-		LEO_pt = 0
-		for index in range(0, max_index):
-			if self.scatData[index] <= LEO_max:
-				LEO_pt = index
-			if self.scatData[index] > LEO_max:   
-				break
-	
-		self.LEOMaxIndex = LEO_pt
-		
 	
 	def isScatteringSatFlagSet(self):
 		decoded_flag = bin(self.flag)[2:].rjust(8, '0')
@@ -248,7 +253,7 @@ class ParticleRecord:
 		self.splitMin = split_min
 	
 	def zeroCrossing(self):
-		self.splitBaseline = np.mean(self.splitData[0:10])
+		self.splitBaseline =(np.mean(self.splitData[0:10]))	
 		split_max_index = np.argmax(self.splitData)
 		split_min_index = np.argmin(self.splitData)
 
@@ -262,41 +267,41 @@ class ParticleRecord:
 	
 	
 	def zeroCrossingPosSlope(self):
-		self.splitBaseline = np.mean(self.splitData[0:5])
+		self.splitBaseline = np.mean(self.splitData[0:10])
 		split_max_index = np.argmax(self.splitData)
 		split_min_index = np.argmin(self.splitData)
+		split_max_value = np.max(self.splitData)
 		split_min_value = np.min(self.splitData)
-		#split_value = split_min_value +(self.splitBaseline-split_min_value)/2
-		split_value = self.splitBaseline
 	
-		if (self.splitBaseline-split_min_value) >= 10:
+		if (self.splitBaseline-split_min_value) >= 10 and (split_max_value-self.splitBaseline) >=10:  #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
 			try:
 				for index in range(split_min_index, split_max_index+1): #go to max +1 because 'range' function is not inclusive
-					if self.splitData[index] < split_value:
+					if self.splitData[index] < self.splitBaseline:
 						value_zero_cross_neg = float(self.splitData[index])
 						index_zero_cross_neg = index
-					if self.splitData[index] >= split_value:
+					if self.splitData[index] >= self.splitBaseline:
 						value_zero_cross_pos = float(self.splitData[index])
 						index_zero_cross_pos = index
 						break
-				zero_crossing = index+((value_zero_cross_pos-split_value)*(index_zero_cross_pos-index_zero_cross_neg))/(value_zero_cross_pos-value_zero_cross_neg)           
+				zero_crossing = index+((value_zero_cross_pos-self.splitBaseline)*(index_zero_cross_pos-index_zero_cross_neg))/(value_zero_cross_pos-value_zero_cross_neg)           
 			except:
 				zero_crossing = -1 
 				
-		if (self.splitBaseline-split_min_value) < 10:
-			zero_crossing = -1   
+		else:
+			zero_crossing = -2   
 		
 		self.zeroCrossingPos = zero_crossing
 		return zero_crossing
 		
 	def zeroCrossingNegSlope(self):
-		self.splitBaseline = np.mean(self.splitData[0:5])
+		self.splitBaseline = np.mean(self.splitData[0:10])
 		split_max_index = np.argmax(self.splitData)
 		split_min_index = np.argmin(self.splitData)
+		split_max_value = np.max(self.splitData)
 		split_min_value = np.min(self.splitData)
 		
 		
-		if (self.splitBaseline-split_min_value) >= 10:
+		if (self.splitBaseline-split_min_value) >= 10 and (split_max_value-self.splitBaseline) >=10: #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
 			try:
 				for index in range(split_max_index, split_min_index+1):  #go to max +1 because 'range' function is not inclusive
 					if self.splitData[index] > self.splitBaseline:
@@ -310,11 +315,82 @@ class ParticleRecord:
 			except:
 				zero_crossing = -1
 		
-		if (self.splitBaseline-split_min_value) < 10:
+		else: 
 			zero_crossing = -2
 
 		self.zeroCrossingPos = zero_crossing
 		return zero_crossing
 		
 		
-	
+	def fullGaussFit(self):
+		#run the scatteringPeakInfo method to retrieve various peak attributes 
+		self.scatteringPeakInfo()
+		
+		#set parameters for fitting
+		baseline = self.scatteringBaseline
+		x_vals = self.getAcqPoints()
+		y_vals = self.getScatteringSignal()	
+		
+		#initial values for amplitude(a) center(u) and gauss width(sig)
+		guess_a = self.scatteringMax  
+		guess_u = self.scatteringMaxPos
+		guess_sig = 10
+		p_guess = [guess_a,guess_u,guess_sig]
+		
+		def fullGauss(x, a, u, sig):
+			return baseline+a*np.exp((-(x-u)**2)/(2*sig**2))
+		
+		#run the fitting
+		try:
+			popt, pcov = curve_fit(fullGauss, x_vals, y_vals, p0=p_guess)
+		except:
+			popt, pcov = [np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan]   
+		
+		self.FF_scattering_amp = popt[0]
+		self.FF_peak_pos = popt[1]   
+		self.FF_gauss_width = popt[2]
+		fit_result = []
+		for x in x_vals:
+			fit_result.append(fullGauss(x,popt[0],popt[1],popt[2]))
+		self.FF_results = fit_result
+
+		
+	def leoGaussFit(self,zeroX_to_LEO_limit,calib_zeroX_to_peak,calib_gauss_width):
+		#run the scatteringPeakInfo method to retrieve various peak attributes 
+		self.scatteringPeakInfo()
+		
+		#get the zero-crossing for the particle
+		zero_crossing_pt_LEO = self.zeroCrossing()
+		
+		#set parameters for fitting
+		baseline = self.scatteringBaseline
+		
+		#LEO max index sets the x-limit for fitting based on the desired magnification factor
+		LEO_max_index = int(round(zero_crossing_pt_LEO-zeroX_to_LEO_limit))
+		LEO_min_index = 0
+		
+		x_vals_all = self.getAcqPoints()
+		self.LF_x_vals_to_use = x_vals_all[LEO_min_index:LEO_max_index]
+
+		y_vals_all = self.getScatteringSignal()
+		self.LF_y_vals_to_use = y_vals_all[LEO_min_index:LEO_max_index]
+
+		self.beam_center_pos = zero_crossing_pt_LEO-calib_zeroX_to_peak
+						
+		def LEOGauss(x, a, b):
+			return b+a*np.exp((-(x-self.beam_center_pos)**2)/(2*calib_gauss_width**2))
+
+		#run the fitting
+		try:
+			popt, pcov = curve_fit(LEOGauss, self.LF_x_vals_to_use, self.LF_y_vals_to_use)
+		except:
+			popt, pcov = [np.nan,np.nan], [np.nan, np.nan] 
+
+		self.LF_scattering_amp = popt[0] 
+		self.LF_baseline = popt[1]
+
+		fit_result = []
+		for x in x_vals_all:
+			fit_result.append(LEOGauss(x,popt[0],popt[1]))
+		self.LF_results = fit_result
+				
