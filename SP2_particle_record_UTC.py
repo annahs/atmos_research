@@ -48,6 +48,7 @@ class ParticleRecord:
 		self.FF_gauss_width = np.nan
 		self.FF_results = []
 		self.LF_scattering_amp = np.nan
+		self.LF_max_index = np.nan
 		self.LF_baseline = np.nan
 		self.LF_results = []
 		self.beam_center_pos = np.nan
@@ -257,7 +258,7 @@ class ParticleRecord:
 		split_max_index = np.argmax(self.splitData)
 		split_min_index = np.argmin(self.splitData)
 
-		if split_max_index > split_min_index:
+		if split_max_index >= split_min_index:
 			return self.zeroCrossingPosSlope()
 		
 		if split_max_index < split_min_index:
@@ -273,7 +274,7 @@ class ParticleRecord:
 		split_max_value = np.max(self.splitData)
 		split_min_value = np.min(self.splitData)
 	
-		if (self.splitBaseline-split_min_value) >= 10 and (split_max_value-self.splitBaseline) >=10:  #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
+		if (self.splitBaseline-split_min_value) >= 180 and (split_max_value-self.splitBaseline) >=180:  #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
 			try:
 				for index in range(split_min_index, split_max_index+1): #go to max +1 because 'range' function is not inclusive
 					if self.splitData[index] < self.splitBaseline:
@@ -301,7 +302,7 @@ class ParticleRecord:
 		split_min_value = np.min(self.splitData)
 		
 		
-		if (self.splitBaseline-split_min_value) >= 10 and (split_max_value-self.splitBaseline) >=10: #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
+		if (self.splitBaseline-split_min_value) >= 180 and (split_max_value-self.splitBaseline) >= 180: #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
 			try:
 				for index in range(split_max_index, split_min_index+1):  #go to max +1 because 'range' function is not inclusive
 					if self.splitData[index] > self.splitBaseline:
@@ -367,6 +368,7 @@ class ParticleRecord:
 		
 		#LEO max index sets the x-limit for fitting based on the desired magnification factor
 		LEO_max_index = int(round(zero_crossing_pt_LEO-zeroX_to_LEO_limit))
+		self.LF_max_index = LEO_max_index
 		LEO_min_index = 0
 		
 		x_vals_all = self.getAcqPoints()
@@ -384,7 +386,7 @@ class ParticleRecord:
 		try:
 			popt, pcov = curve_fit(LEOGauss, self.LF_x_vals_to_use, self.LF_y_vals_to_use)
 		except:
-			popt, pcov = [np.nan,np.nan], [np.nan, np.nan] 
+			popt, pcov = [-1,-1], [np.nan, np.nan] 
 
 		self.LF_scattering_amp = popt[0] 
 		self.LF_baseline = popt[1]
