@@ -19,26 +19,26 @@ from datetime import datetime
 
 
 
-data_dir = 'D:/2012/WHI_UBCSP2/Binary/' #'D:/2009/WHI_ECSP2/Binary/'# 'D:/2010/WHI_ECSP2/Binary/'  #'D:/2012/WHI_UBCSP2/Binary/' 
+data_dir = 'D:/2010/WHI_ECSP2/Binary/' #'D:/2009/WHI_ECSP2/Binary/'# 'D:/2010/WHI_ECSP2/Binary/'  #'D:/2012/WHI_UBCSP2/Binary/' 
 #analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'
 multiple_directories = True
-instrument = 'WHI_UBCSP2'
+instrument = 'WHI_ECSP2'
 instrument_locn = 'WHI'
 PSL_size = np.nan
 type_particle = 'nonincand' #PSL, nonincand, incand
-start_analysis_at = datetime.strptime('20080601','%Y%m%d')
-end_analysis_at = datetime.strptime('20120410','%Y%m%d')
+start_analysis_at = datetime.strptime('2010610','%Y%m%d')
+end_analysis_at = datetime.strptime('20100727','%Y%m%d')
 
 
 #setup
-num_records_to_analyse = 100
+num_records_to_analyse = 1000
 show_full_fit = False
 
 #pararmeters used to reject invalid particle records based on scattering peak attributes
 min_peakheight = 20
 max_peakheight = 3500
-min_peakpos = 20
-max_peakpos = 125
+min_peakpos = 50
+max_peakpos = 250
 
 
 #setup database
@@ -53,7 +53,7 @@ instr TEXT,
 instr_locn TEXT,
 particle_type TEXT,		
 particle_dia FLOAT,				
-date TIMESTAMP,
+UTC_datetime TIMESTAMP,
 actual_scat_amp FLOAT,
 actual_peak_pos INT,
 FF_scat_amp FLOAT,
@@ -62,6 +62,8 @@ FF_gauss_width FLOAT,
 zeroX_to_peak FLOAT,
 LF_scat_amp FLOAT,
 incand_amp FLOAT,
+lag_time_fit_to_incand FLOAT,
+LF_baseline_pct_diff FLOAT,
 UNIQUE (sp2b_file, file_index, instr)
 )''')
 
@@ -95,8 +97,8 @@ def gaussFullFit(parameters_dict):
 	#bad_durations = []
 
 	###use for hk files with timestamp (this is for the UBCSP2 after 20120405)
-	avg_flow = hk_new.find_bad_hk_durations(parameters)
-	parameters['avg_flow'] = avg_flow
+	#avg_flow = hk_new.find_bad_hk_durations(parameters)
+	#parameters['avg_flow'] = avg_flow
 
 	#*************LEO routine************
 	
@@ -110,7 +112,7 @@ def gaussFullFit(parameters_dict):
 			
 			path = parameters['directory'] + '/' + str(file)
 			file_bytes = os.path.getsize(path) #size of entire file in bytes
-			record_size = 1498 #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458)
+			record_size = 2458  #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458)
 			number_of_records = (file_bytes/record_size)-1
 			if num_records_to_analyse == 'all':
 				number_records_toshow =  number_of_records 
@@ -134,7 +136,12 @@ def gaussFullFit(parameters_dict):
 				
 				##Import and parse binary
 				record = f.read(record_size)
-				particle_record = ParticleRecord(record, parameters['acq_rate'], parameters['timezone'])	
+				try:
+					particle_record = ParticleRecord(record, parameters['acq_rate'], parameters['timezone'])
+				except:
+					print 'corrupt particle record'
+					#input("Press Enter to continue...")
+					continue
 				event_time = particle_record.timestamp
 				
 				###### FITTING AND ANALYSIS ########          
@@ -169,68 +176,73 @@ def gaussFullFit(parameters_dict):
 					particle_record.incandPeakInfo()
 					incand_max = particle_record.incandMax
 					
-					#check for a double peak
-					try:
-						particle_record.isSingleParticle()
-					except:
-						print record_index
-						print actual_max_value
 
-					#note: zero-crossing calc will depend on the slope of the zero-crossing from the split detector
-					zero_crossing_pt = particle_record.zeroCrossing()
-					
-					
 					#check to see if incandescencen is negligible, scattering signal is over threshold, is in a reasonable position, and no double peaks
-					if incand_max < 5. and actual_max_value > min_peakheight and actual_max_value < max_peakheight and actual_max_pos > min_peakpos and actual_max_pos < max_peakpos and particle_record.doublePeak==False and zero_crossing_pt > 0 : 
+					if incand_max < 5. and actual_max_value > min_peakheight and actual_max_value < max_peakheight and actual_max_pos > min_peakpos and actual_max_pos < max_peakpos:
 						
-						particle_record.fullGaussFit()
+						#check zero crossing posn
+						#note: zero-crossing calc will depend on the slope of the zero-crossing from the split detector
+						zero_crossing_pt = particle_record.zeroCrossing()
+						if zero_crossing_pt > 0: 
 						
-						fit_peak_pos = particle_record.FF_peak_pos
-						fit_gauss_width = particle_record.FF_gauss_width
-						fit_scattering_amp = particle_record.FF_scattering_amp
-						zero_cross_to_peak = (zero_crossing_pt - fit_peak_pos)
-						
-						#put particle into database or update record
-						c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr, instr_locn, particle_type, particle_dia) VALUES (?,?,?,?,?,?)''', (file, record_index,instrument, instrument_locn,type_particle,PSL_size))
-						c.execute('''UPDATE SP2_coating_analysis SET 
-						date=?, 
-						actual_scat_amp=?, 
-						actual_peak_pos=?, 
-						FF_scat_amp=?, 
-						FF_peak_pos=?, 
-						FF_gauss_width=?, 
-						zeroX_to_peak=?
-						WHERE sp2b_file=? and file_index=? and instr=?''', 
-						(event_time,
-						actual_max_value,
-						actual_max_pos,
-						fit_scattering_amp,
-						fit_peak_pos,
-						fit_gauss_width,
-						zero_cross_to_peak,
-						file, record_index,instrument))
-										
-						#plot particle fit if desired
-						if show_full_fit == True:
-							x_vals = particle_record.getAcqPoints()
-							y_vals = particle_record.getScatteringSignal()	
-							fit_result = particle_record.FF_results
+							#check for a double peak
+							try:
+								particle_record.isSingleParticle()
+								
+							except:
+								print record_index
+								print actual_max_value
+								
+							if particle_record.doublePeak==False:
 							
-							print record_index, actual_max_value
-							
-							fig = plt.figure()
-							ax1 = fig.add_subplot(111)
-							ax1.plot(x_vals,y_vals,'o', markerfacecolor='None')   
-							ax1.plot(x_vals,fit_result, 'red')
-							plt.show()
+								
+								particle_record.fullGaussFit()
+								
+								fit_peak_pos = particle_record.FF_peak_pos
+								fit_gauss_width = particle_record.FF_gauss_width
+								fit_scattering_amp = particle_record.FF_scattering_amp
+								zero_cross_to_peak = (zero_crossing_pt - fit_peak_pos)
+								
+								#put particle into database or update record
+								c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr, instr_locn, particle_type, particle_dia) VALUES (?,?,?,?,?,?)''', (file, record_index,instrument, instrument_locn,type_particle,PSL_size))
+								c.execute('''UPDATE SP2_coating_analysis SET 
+								UTC_datetime=?, 
+								actual_scat_amp=?, 
+								actual_peak_pos=?, 
+								FF_scat_amp=?, 
+								FF_peak_pos=?, 
+								FF_gauss_width=?, 
+								zeroX_to_peak=?
+								WHERE sp2b_file=? and file_index=? and instr=?''', 
+								(event_time,
+								actual_max_value,
+								actual_max_pos,
+								fit_scattering_amp,
+								fit_peak_pos,
+								fit_gauss_width,
+								zero_cross_to_peak,
+								file, record_index,instrument))
+												
+								#plot particle fit if desired
+								if show_full_fit == True:
+									x_vals = particle_record.getAcqPoints()
+									y_vals = particle_record.getScatteringSignal()	
+									fit_result = particle_record.FF_results
+									
+									print record_index, actual_max_value
+									
+									fig = plt.figure()
+									ax1 = fig.add_subplot(111)
+									ax1.plot(x_vals,y_vals,'o', markerfacecolor='None')   
+									ax1.plot(x_vals,fit_result, 'red')
+									plt.show()
 
 							
 
 				record_index+=1   
 					
 			f.close()
-			
-	conn.commit()
+		conn.commit()
 
 
 
