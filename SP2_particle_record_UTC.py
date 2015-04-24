@@ -168,8 +168,7 @@ class ParticleRecord:
 			return
 			
 		percent_diff = np.absolute((right_slope-left_slope)/(0.5*right_slope+0.5*left_slope))
-		
-		if percent_diff > 0.1:
+		if percent_diff > 0.06:
 			self.doublePeak = True
 					
 	
@@ -274,7 +273,7 @@ class ParticleRecord:
 		split_max_value = np.max(self.splitData)
 		split_min_value = np.min(self.splitData)
 	
-		if (self.splitBaseline-split_min_value) >= 180 and (split_max_value-self.splitBaseline) >=180:  #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
+		if (self.splitBaseline-split_min_value) >= 120 and (split_max_value-self.splitBaseline) >=120:  #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
 			try:
 				for index in range(split_min_index, split_max_index+1): #go to max +1 because 'range' function is not inclusive
 					if self.splitData[index] < self.splitBaseline:
@@ -302,7 +301,7 @@ class ParticleRecord:
 		split_min_value = np.min(self.splitData)
 		
 		
-		if (self.splitBaseline-split_min_value) >= 180 and (split_max_value-self.splitBaseline) >= 180: #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
+		if (self.splitBaseline-split_min_value) >= 120 and (split_max_value-self.splitBaseline) >= 120: #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
 			try:
 				for index in range(split_max_index, split_min_index+1):  #go to max +1 because 'range' function is not inclusive
 					if self.splitData[index] > self.splitBaseline:
