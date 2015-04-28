@@ -11,8 +11,8 @@ import sys
 from datetime import timedelta
 from mpl_toolkits.basemap import Basemap
 
-night_start_time = 18
-night_end_time = 6
+night_start_time = 17
+night_end_time = 15
 
 
 #location:  USAF,city, lat, long, elev ,daytime RH and T, nightime RH and T, timezone
@@ -108,21 +108,21 @@ for file in os.listdir(data_dir):
 							else:
 								daytime_data[date_local] = [[RHx,temp]]
 								
-						#get nighttime data up to midnight
-						if datetime_local.hour >= night_start_time and datetime_local.hour < 24:
-							if date_local in nighttime_data:
-								nighttime_data[date_local].append([RHx,temp])
-							else:
-								nighttime_data[date_local] = [[RHx,temp]]
-							
-						#get nighttime data after midnight
-						if datetime_local.hour >= 0 and datetime_local.hour < night_end_time:
-							date_to_use = date_local - timedelta(days = 1)
-							
-							if date_to_use in nighttime_data:
-								nighttime_data[date_to_use].append([RHx,temp])
-							else:
-								nighttime_data[date_to_use] = [[RHx,temp]]
+						##get nighttime data up to midnight
+						#if datetime_local.hour >= night_start_time and datetime_local.hour < 24:
+						#	if date_local in nighttime_data:
+						#		nighttime_data[date_local].append([RHx,temp])
+						#	else:
+						#		nighttime_data[date_local] = [[RHx,temp]]
+						#	
+						##get nighttime data after midnight
+						#if datetime_local.hour >= 0 and datetime_local.hour < night_end_time:
+						#	date_to_use = date_local - timedelta(days = 1)
+						#	
+						#	if date_to_use in nighttime_data:
+						#		nighttime_data[date_to_use].append([RHx,temp])
+						#	else:
+						#		nighttime_data[date_to_use] = [[RHx,temp]]
 
 
 		
@@ -138,26 +138,24 @@ for stn in stations:
 	city_Ts  = cities[city][1]
 	
 	
-	for date, data in nighttime_data.iteritems():
-		RHs = [row[0] for row in data]
-		Ts  = [row[1] for row in data]
-		nighttime_avg_RH = np.mean(RHs)
-		nighttime_avg_T  = np.mean(Ts)
-		night_count += 1
-		
-		if date.month in city_RHs:
-			city_RHs[date.month].append(nighttime_avg_RH)
-		else:
-			city_RHs[date.month] = [nighttime_avg_RH]
-
-		if date.month in city_Ts:
-			city_Ts[date.month].append(nighttime_avg_T)
-		else:
-			city_Ts[date.month] = [nighttime_avg_T]
-
-	print 'night_count', night_count
-
-
+	#for date, data in nighttime_data.iteritems():
+	#	RHs = [row[0] for row in data]
+	#	Ts  = [row[1] for row in data]
+	#	nighttime_avg_RH = np.mean(RHs)
+	#	nighttime_avg_T  = np.mean(Ts)
+	#	night_count += 1
+	#	
+	#	if date.month in city_RHs:
+	#		city_RHs[date.month].append(nighttime_avg_RH)
+	#	else:
+	#		city_RHs[date.month] = [nighttime_avg_RH]
+    #
+	#	if date.month in city_Ts:
+	#		city_Ts[date.month].append(nighttime_avg_T)
+	#	else:
+	#		city_Ts[date.month] = [nighttime_avg_T]
+    #
+	#print 'night_count', night_count
 	
 	for date, data in daytime_data.iteritems():
 		RHs = [row[0] for row in data]
@@ -165,46 +163,50 @@ for stn in stations:
 		daytime_avg_RH = np.mean(RHs)
 		daytime_avg_T  = np.mean(Ts)
 		
-		if day_count <= night_count:
-			day_count += 1
-			if date.month in city_RHs:
-				city_RHs[date.month].append(daytime_avg_RH)
-			else:
-				city_RHs[date.month] = [daytime_avg_RH]
-			
-			if date.month in city_Ts:
-				city_Ts[date.month].append(daytime_avg_T)
-			else:
-				city_Ts[date.month] = [daytime_avg_T]
+		#if day_count <= night_count:
+		day_count += 1
+		if date.month in city_RHs:
+			city_RHs[date.month].append(daytime_avg_RH)
+		else:
+			city_RHs[date.month] = [daytime_avg_RH]
+		
+		if date.month in city_Ts:
+			city_Ts[date.month].append(daytime_avg_T)
+		else:
+			city_Ts[date.month] = [daytime_avg_T]
 	
 	print 'day_count', day_count
 
 
-city_ordered_list = ['Tokyo','Delhi','Seoul','Shanghai','Mumbai','Mexico City','Beijing','Lagos','Sao Paulo','Jakarta','New York','Karachi','Osaka','Manila','Cairo']		
+low_RH_city_ordered_list = ['Delhi','Mexico City','Beijing','Karachi','Cairo']		
+high_RH_city_ordered_list = ['Tokyo','Seoul','Shanghai','Mumbai','Lagos','Sao Paulo','Jakarta','New York','Osaka','Manila']		
  
 	                                                                                        
 #Plotting                                                                                   
                                                                                             
 
-label_x_pos = 0.45
+label_x_pos = 0.55
 label_y_pos = 0.1
 RH_lim = 100
 T_lim = 58
-T_min = -10
+T_min = -7
 months = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
 span_color = 'red'
-span_alpha = 0.1
+span_alpha_25 = 0.1
+span_alpha_med = 0.2
 RH_color = 'black'
 temp_color = 'blue'
 
 
-fig, axes = plt.subplots(5,3, figsize=(12, 12), facecolor='w', edgecolor='k')
+fig, axes = plt.subplots(3,2, figsize=(12, 12), facecolor='w', edgecolor='k')
 fig.subplots_adjust(hspace = 0., wspace=0.08)
+axes[-1, -1].axis('off')
+
 
 axs = axes.ravel()
 
 i=0
-for city in city_ordered_list:
+for city in low_RH_city_ordered_list:
 	RH_plot_data = []
 	T_plot_data = []
 	for month in range (1,13):                                                                  
@@ -220,26 +222,104 @@ for city in city_ordered_list:
 	axs[i].set_ylabel('')
 	axs[i].text(label_x_pos, label_y_pos,city,transform=axs[i].transAxes)
 	axs[i].yaxis.grid(True, linestyle='-', which='major', color='grey', alpha=1)
-	if i in [0,1,2]:
+	if i in [0,1]:
 		axs[i].xaxis.tick_top()
 		axs[i].set_xticklabels(months)	
-	if i in [0,3,6,9,12]:
+	if i in [0,2,4]:
 		axs[i].set_ylabel('%RH', color = RH_color)
 	else:
 		axs[i].set_yticklabels([])
 	if city == 'Delhi':
-		axs[i].axvspan(3.5,6.5, facecolor=span_color, alpha=span_alpha)
+		axs[i].axvspan(2.5,5.5, facecolor=span_color, alpha=span_alpha_med)
+		axs[i].axvspan(5.5,6.5, facecolor=span_color, alpha=span_alpha_25)
+		axs[i].axvspan(9.5,11.5, facecolor=span_color, alpha=span_alpha_25)
 	if city == 'Mexico City':
-		axs[i].axvspan(1.5,4.5, facecolor=span_color, alpha=span_alpha)
+		axs[i].axvspan(0.5,5.5, facecolor=span_color, alpha=span_alpha_med)
+		axs[i].axvspan(11.5,12.5, facecolor=span_color, alpha=span_alpha_med)
+		axs[i].axvspan(5.5,6.5, facecolor=span_color, alpha=span_alpha_25)
+		axs[i].axvspan(9.5,11.5, facecolor=span_color, alpha=span_alpha_25)
 	if city == 'Beijing':
-		axs[i].axvspan(0.5,5.5, facecolor=span_color, alpha=span_alpha)
-		axs[i].axvspan(10.5,12.5, facecolor=span_color, alpha=span_alpha)
+		axs[i].axvspan(10.5,12.5, facecolor=span_color, alpha=span_alpha_med)
+		axs[i].axvspan(0.5,5.5, facecolor=span_color, alpha=span_alpha_med)
+		axs[i].axvspan(9.5,10.5, facecolor=span_color, alpha=span_alpha_25)
 	if city == 'Karachi':
-		axs[i].axvspan(0.5,2.5, facecolor=span_color, alpha=span_alpha)
-		axs[i].axvspan(10.5,12.5, facecolor=span_color, alpha=span_alpha)
+		axs[i].axvspan(0.5,2.5, facecolor=span_color, alpha=span_alpha_med)
+		axs[i].axvspan(10.5,12.5, facecolor=span_color, alpha=span_alpha_med)
+		axs[i].axvspan(2.5,3.5, facecolor=span_color, alpha=span_alpha_25)
+		axs[i].axvspan(9.5,10.5, facecolor=span_color, alpha=span_alpha_25)
 	if city == 'Cairo':
-		axs[i].axvspan(2.5,5.5, facecolor=span_color, alpha=span_alpha)
-	if i == 13:
+		axs[i].axvspan(4.5,6.5, facecolor=span_color, alpha=span_alpha_med)
+		axs[i].axvspan(1.5,4.5, facecolor=span_color, alpha=span_alpha_25)
+	if i in [4,3]:
+		axs[i].set_xlabel('month')
+	if i == 5:
+		axs[i].axes.get_yaxis().set_visible(False)
+		axs[i].axes.get_xaxis().set_visible(False)
+	
+	axT = axs[i].twinx()		
+	T_T = axT.boxplot(T_plot_data, whis=[10,90],sym='')
+	plt.setp(T_T['boxes'], color=temp_color)
+	plt.setp(T_T['whiskers'], color=temp_color,linestyle='-')
+	plt.setp(T_T['caps'], color=temp_color)
+	plt.setp(T_T['medians'], color=temp_color)
+	axT.set_ylim(T_min,T_lim)
+	axT.yaxis.grid(True, linestyle=':', which='major', color='grey', alpha=1)
+	axT.set_ylabel('')
+	axT.yaxis.set_visible(True)
+	axT.set_xticklabels(months)
+	if i in [1,3,4]:
+		axT.set_ylabel('Temperature (C)', color = temp_color)
+	else:
+		axT.set_yticklabels([])
+		
+	i+=1
+
+
+plt.savefig(data_dir + 'RH_and_T_for_global_megacities-low_RH_cities.png',  bbox_inches='tight') 
+
+plt.show()
+
+
+##
+
+fig, axes = plt.subplots(5,2, figsize=(12, 12), facecolor='w', edgecolor='k')
+fig.subplots_adjust(hspace = 0., wspace=0.08)
+
+axs = axes.ravel()
+
+i=0
+for city in high_RH_city_ordered_list:
+	RH_plot_data = []
+	T_plot_data = []
+	for month in range (1,13):                                                                  
+		RH_plot_data.append(cities[city][0][month])                                    
+		T_plot_data.append(cities[city][1][month]) 
+	
+	T_RH = axs[i].boxplot(RH_plot_data, whis=[10,90],sym='')
+	plt.setp(T_RH['boxes'], color=RH_color)
+	plt.setp(T_RH['whiskers'], color=RH_color,linestyle='-')
+	plt.setp(T_RH['caps'], color=RH_color)
+	plt.setp(T_RH['medians'], color=RH_color)
+	axs[i].set_ylim(0,RH_lim)
+	axs[i].set_ylabel('')
+	axs[i].text(label_x_pos, label_y_pos,city,transform=axs[i].transAxes)
+	axs[i].yaxis.grid(True, linestyle='-', which='major', color='grey', alpha=1)
+	if i in [0,1]:
+		axs[i].xaxis.tick_top()
+		axs[i].set_xticklabels(months)	
+	if i in [0,2,4,6,8]:
+		axs[i].set_ylabel('%RH', color = RH_color)
+	else:
+		axs[i].set_yticklabels([])
+	if city == 'Tokyo':
+		axs[i].axvspan(0.5,1.5, facecolor=span_color, alpha=span_alpha_25)
+	if city == 'Seoul':
+		axs[i].axvspan(1.5,4.5, facecolor=span_color, alpha=span_alpha_25)
+	if city == 'Sao Paulo':
+		axs[i].axvspan(7.5,8.5, facecolor=span_color, alpha=span_alpha_25)
+	if city == 'Osaka':
+		axs[i].axvspan(3.5,4.5, facecolor=span_color, alpha=span_alpha_25)
+	if i in [8,9]:
 		axs[i].set_xlabel('month')
 	
 	
@@ -255,7 +335,7 @@ for city in city_ordered_list:
 	axT.set_ylabel('')
 	axT.yaxis.set_visible(True)
 	axT.set_xticklabels(months)
-	if i in [2,5,8,11,14]:
+	if i in [1,3,5,7,9]:
 		axT.set_ylabel('Temperature (C)', color = temp_color)
 	else:
 		axT.set_yticklabels([])
@@ -263,7 +343,7 @@ for city in city_ordered_list:
 	i+=1
 
 
-plt.savefig(data_dir + 'RH_and_T_for_global_megacities.png',  bbox_inches='tight') 
+plt.savefig(data_dir + 'RH_and_T_for_global_megacities-high_RH_cities.png',  bbox_inches='tight') 
 
 plt.show()
 
