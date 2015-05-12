@@ -22,21 +22,14 @@ core_RI = complex(2.26,1.26)  #from Moteki 2010 (and Laborde and Taylor)
 shell_RI = complex(1.5, 0)
 PSL_RI = complex(1.59,0)
 
-#UBC 2012 WHI SP2
-#scat_cal_limit = 3542 #signal for 300nm PSLs our highest calibration std (b/c we use a polynomial fit for calc scattering vs instr response we can't extrapolate outside the caibration curve)
-
 #WHI 2010 ECSP2
 scat_cal_limit = 50000
-
-
-#LJ EC SP2
-#scat_cal_limit = 4000
 
 def scat_amp(Itotal):
 	#calc_scattering_amplitude = 112*Itotal  #calibration fit is in origin file for LJ-EC_SP2
 	#calc_scattering_amplitude = 3.72*Itotal+9.65  #calibration from Aquadag numbers Jason sent for LJ
-	calc_scattering_amplitude = 331.2*Itotal # UBCSP2 WHI 2012 
-	#calc_scattering_amplitude = 71.32*Itotal  # ECSP2 WHI 2010
+	#calc_scattering_amplitude = 331.2*Itotal # UBCSP2 WHI 2012 
+	calc_scattering_amplitude = 71.32*Itotal  # ECSP2 WHI 2010
 	
 	return calc_scattering_amplitude
 	
@@ -143,7 +136,7 @@ for core_rad in core_rad_range:
 
 	
 
-file = open('coating_lookup_table_WHI_2012_UBCSP2-neg_coat.lupckl', 'w')
+file = open('coating_lookup_table_WHI_2010_ECSP2-neg_coat.lupckl', 'w')
 pickle.dump(lookup_table, file)
 file.close()  
 
