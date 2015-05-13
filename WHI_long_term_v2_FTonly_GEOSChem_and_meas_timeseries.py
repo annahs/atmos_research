@@ -166,7 +166,7 @@ SP2_6h_Cont = []
 SP2_6h_LRT  = [] 
 SP2_6h_GBPS = [] 
 SP2_6h_BB = []
-		
+all_6h_SP2_data = []
 
 #6h avgd data	
 for date, mass_data in rBC_FT_data_cluster_NPac.iteritems():
@@ -176,6 +176,7 @@ for date, mass_data in rBC_FT_data_cluster_NPac.iteritems():
 	date_mean = np.mean(mass_concs)
 	date_mean_abs_err = np.mean(mass_concs_abs_err)
 	SP2_6h_NPac.append([date,date_mean,date_mean_abs_err])
+	all_6h_SP2_data.append([date,date_mean,date_mean_abs_err])
 	
 for date, mass_data in rBC_FT_data_cluster_SPac.iteritems():
 	mass_concs = [row[0] for row in mass_data]
@@ -184,6 +185,7 @@ for date, mass_data in rBC_FT_data_cluster_SPac.iteritems():
 	date_mean = np.mean(mass_concs)
 	date_mean_abs_err = np.mean(mass_concs_abs_err)	
 	SP2_6h_SPac.append([date,date_mean,date_mean_abs_err])
+	all_6h_SP2_data.append([date,date_mean,date_mean_abs_err])
 	
 for date, mass_data in rBC_FT_data_cluster_Cont.iteritems():
 	mass_concs = [row[0] for row in mass_data]
@@ -192,6 +194,7 @@ for date, mass_data in rBC_FT_data_cluster_Cont.iteritems():
 	date_mean = np.mean(mass_concs)
 	date_mean_abs_err = np.mean(mass_concs_abs_err)
 	SP2_6h_Cont.append([date,date_mean,date_mean_abs_err])
+	all_6h_SP2_data.append([date,date_mean,date_mean_abs_err])
 
 for date, mass_data in rBC_FT_data_cluster_LRT.iteritems():
 	mass_concs = [row[0] for row in mass_data]
@@ -199,8 +202,8 @@ for date, mass_data in rBC_FT_data_cluster_LRT.iteritems():
 	
 	date_mean = np.mean(mass_concs)
 	date_mean_abs_err = np.mean(mass_concs_abs_err)
-	
 	SP2_6h_LRT.append([date,date_mean,date_mean_abs_err])
+	all_6h_SP2_data.append([date,date_mean,date_mean_abs_err])
 
 for date, mass_data in rBC_FT_data_cluster_GBPS.iteritems():
 	mass_concs = [row[0] for row in mass_data]
@@ -209,7 +212,7 @@ for date, mass_data in rBC_FT_data_cluster_GBPS.iteritems():
 	date_mean = np.mean(mass_concs)
 	date_mean_abs_err = np.mean(mass_concs_abs_err)
 	SP2_6h_GBPS.append([date,date_mean,date_mean_abs_err])	
-	
+	all_6h_SP2_data.append([date,date_mean,date_mean_abs_err])	
 	
 for date, mass_data in rBC_FT_data_cluster_BB.iteritems():
 	mass_concs = [row[0] for row in mass_data]
@@ -218,7 +221,18 @@ for date, mass_data in rBC_FT_data_cluster_BB.iteritems():
 	date_mean = np.mean(mass_concs)
 	date_mean_abs_err = np.mean(mass_concs_abs_err)
 	SP2_6h_BB.append([date,date_mean,date_mean_abs_err])	
-	
+
+##save data to file
+sorted_6h_SP2_data = sorted(all_6h_SP2_data)
+os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/')
+file = open('WHI_SP2_free_troposphere_6h_mass_concs.txt', 'w')
+file.write('midpoint_date_and_time(PST)' + '\t' +  'rBC_mass_conc_ng/m3(STP)' + '\t' + 'mass_conc_absolute_err' + '\n')
+for row in sorted_6h_SP2_data:
+	line = '\t'.join(str(x) for x in row)
+	file.write(line + '\n')
+file.close()
+
+
 ###################GEOS-Chem
 
 data_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/sarahWhistlerData'
