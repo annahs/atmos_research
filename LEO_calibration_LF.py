@@ -21,36 +21,36 @@ import calendar
 
 
 #analysis parameters
-data_dir = 'D:/2010/WHI_ECSP2/Binary/'#'D:/2012/WHI_UBCSP2/Binary/' #'D:/2009/WHI_ECSP2/Binary/'# 'D:/2010/WHI_ECSP2/Binary/'  #'D:/2012/WHI_UBCSP2/Binary/' 
+data_dir = 'D:/2012/WHI_UBCSP2/Binary/' #'D:/2012/WHI_UBCSP2/Binary/' #'D:/2009/WHI_ECSP2/Binary/'# 'D:/2010/WHI_ECSP2/Binary/'  #'D:/2012/WHI_UBCSP2/Binary/' 
 #analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'
 multiple_directories = True
-num_records_to_analyse = 100#'all'
+num_records_to_analyse = 'all'
 LEO_factor = 16  # fit up to 1/this_value of max peak height (ie 1/20 is 5%)
-show_LEO_fit = True
-instrument = 'WHI_ECSP2'
+show_LEO_fit = False
+instrument = 'UBCSP2'
 instrument_locn = 'WHI'
-type_particle = 'nonincand' #PSL, nonincand, incand
-start_analysis_at = datetime.strptime('20100610','%Y%m%d')
-end_analysis_at = datetime.strptime('20100612','%Y%m%d')
-analysis_time_start = 0#20
-analysis_time_end = 24#8
-FF = -0.2
+type_particle = 'incand' #PSL, nonincand, incand
+start_analysis_at = datetime.strptime('20120505','%Y%m%d')
+end_analysis_at = datetime.strptime('20120526','%Y%m%d')
+analysis_time_start = 20
+analysis_time_end = 8
+FF = -0.4
 #parameters for settign values of fixed variables in Gaussian fitting
 #note: the program will select calibration data from a time period surrounding (+- 48h) the data being LEO fitted
-calib_instrument = 'WHI_ECSP2'
+calib_instrument = 'UBCSP2'
 calib_instrument_locn = 'WHI'
 calib_type_particle = 'nonincand'
 
 #pararmeters used to reject invalid particle records based on scattering peak attributes
 min_peakheight = 20
 max_peakheight = 3500
-min_peakpos = 50 #20 for 2012
-max_peakpos = 250 #125 for 2012
+min_peakpos = 20 #50 for 2010
+max_peakpos = 125 #250 for 2010
 
 #pararmeters used to assess incandescent peak
 min_incand_amp = 20
 
-record_size_bytes = 2458 #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458)
+record_size_bytes = 1498 #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458)
 
 #connect to database
 conn = sqlite3.connect('C:/projects/dbs/SP2_data.db')
@@ -86,7 +86,7 @@ def gaussLEOFit(parameters_dict):
 	end_calib_data = file_date_UNIX+time_span
 	#get parameters for fixing variables in Gaussian fitting
 	
-	c.execute('''SELECT FF_gauss_width, zeroX_to_peak FROM SP2_coating_analysis WHERE instr=? and instr_locn=? and particle_type=? and UTC_datetime>? and UTC_datetime<? and FF_gauss_width is not null and zeroX_to_peak is not null ''', (calib_instrument,calib_instrument_locn,calib_type_particle, begin_calib_data, end_calib_data))
+	c.execute('''SELECT FF_gauss_width, zeroX_to_peak FROM SP2_coating_analysis WHERE instr=? and instr_locn=? and particle_type=? and unix_ts_utc>? and unix_ts_utc<? and FF_gauss_width is not null and zeroX_to_peak is not null ''', (calib_instrument,calib_instrument_locn,calib_type_particle, begin_calib_data, end_calib_data))
 	result = c.fetchall()
 
 	mean_gauss_width = np.nanmean([row[0] for row in result])+FF
@@ -143,7 +143,7 @@ def gaussLEOFit(parameters_dict):
 				##Import and parse binary
 				record = f2.read(record_size)
 				particle_record = ParticleRecord(record, parameters['acq_rate'], parameters['timezone'])	
-				event_time = particle_record.timestamp #UNIX ts in UTC
+				event_time = particle_record.timestamp #UNIXts in UTC
 				local_datetime = datetime.utcfromtimestamp(event_time)+timedelta(hours=parameters['timezone'])
 				
 				number_bad_durations = len(bad_durations)
@@ -151,16 +151,16 @@ def gaussLEOFit(parameters_dict):
 								
 				#if there are any bad hk durations, note the beginning and end times of the first one
 				if number_bad_durations:               
-					bad_duration_start_time = bad_durations[0][0]
-					bad_duration_end_time = bad_durations[0][1]
+					bad_duration_start_time = bad_durations[0][0]#-parameters['timezone']
+					bad_duration_end_time = bad_durations[0][1]#-parameters['timezone']
 				
 					#if the current event is after the end of the first bad duration in the list, pop that duration off, repeat if necessary until all bad durations before the event are gone
 					while event_time >= bad_duration_end_time:
 						if len(bad_durations): 
 							bad_durations.pop(0)
 							if len(bad_durations):
-								bad_duration_start_time = bad_durations[0][0]
-								bad_duration_end_time = bad_durations[0][1]
+								bad_duration_start_time = bad_durations[0][0]#-parameters['timezone']
+								bad_duration_end_time = bad_durations[0][1]#-parameters['timezone']
 								continue
 							else:
 								break
@@ -173,7 +173,7 @@ def gaussLEOFit(parameters_dict):
 						particle_record.scatteringPeakInfo()
 						
 						#get the zero-crossing with the appropriate method
-						zero_crossing_pt_LEO = particle_record.zeroCrossing()
+						zero_crossing_pt = particle_record.zeroCrossing()
 							
 						analyze_this_particle = False
 						
@@ -190,7 +190,7 @@ def gaussLEOFit(parameters_dict):
 							particle_record.incandPeakInfo() #run the incandPeakInfo method to retrieve various incandescence peak attributes				
 							incand_pk_amp = particle_record.incandMax					
 							incand_pk_pos = particle_record.incandMaxPos
-							zero_crossing_pt = particle_record.zeroCrossing() #get this to calc lag time
+							 
 							
 							if incand_pk_amp > min_incand_amp:
 
@@ -199,15 +199,17 @@ def gaussLEOFit(parameters_dict):
 			
 								c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr, instr_locn, particle_type) VALUES (?,?,?,?,?)''', (file, record_index,instrument, instrument_locn,type_particle))
 								c.execute('''UPDATE SP2_coating_analysis SET 
-								UTC_datetime=?, 
+								unix_ts_utc=?, 
 								actual_scat_amp=?, 
 								incand_amp=?,
-								lag_time_fit_to_incand=?						
+								lag_time_fit_to_incand=?,	
+								zero_crossing_posn=?
 								WHERE sp2b_file=? and file_index=? and instr=?''', 
 								(event_time,
 								scattering_pk_amp,
 								incand_pk_amp,
 								lag_time_pts,
+								zero_crossing_pt,
 								file, record_index,instrument))
 							
 							if incand_pk_amp > min_incand_amp and scattering_pk_amp < min_peakheight:	
@@ -234,17 +236,19 @@ def gaussLEOFit(parameters_dict):
 							if LEO_max_fit_index < 5 or LEO_max_fit_index > max_peakpos: #error locating LEO fitting index
 								LEO_amp = -2
 								LEO_baseline = -2
-								
+
 							c.execute('''UPDATE SP2_coating_analysis SET 
 								LF_scat_amp=?,
-								LF_baseline_pct_diff=?
+								LF_baseline_pct_diff=?,
+								zero_crossing_posn=?
 								WHERE sp2b_file=? and file_index=? and instr=?''',
 								(LEO_amp,
 								LF_percent_diff_baseline,
+								zero_crossing_pt,
 								file,record_index,instrument))
 				
 							#plot particle fit if desired				
-							if show_LEO_fit == True:# and incand_pk_amp > min_incand_amp:
+							if show_LEO_fit == True and incand_pk_amp > min_incand_amp:
 							
 								x_vals_all = particle_record.getAcqPoints()
 								y_vals_all = particle_record.getScatteringSignal()	
@@ -252,7 +256,7 @@ def gaussLEOFit(parameters_dict):
 								y_vals_incand = particle_record.getWidebandIncandSignal()
 								fit_result = particle_record.LF_results		
 													
-								print file, 'record: ',record_index
+								print file, 'record: ',record_index, zero_crossing_pt
 								fig = plt.figure()
 								ax1 = fig.add_subplot(111)
 								ax1.plot(x_vals_all,y_vals_all,'o', markerfacecolor='None')  
@@ -261,7 +265,7 @@ def gaussLEOFit(parameters_dict):
 								except:
 									print 'no fit result'
 								ax1.plot(particle_record.LF_x_vals_to_use,particle_record.LF_y_vals_to_use, color = 'black',linewidth=3)
-								#ax1.plot(x_vals_all, y_vals_split, 'o', color ='green')
+								ax1.plot(x_vals_all, y_vals_split, 'o', color ='green')
 								ax1.plot(x_vals_all, y_vals_incand, color ='red')
 								plt.axvline(x=zero_crossing_pt_LEO, ymin=0, ymax=1)
 								plt.axvline(x=particle_record.beam_center_pos, ymin=0, ymax=1, color='red')

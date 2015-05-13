@@ -19,26 +19,28 @@ from datetime import datetime
 
 
 
-data_dir = 'D:/2010/WHI_ECSP2/Binary/' #'D:/2009/WHI_ECSP2/Binary/'# 'D:/2010/WHI_ECSP2/Binary/'  #'D:/2012/WHI_UBCSP2/Binary/' 
-#analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'
-multiple_directories = True
-instrument = 'WHI_ECSP2'
+#data_dir = 'D:/2010/WHI_ECSP2/Binary/' #'D:/2009/WHI_ECSP2/Binary/'# 'D:/2010/WHI_ECSP2/Binary/'  #'D:/2012/WHI_UBCSP2/Binary/' 
+analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/300nm/' #'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'  #D:/2010/WHI_ECSP2/Calibration/20100305/PSL/Binary/300nm PSL/
+multiple_directories = False
+instrument = 'UBCSP2' #'UBCSP2' #ECSP2
 instrument_locn = 'WHI'
-PSL_size = np.nan
-type_particle = 'nonincand' #PSL, nonincand, incand
-start_analysis_at = datetime.strptime('2010610','%Y%m%d')
-end_analysis_at = datetime.strptime('20100727','%Y%m%d')
+PSL_size = 300
+type_particle = 'PSL' #PSL, nonincand, incand
+start_analysis_at = datetime.strptime('20100110','%Y%m%d')
+end_analysis_at = datetime.strptime('20120726','%Y%m%d')
 
 
 #setup
-num_records_to_analyse = 1000
+num_records_to_analyse = 5000
 show_full_fit = False
 
 #pararmeters used to reject invalid particle records based on scattering peak attributes
 min_peakheight = 20
 max_peakheight = 3500
-min_peakpos = 50
+min_peakpos = 20
 max_peakpos = 250
+
+record_size_bytes = 1498 #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458)
 
 
 #setup database
@@ -53,7 +55,7 @@ instr TEXT,
 instr_locn TEXT,
 particle_type TEXT,		
 particle_dia FLOAT,				
-UTC_datetime TIMESTAMP,
+unix_ts_utc FLOAT,
 actual_scat_amp FLOAT,
 actual_peak_pos INT,
 FF_scat_amp FLOAT,
@@ -64,6 +66,9 @@ LF_scat_amp FLOAT,
 incand_amp FLOAT,
 lag_time_fit_to_incand FLOAT,
 LF_baseline_pct_diff FLOAT,
+rBC_mass_fg FLOAT,
+coat_thickness_nm FLOAT,
+zero_crossing_posn FLOAT,
 UNIQUE (sp2b_file, file_index, instr)
 )''')
 
@@ -96,8 +101,8 @@ def gaussFullFit(parameters_dict):
 	#parameters['avg_flow'] = avg_flow
 	#bad_durations = []
 
-	###use for hk files with timestamp (this is for the UBCSP2 after 20120405)
-	#avg_flow = hk_new.find_bad_hk_durations(parameters)
+	##use for hk files with timestamp (this is for the UBCSP2 after 20120405)
+	#avg_flow = hk_new.find_bad_hk_durations(parameters)  #writes bad durations in UTC
 	#parameters['avg_flow'] = avg_flow
 
 	#*************LEO routine************
@@ -112,7 +117,7 @@ def gaussFullFit(parameters_dict):
 			
 			path = parameters['directory'] + '/' + str(file)
 			file_bytes = os.path.getsize(path) #size of entire file in bytes
-			record_size = 2458  #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458)
+			record_size = record_size_bytes  
 			number_of_records = (file_bytes/record_size)-1
 			if num_records_to_analyse == 'all':
 				number_records_toshow =  number_of_records 
@@ -131,7 +136,6 @@ def gaussFullFit(parameters_dict):
 					hk_data.close()
 		
 			record_index = 0      
-			
 			while record_index < number_records_toshow:
 				
 				##Import and parse binary
@@ -150,16 +154,16 @@ def gaussFullFit(parameters_dict):
 								
 				#if there are any bad hk durations, note the beginning and end times of the first one
 				if number_bad_durations:               
-					bad_duration_start_time = bad_durations[0][0]
-					bad_duration_end_time = bad_durations[0][1]
+					bad_duration_start_time = bad_durations[0][0]#-parameters['timezone']  #needed timezone adjustemtn for 2010 data b/c the hk Bad durations lists were written in local time and I don't want to re-analyze them given the odd datestamping style
+					bad_duration_end_time = bad_durations[0][1]#-parameters['timezone']
 				
 					#if the current event is after the end of the first bad duration in the list, pop that duration off, repeat if necessary until all bad durations before the event are gone
 					while event_time >= bad_duration_end_time:
 						if len(bad_durations): 
 							bad_durations.pop(0)
 							if len(bad_durations):
-								bad_duration_start_time = bad_durations[0][0]
-								bad_duration_end_time = bad_durations[0][1]
+								bad_duration_start_time = bad_durations[0][0]#-parameters['timezone']
+								bad_duration_end_time = bad_durations[0][1]#-parameters['timezone']
 								continue
 							else:
 								break
@@ -206,7 +210,7 @@ def gaussFullFit(parameters_dict):
 								#put particle into database or update record
 								c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr, instr_locn, particle_type, particle_dia) VALUES (?,?,?,?,?,?)''', (file, record_index,instrument, instrument_locn,type_particle,PSL_size))
 								c.execute('''UPDATE SP2_coating_analysis SET 
-								UTC_datetime=?, 
+								unix_ts_utc=?, 
 								actual_scat_amp=?, 
 								actual_peak_pos=?, 
 								FF_scat_amp=?, 
@@ -228,7 +232,7 @@ def gaussFullFit(parameters_dict):
 									x_vals = particle_record.getAcqPoints()
 									y_vals = particle_record.getScatteringSignal()	
 									fit_result = particle_record.FF_results
-									
+									print datetime.utcfromtimestamp(event_time)
 									print record_index, actual_max_value
 									
 									fig = plt.figure()

@@ -77,7 +77,7 @@ c = conn.cursor()
 instrument = 'UBCSP2'
 instrument_locn = 'WHI'
 type_particle = 'incand'
-start_date = datetime.strptime('20100401','%Y%m%d')
+start_date = datetime.strptime('20110401','%Y%m%d')
 end_date = datetime.strptime('20120531','%Y%m%d')
 rBC_density = 1.8 
 incand_sat = 3750
@@ -109,7 +109,8 @@ early_evap=0
 flat_fit=0
 LF_high=0
 
-
+LOG_EVERY_N = 10000
+i=0
 for row in c.execute('''SELECT rBC_mass_fg, coat_thickness_nm, unix_ts_utc, LF_scat_amp, LF_baseline_pct_diff, sp2b_file, file_index, instr,actual_scat_amp
 FROM SP2_coating_analysis 
 WHERE instr_locn=? and particle_type=? and rBC_mass_fg>=? and  rBC_mass_fg<? and unix_ts_utc>=? and unix_ts_utc<?''', 
@@ -127,20 +128,23 @@ WHERE instr_locn=? and particle_type=? and rBC_mass_fg>=? and  rBC_mass_fg<? and
 	meas_scat_amp = row[8]
 	rBC_VED = (((rBC_mass/(10**15*rBC_density))*6/3.14159)**(1/3.0))*10**7 #VED in nm with 10^15fg/g and 10^7nm/cm
 	
-	Dp = rBC_VED + coat_thickness*2.0
-	Dc = rBC_VED
 	
 	
-	try:
-		DpDc = math.pow((Dp**3/Dc**3),(1./3.))
-	except:
-		DpDc = np.nan
+	
+	#Dp = rBC_VED + coat_thickness*2.0
+	#Dc = rBC_VED
+	
+	
+	#try:
+	#	DpDc = math.pow((Dp**3/Dc**3),(1./3.))
+	#except:
+	#	DpDc = np.nan
 	
 	
 	#skip if a bad record
 	if meas_scat_amp < 6 :
 		no_scat +=1
-	if meas_scat_amp >= 6 and LEO_amp == 0.0 and LF_baseline_pctdiff == None:
+	if meas_scat_amp >= 6 and meas_scat_amp <= 20 and LEO_amp == 0.0 and LF_baseline_pctdiff == None:
 		early_evap +=1
 		continue
 	if LEO_amp == -2:
@@ -156,7 +160,7 @@ WHERE instr_locn=? and particle_type=? and rBC_mass_fg>=? and  rBC_mass_fg<? and
 		LF_high +=1
 		continue
 
-	
+		
 	#ignore spike times	(LT)
 	for spike in spike_times:
 		spike_start = spike-timedelta(minutes=5)
@@ -167,28 +171,34 @@ WHERE instr_locn=? and particle_type=? and rBC_mass_fg>=? and  rBC_mass_fg<? and
 	
 	#if in a BB time, put this data in BB dict
 	if (fire_time1[0] <= event_time <= fire_time1[1]) or (fire_time2[0] <= event_time <= fire_time2[1]):
-		BB.append(DpDc)
+		BB.append(coat_thickness)
 		continue
 		
 	for traj in cluslist:
 		traj_time_PST = traj[0]
 		cluster_no = traj[1]
 		
+		if meas_scat_amp < 6:
+			coat_thickness = (91-rBC_VED)/2
 		
 		if ((traj_time_PST-timedelta(hours=3)) <= event_time < (traj_time_PST+timedelta(hours=3))):
 			if meas_scat_amp < 6 or LEO_amp > 0:
 				if cluster_no == 9:
-					GBPS.append(DpDc)
+					GBPS.append(coat_thickness)
 				if cluster_no == 4:
-					Cont.append(DpDc)
+					Cont.append(coat_thickness)
 				if cluster_no in [6,8]:
-					SPac.append(DpDc)
+					SPac.append(coat_thickness)
 				if cluster_no in [2,7]:
-					LRT.append(DpDc)
+					LRT.append(coat_thickness)
 				if cluster_no in [1,3,5,10]:
-					NPac.append(DpDc)
+					NPac.append(coat_thickness)
 				
-				
+	i+=1
+	if (i % LOG_EVERY_N) == 0:
+		print 'record: ', i
+	
+	
 print len(GBPS),len(Cont),len(SPac),len(NPac),len(LRT),len(BB)
 	
 print '# of particles', particles
