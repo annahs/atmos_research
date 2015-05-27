@@ -190,12 +190,13 @@ def gaussLEOFit(parameters_dict):
 							particle_record.incandPeakInfo() #run the incandPeakInfo method to retrieve various incandescence peak attributes				
 							incand_pk_amp = particle_record.incandMax					
 							incand_pk_pos = particle_record.incandMaxPos
+							scat_pk_pos = particle_record.scatteringMaxPos
 							 
 							
 							if incand_pk_amp > min_incand_amp:
 
 								scattering_pk_amp = particle_record.scatteringMax
-								lag_time_pts = (incand_pk_pos-zero_crossing_pt)+mean_zeroX_to_peak
+								lag_time_pts = incand_pk_pos-scat_pk_pos
 			
 								c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr, instr_locn, particle_type) VALUES (?,?,?,?,?)''', (file, record_index,instrument, instrument_locn,type_particle))
 								c.execute('''UPDATE SP2_coating_analysis SET 
