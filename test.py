@@ -109,7 +109,7 @@ LF_high=0
 
 LOG_EVERY_N = 10000
 i=0
-for row in c.execute('''SELECT rBC_mass_fg, coat_thickness_nm, unix_ts_utc, LF_scat_amp, LF_baseline_pct_diff, sp2b_file, file_index, instr,actual_scat_amp 
+for row in c.execute('''SELECT rBC_mass_fg, coat_thickness_from_actual_scat_amp, unix_ts_utc, LF_scat_amp, LF_baseline_pct_diff, sp2b_file, file_index, instr,actual_scat_amp 
 FROM SP2_coating_analysis 
 WHERE instr_locn=? and particle_type=? and rBC_mass_fg>=? and  rBC_mass_fg<? and unix_ts_utc>=? and unix_ts_utc<?
 ORDER BY unix_ts_utc''', 
@@ -149,8 +149,8 @@ ORDER BY unix_ts_utc''',
 	
 	
 	if meas_scat_amp < 6:
-		coat_thickness = (91-rBC_VED)/2
-	
+		#coat_thickness = (91-rBC_VED)/2
+		LEO_amp  = 0
 	
 	#spike times(local time)
 	event_in_spike = False
@@ -171,14 +171,14 @@ ORDER BY unix_ts_utc''',
 			if (spike_start <= event_time < spike_end):
 				event_in_spike = True
 				if meas_scat_amp < 6 or LEO_amp > 0:
-					spikes.append([rBC_VED,coat_thickness])
+					spikes.append([rBC_VED,LEO_amp])
 			
 	if event_in_spike == True:
 		continue	
 
 	#if in a BB time, put this data in BB dict and continue
 	if (fire_time1[0] <= event_time <= fire_time1[1]) or (fire_time2[0] <= event_time <= fire_time2[1]):
-		#BB.append([rBC_VED,coat_thickness])
+		#BB.append([rBC_VED,LEO_amp])
 		continue
 	
 	#trajectory clusters
@@ -196,19 +196,19 @@ ORDER BY unix_ts_utc''',
 		if ((traj_time_PST-timedelta(hours=1)) <= event_time < (traj_time_PST+timedelta(hours=1))):
 			if meas_scat_amp < 6 or LEO_amp > 0:
 				if cluster_no == 1:
-					cluster_1.append([rBC_VED,coat_thickness])
+					cluster_1.append([rBC_VED,LEO_amp])
 				if cluster_no == 2:
-					cluster_2.append([rBC_VED,coat_thickness])
+					cluster_2.append([rBC_VED,LEO_amp])
 				if cluster_no == 3:
-					cluster_3.append([rBC_VED,coat_thickness])
+					cluster_3.append([rBC_VED,LEO_amp])
 				if cluster_no == 4:
-					cluster_4.append([rBC_VED,coat_thickness])
+					cluster_4.append([rBC_VED,LEO_amp])
 				if cluster_no == 5:
-					cluster_5.append([rBC_VED,coat_thickness])				
+					cluster_5.append([rBC_VED,LEO_amp])				
 				if cluster_no == 6:
-					cluster_6.append([rBC_VED,coat_thickness])
+					cluster_6.append([rBC_VED,LEO_amp])
 				if cluster_no == 7:
-					cluster_GBPS.append([rBC_VED,coat_thickness])
+					cluster_GBPS.append([rBC_VED,LEO_amp])
 				
 				
 	
@@ -242,7 +242,7 @@ for list in lists:
 
 #save data
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/')
-file = open('coating thicknesses by air mass for '+str(round(min_BC_VED,2)) +'nm to ' + str(round(max_BC_VED,2))+'nm-spikes_fixed-2hr_clusters-DMT269_coating_calib.binpickl', 'w')
+file = open('coating thicknesses by air mass for '+str(round(min_BC_VED,2)) +'nm to ' + str(round(max_BC_VED,2))+'nm-spikes_fixed-2hr_clusters-raw_LEO_amp.binpickl', 'w')
 pickle.dump(data_to_pickle, file)
 file.close()
 

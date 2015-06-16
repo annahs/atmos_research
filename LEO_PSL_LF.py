@@ -22,11 +22,11 @@ import calendar
 
 #analysis parameters
 #data_dir = 'D:/2012/WHI_UBCSP2/Binary/' #'D:/2012/WHI_UBCSP2/Binary/' #'D:/2009/WHI_ECSP2/Binary/'# 'D:/2010/WHI_ECSP2/Binary/'  #'D:/2012/WHI_UBCSP2/Binary/' 
-analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'
+analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/110nm/'
 multiple_directories = False
-num_records_to_analyse = 1000#'all'
+num_records_to_analyse = 30000#'all'
 LEO_factor = 16  # fit up to 1/this_value of max peak height (ie 1/20 is 5%)
-show_LEO_fit = True
+show_LEO_fit = False
 instrument = 'UBCSP2'
 instrument_locn = 'WHI'
 type_particle = 'PSL' #PSL, nonincand, incand
@@ -39,7 +39,7 @@ FF = -0.4
 #note: the program will select calibration data from a time period surrounding (+- 48h) the data being LEO fitted
 calib_instrument = 'UBCSP2'
 calib_instrument_locn = 'WHI'
-calib_type_particle = 'nonincand'
+calib_type_particle = 'PSL'
 
 #pararmeters used to reject invalid particle records based on scattering peak attributes
 min_peakheight = 20
@@ -79,7 +79,8 @@ def gaussLEOFit(parameters_dict):
 	print parameters['folder']
 	
 	#**********get LEO calib parameters
-	file_date = datetime.strptime(parameters['folder'],'%Y%m%d')
+	#file_date = datetime.strptime(parameters['folder'],'%Y%m%d')
+	file_date = datetime.strptime('20120328','%Y%m%d')
 	file_date_UNIX = calendar.timegm(file_date.timetuple())
 	time_span = 172800 #48h in secs
 	begin_calib_data = file_date_UNIX-time_span
@@ -248,7 +249,7 @@ def gaussLEOFit(parameters_dict):
 								file,record_index,instrument))
 				
 							#plot particle fit if desired				
-							if show_LEO_fit == True and incand_pk_amp > min_incand_amp:
+							if show_LEO_fit == True:
 							
 								x_vals_all = particle_record.getAcqPoints()
 								y_vals_all = particle_record.getScatteringSignal()	
@@ -265,9 +266,9 @@ def gaussLEOFit(parameters_dict):
 								except:
 									print 'no fit result'
 								ax1.plot(particle_record.LF_x_vals_to_use,particle_record.LF_y_vals_to_use, color = 'black',linewidth=3)
-								ax1.plot(x_vals_all, y_vals_split, 'o', color ='green')
+								#ax1.plot(x_vals_all, y_vals_split, 'o', color ='green')
 								ax1.plot(x_vals_all, y_vals_incand, color ='red')
-								plt.axvline(x=zero_crossing_pt_LEO, ymin=0, ymax=1)
+								#plt.axvline(x=zero_crossing_pt_LEO, ymin=0, ymax=1)
 								plt.axvline(x=particle_record.beam_center_pos, ymin=0, ymax=1, color='red')
 								plt.show()
 

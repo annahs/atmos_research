@@ -6,8 +6,8 @@ mie = Mie()
  
 wl = 1.064
 
-core_rad = 0.200/2#um
-shell_thickness = 0.
+core_rad = 0.2/2 #nm
+shell_thickness = 0.0
 
 #Refractive indices PSL 1.59-0.0i  rBC 2.26- 1.26i  shell 1.5-0.0i
 
@@ -30,18 +30,33 @@ abss = abs*3.14*shell_rad**2
 
 sca = mie.qsca()
 sca_xs = sca*math.pi*shell_rad**2
-print sca_xs
+print sca_xs*10**-8
 
 
+#set ranges
+incr = 1
+range1 = []
+i=4
+while i <= 86:
+	range1.append(i)
+	i+=incr
+	
+range2 = []
+i=94
+while i <= 176:
+	range2.append(i)
+	i+=incr	
+	
+#calc intensity
 Itot = 0
-for theta in range(4, 87, 1):
+for theta in range1:
     cos_angle=math.cos(math.radians(theta))
     S12 = mie.S12(cos_angle)
     I1 = S12[0].real**2 + S12[0].imag**2
     I2 = S12[1].real**2 + S12[1].imag**2
     Itot = Itot+ I1 + I2
     
-for theta in range(94, 177, 1):
+for theta in range2:
     cos_angle=math.cos(math.radians(theta))
     S12 = mie.S12(cos_angle)
     I1 = S12[0].real**2 + S12[0].imag**2
@@ -49,4 +64,4 @@ for theta in range(94, 177, 1):
     Itot = Itot+ I1 + I2
 
 
-print Itot
+print Itot#*331.2

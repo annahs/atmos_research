@@ -19,6 +19,7 @@ fire_time2 = [datetime.strptime('2010/07/26 09:00', '%Y/%m/%d %H:%M'), datetime.
 #open cluslist and read into a python list
 cluslist = []
 CLUSLIST_file = 'C:/hysplit4/working/WHI/CLUSLIST_10'
+CLUSLIST_file = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/HYSPLIT/clustering/CLUSLIST_10'
 with open(CLUSLIST_file,'r') as f:
 	for line in f:
 		newline = line.split()
@@ -66,10 +67,6 @@ with open('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/WHI_rBC_reco
 			row_abs_err = np.nan
 		else:
 			row_abs_err = (row_rBC_mass_conc-row_rBC_mass_conc_LL)
-		
-	
-			
-		
 		
 				
 		#pop off any cluslist times that are in the past
@@ -225,7 +222,7 @@ for date, mass_data in rBC_FT_data_cluster_BB.iteritems():
 ##save data to file
 sorted_6h_SP2_data = sorted(all_6h_SP2_data)
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/')
-file = open('WHI_SP2_free_troposphere_6h_mass_concs.txt', 'w')
+file = open('WHI_SP2_6h_rBC_mass_concs.txt', 'w')
 file.write('midpoint_date_and_time(PST)' + '\t' +  'rBC_mass_conc_ng/m3(STP)' + '\t' + 'mass_conc_absolute_err' + '\n')
 for row in sorted_6h_SP2_data:
 	line = '\t'.join(str(x) for x in row)

@@ -18,6 +18,8 @@ fire_time2 = [datetime.strptime('2010/07/26 09:00', '%Y/%m/%d %H:%M'), datetime.
 #open cluslist and read into a python list
 cluslist = []
 CLUSLIST_file = 'C:/hysplit4/working/WHI/CLUSLIST_10'
+CLUSLIST_file = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/HYSPLIT/clustering/CLUSLIST_10'
+
 with open(CLUSLIST_file,'r') as f:
 	for line in f:
 		newline = line.split()
@@ -512,7 +514,7 @@ for key, value in stats_GC.iteritems():
 	stats_GC[key].append(np.percentile(mass_concs, 50))
 
 
-
+sys.exit()
 
 ###################plotting
 SP2_6h_NPac_m = [row[0] for row in SP2_6h_NPac]

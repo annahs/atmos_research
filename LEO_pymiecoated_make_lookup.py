@@ -27,7 +27,7 @@ scat_cal_limit = 50000
 def scat_amp(Itotal):
 	#calc_scattering_amplitude = 112*Itotal  #calibration fit is in origin file for LJ-EC_SP2
 	#calc_scattering_amplitude = 3.72*Itotal+9.65  #calibration from Aquadag numbers Jason sent for LJ
-	calc_scattering_amplitude = 331.2*Itotal # UBCSP2 WHI 2012 
+	calc_scattering_amplitude = 61*Itotal # UBCSP2 WHI 2012 ###331.2*Itotal # UBCSP2 WHI 2012 
 	#calc_scattering_amplitude = 71.32*Itotal  # ECSP2 WHI 2010
 	
 	return calc_scattering_amplitude
@@ -43,7 +43,7 @@ core_step_size = 0.5 # will give 1nm steps in final diameter
 #set the range of core radii to be used
 core_rad_range = []
 core_radius = 30  #60nm dia
-while core_radius <= 32: #240nm dia
+while core_radius <= 120: #240nm dia
 	core_rad_range.append(core_radius)
 	core_radius += core_step_size
 
@@ -135,7 +135,7 @@ for core_rad in core_rad_range:
 
 	
 
-file = open('coating_lookup_table_WHI_2010_ECSP2-neg_coat-test.lupckl', 'w')
+file = open('coating_lookup_table_WHI_2012_UBCSP2-DMTcalib_20120206-269nm.lupckl', 'w')
 pickle.dump(lookup_table, file)
 file.close()  
 

@@ -20,18 +20,18 @@ from datetime import datetime
 
 
 #data_dir = 'D:/2010/WHI_ECSP2/Binary/' #'D:/2009/WHI_ECSP2/Binary/'# 'D:/2010/WHI_ECSP2/Binary/'  #'D:/2012/WHI_UBCSP2/Binary/' 
-analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/300nm/' #'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'  #D:/2010/WHI_ECSP2/Calibration/20100305/PSL/Binary/300nm PSL/
+analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/110nm/'#'D:/2012/WHI_UBCSP2/Calibrations/From DMT/20120206/PSL/'# #'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'  #D:/2010/WHI_ECSP2/Calibration/20100305/PSL/Binary/300nm PSL/
 multiple_directories = False
 instrument = 'UBCSP2' #'UBCSP2' #ECSP2
 instrument_locn = 'WHI'
-PSL_size = 300
+PSL_size = 110
 type_particle = 'PSL' #PSL, nonincand, incand
-start_analysis_at = datetime.strptime('20100110','%Y%m%d')
-end_analysis_at = datetime.strptime('20120726','%Y%m%d')
+start_analysis_at = datetime.strptime('20120101','%Y%m%d')
+end_analysis_at = datetime.strptime('20120601','%Y%m%d')
 
 
 #setup
-num_records_to_analyse = 5000
+num_records_to_analyse = 30000
 show_full_fit = False
 
 #pararmeters used to reject invalid particle records based on scattering peak attributes
@@ -47,30 +47,30 @@ record_size_bytes = 1498 #size of a single particle record in bytes(UBC_SP2 = 14
 conn = sqlite3.connect('C:/projects/dbs/SP2_data.db')
 c = conn.cursor()
 
-c.execute('''CREATE TABLE if not exists SP2_coating_analysis(
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-sp2b_file TEXT, 
-file_index INT, 
-instr TEXT,
-instr_locn TEXT,
-particle_type TEXT,		
-particle_dia FLOAT,				
-unix_ts_utc FLOAT,
-actual_scat_amp FLOAT,
-actual_peak_pos INT,
-FF_scat_amp FLOAT,
-FF_peak_pos INT,
-FF_gauss_width FLOAT,
-zeroX_to_peak FLOAT,
-LF_scat_amp FLOAT,
-incand_amp FLOAT,
-lag_time_fit_to_incand FLOAT,
-LF_baseline_pct_diff FLOAT,
-rBC_mass_fg FLOAT,
-coat_thickness_nm FLOAT,
-zero_crossing_posn FLOAT,
-UNIQUE (sp2b_file, file_index, instr)
-)''')
+#c.execute('''CREATE TABLE if not exists SP2_coating_analysis(
+#id INTEGER PRIMARY KEY AUTOINCREMENT,
+#sp2b_file TEXT, 
+#file_index INT, 
+#instr TEXT,
+#instr_locn TEXT,
+#particle_type TEXT,		
+#particle_dia FLOAT,				
+#unix_ts_utc FLOAT,
+#actual_scat_amp FLOAT,
+#actual_peak_pos INT,
+#FF_scat_amp FLOAT,
+#FF_peak_pos INT,
+#FF_gauss_width FLOAT,
+#zeroX_to_peak FLOAT,
+#LF_scat_amp FLOAT,
+#incand_amp FLOAT,
+#lag_time_fit_to_incand FLOAT,
+#LF_baseline_pct_diff FLOAT,
+#rBC_mass_fg FLOAT,
+#coat_thickness_nm FLOAT,
+#zero_crossing_posn FLOAT,
+#UNIQUE (sp2b_file, file_index, instr)
+#)''')
 
 #**********parameters dictionary**********
 parameters = {
@@ -86,7 +86,7 @@ parameters = {
 'YAG_max' : 6,
 'min_good_points' : 10,
 #show plots?
-'show_plot':False,
+'show_plot':True
 }
 
 
@@ -96,17 +96,16 @@ def gaussFullFit(parameters_dict):
 	
 	#*******HK ANALYSIS************ 
 
-	###use for hk files with no timestamp (just time since midnight) (this should work for the EC polar flights in spring 2012,also for ECSP2 for WHI 20100610 to 20100026, UBCSP2 prior to 20120405)
+	####use for hk files with no timestamp (just time since midnight) (this should work for the EC polar flights in spring 2012,also for ECSP2 for WHI 20100610 to 20100026, UBCSP2 prior to 20120405)
 	#avg_flow = hk_new_no_ts_LEO.find_bad_hk_durations_no_ts(parameters) 
 	#parameters['avg_flow'] = avg_flow
-	#bad_durations = []
+	bad_durations = []
 
 	##use for hk files with timestamp (this is for the UBCSP2 after 20120405)
 	#avg_flow = hk_new.find_bad_hk_durations(parameters)  #writes bad durations in UTC
 	#parameters['avg_flow'] = avg_flow
 
 	#*************LEO routine************
-	
 	
 	
 	for file in os.listdir('.'):
@@ -226,6 +225,7 @@ def gaussFullFit(parameters_dict):
 								fit_gauss_width,
 								zero_cross_to_peak,
 								file, record_index,instrument))
+
 												
 								#plot particle fit if desired
 								if show_full_fit == True:
