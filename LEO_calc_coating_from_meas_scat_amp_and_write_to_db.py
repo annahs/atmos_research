@@ -43,7 +43,7 @@ instrument_locn = 'WHI'
 type_particle = 'incand'
 start_date = '20110105'
 end_date = '20120601'
-lookup_file = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/lookup_tables/coating_lookup_table_WHI_2012_UBCSP2-neg_coat.lupckl'
+lookup_file = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/lookup_tables/coating_lookup_table_WHI_2012_UBCSP2-nc(2p26,1p26).lupckl'
 rBC_density = 1.8 
 incand_sat = 3750
 
@@ -93,11 +93,11 @@ def get_coating_thickness(BC_VED,scat_amp,coating_lookup_table):
 LOG_EVERY_N = 10000
 
 i = 0
-for row in c.execute('''SELECT incand_amp, actual_scat_amp, unix_ts_utc, sp2b_file, file_index, instr FROM SP2_coating_analysis 
+for row in c.execute('''SELECT incand_amp, LF_scat_amp, unix_ts_utc, sp2b_file, file_index, instr FROM SP2_coating_analysis 
 WHERE instr=? and instr_locn=? and particle_type=? and incand_amp<? and unix_ts_utc>=? and unix_ts_utc<?''', 
 (instrument,instrument_locn,type_particle,incand_sat,begin_data,end_data)):
 	incand_amp = row[0]
-	actual_scat_amp = row[1]
+	LF_amp = row[1]
 	event_time = datetime.utcfromtimestamp(row[2])
 	file = row[3]
 	index = row[4]
@@ -106,7 +106,7 @@ WHERE instr=? and instr_locn=? and particle_type=? and incand_amp<? and unix_ts_
 	rBC_mass = get_rBC_mass(incand_amp, event_time.year)
 	if rBC_mass >= 0.25:
 		rBC_VED = (((rBC_mass/(10**15*rBC_density))*6/3.14159)**(1/3.0))*10**7 #VED in nm with 10^15fg/g and 10^7nm/cm
-		coat_th = get_coating_thickness(rBC_VED,actual_scat_amp,lookup_table)
+		coat_th = get_coating_thickness(rBC_VED,LF_amp,lookup_table)
 	else:
 		rBC_VED = None
 		coat_th = None

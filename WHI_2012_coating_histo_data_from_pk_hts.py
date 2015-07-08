@@ -36,9 +36,35 @@ import math
 #coat_thickness_from_actual_scat_amp FLOAT
 #UNIQUE (sp2b_file, file_index, instr)
 
-timezone = -8
+#mie parametrs to use
+lookup_file = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/lookup_tables/coating_lookup_table_WHI_2012_UBCSP2-nc(2p26,1p26)-calib_scale_factor225.lupckl'
+rBC_density = 1.8
+RI = complex(2.26,1.26)
 
-######get spike times these are in local time
+lookup = open(lookup_file, 'r')
+lookup_table = pickle.load(lookup)
+lookup.close()
+
+#analysis parameters
+instrument = 'UBCSP2'
+instrument_locn = 'WHI'
+timezone = -8
+type_particle = 'incand'
+start_date = datetime.strptime('20120401','%Y%m%d')
+end_date = datetime.strptime('20120601','%Y%m%d')
+LF_max = 45000 #above this is unreasonable
+
+min_rBC_mass = 3.4  #100-#0.94#1.63-#120 2.6-#140 3.86-#160nm 0.25-#65
+min_BC_VED = (((min_rBC_mass/(10**15*rBC_density))*6/3.14159)**(1/3.0))*10**7
+max_rBC_mass = 5.6  #140 3.86-160 5.5-#180nm 7.55-#200 10.05-#220
+max_BC_VED = (((max_rBC_mass/(10**15*rBC_density))*6/3.14159)**(1/3.0))*10**7
+
+begin_data = calendar.timegm(start_date.timetuple())
+end_data = calendar.timegm(end_date.timetuple())
+
+
+
+######get spike times (these are in local time already)
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/')
 file = open('WHI_rBC_record_2009to2013-spike_times.rbcpckl', 'r')
 spike_times_full = pickle.load(file)
@@ -50,24 +76,22 @@ for spike in spike_times_full:
 		if spike < datetime(2012,06,01):
 			spike_times.append(spike)
 
-#fire times
-fire_time1 = [datetime.strptime('2009/07/27 00:00', '%Y/%m/%d %H:%M'), datetime.strptime('2009/08/08 00:00', '%Y/%m/%d %H:%M')] #row_datetimes following Takahama et al (2011) doi:10.5194/acp-11-6367-2011 #PST  in LT
-fire_time2 = [datetime.strptime('2010/07/26 09:00', '%Y/%m/%d %H:%M'), datetime.strptime('2010/07/28 09:30', '%Y/%m/%d %H:%M')] #jason's BC clear report #PST in LT
-
-#open cluslist and read into a python list
+#open cluslist and read into a python list (convert UTC to local time here)
 cluslist = []
-CLUSLIST_file = 'C:/hysplit4/working/WHI/2hrly_HYSPLIT_files/all_with_sep_GBPS/CLUSLIST_6-mod-precip_amount_added'
+#CLUSLIST_file = 'C:/hysplit4/working/WHI/2hrly_HYSPLIT_files/all_with_sep_GBPS/CLUSLIST_6-mod-precip_amount_added'
+#CLUSLIST_file = 'C:/hysplit4/working/WHI/2hrly_HYSPLIT_files/all_with_sep_GBPS/CLUSLIST_6-mod-precip_added-sig_precip_72hrs_pre_arrival'
+CLUSLIST_file = 'C:/hysplit4/working/WHI/2hrly_HYSPLIT_files/all_with_sep_GBPS/CLUSLIST_6-mod-precip_added-sig_precip_any_time'
 
 with open(CLUSLIST_file,'r') as f:
 	for line in f:
 		newline = line.split()
 		cluster_no = int(newline[0])
 		traj_time = datetime(int(newline[2])+2000,int(newline[3]),int(newline[4]),int(newline[5]))+timedelta(hours = timezone) #convert UTC->LT here
-		significant_rainfall = float(newline[8])
+		significant_rainfall = newline[8]
 		if traj_time.year >=2012:
 			cluslist.append([traj_time,cluster_no,significant_rainfall])
 
-# sort cluslist by row_datetime in place		
+#sort cluslist by row_datetime in place		
 cluslist.sort(key=lambda clus_info: clus_info[0])  
 print len(cluslist)
 
@@ -76,22 +100,7 @@ conn = sqlite3.connect('C:/projects/dbs/SP2_data.db')
 c = conn.cursor()
 
 
-instrument_locn = 'WHI'
-type_particle = 'incand'
-start_date = datetime.strptime('20120101','%Y%m%d')
-end_date = datetime.strptime('20120601','%Y%m%d')
-rBC_density = 1.8 
-incand_sat = 3750
-LF_max = 45000 #above this is unreasonable
-
-min_rBC_mass = 2.6#100-#0.94#1.63-#120 2.6-#140 3.86-#160nm 0.25-#65
-min_BC_VED = (((min_rBC_mass/(10**15*rBC_density))*6/3.14159)**(1/3.0))*10**7
-max_rBC_mass = 5.6#140 3.86-160 5.5-#180nm 7.55-#200 10.05-#220
-max_BC_VED = (((max_rBC_mass/(10**15*rBC_density))*6/3.14159)**(1/3.0))*10**7
-
-begin_data = calendar.timegm(start_date.timetuple())
-end_data = calendar.timegm(end_date.timetuple())
-
+#set up lists and counters needed 
 cluster_1 = []
 cluster_2= []
 cluster_3= []
@@ -112,28 +121,64 @@ no_scat_155_180 = 0
 early_evap_155_180 = 0
 
 LOG_EVERY_N = 10000
-i=0
-for row in c.execute('''SELECT rBC_mass_fg, coat_thickness_nm, unix_ts_utc, LF_scat_amp, LF_baseline_pct_diff, sp2b_file, file_index, instr,actual_scat_amp 
-FROM SP2_coating_analysis 
-WHERE instr_locn=? and particle_type=? and rBC_mass_fg>=? and  rBC_mass_fg<? and unix_ts_utc>=? and unix_ts_utc<?
+
+#methods 
+
+def get_rBC_mass(incand_pk_ht):
+	rBC_mass = 0.003043*incand_pk_ht + 0.24826 #AD corrected linear calibration for UBCSP2 at WHI 2012
+	#rBC_mass = (-1.09254*10**-7)*incand_pk_ht*incand_pk_ht+0.00246*incand_pk_ht + 0.20699 #AD UNcorrected calibration for UBCSP2 at WHI 2012
+	return rBC_mass
+
+def get_coating_thickness(BC_VED,scat_amp,coating_lookup_table):
+	#get the coating thicknesses from the lookup table which is a dictionary of dictionaries, the 1st keyed with BC core size and the second being coating thicknesses keyed with calc scat amps                  
+	core_diameters = sorted(coating_lookup_table.keys())
+	prev_diameter = core_diameters[0]
+
+	for core_diameter in core_diameters:
+		if core_diameter > BC_VED:
+			core_dia_to_use = prev_diameter
+			break
+		prev_diameter = core_diameter
+
+	#now get the coating thickness for the scat_amp this is the coating thickness based on the raw scattering max
+	scattering_amps = sorted(coating_lookup_table[core_dia_to_use].keys())
+	prev_amp = scattering_amps[0]
+	for scattering_amp in scattering_amps:
+		if scat_amp < scattering_amp:
+			scat_amp_to_use = prev_amp
+			break
+		prev_amp = scattering_amp
+
+	scat_coating_thickness = coating_lookup_table[core_dia_to_use].get(scat_amp_to_use, np.nan) # returns value for the key, or none
+	return scat_coating_thickness
+
+
+#analysis
+for row in c.execute('''SELECT incand_amp, LF_scat_amp, unix_ts_utc, sp2b_file, file_index, instr, LF_baseline_pct_diff, actual_scat_amp FROM SP2_coating_analysis 
+WHERE instr=? and instr_locn=? and particle_type=? and rBC_mass_fg>=? and  rBC_mass_fg<? and unix_ts_utc>=? and unix_ts_utc<?
 ORDER BY unix_ts_utc''', 
-(instrument_locn,type_particle, min_rBC_mass, max_rBC_mass, begin_data,end_data)):	
+(instrument,instrument_locn,type_particle,min_rBC_mass, max_rBC_mass,begin_data,end_data)):
 	particles+=1
-	i+=1
-	rBC_mass = row[0]
-	coat_thickness = row[1]
-	event_time = datetime.utcfromtimestamp(row[2])+timedelta(hours = timezone) #db is UTC, convert to LT here
-	LEO_amp = row[3]
-	LF_baseline_pctdiff = row[4]
-	file = row[5]
-	index = row[6]
-	instrt = row[7]
-	meas_scat_amp = row[8]
+
+	incand_amp = row[0]
+	LEO_amp = row[1]
+	event_time = datetime.utcfromtimestamp(row[2])+timedelta(hours = timezone)
+	file = row[3]
+	index = row[4]
+	instrt = row[5]
+	LF_baseline_pctdiff = row[6]
+	meas_scat_amp = row[7]
+
+	rBC_mass = get_rBC_mass(incand_amp)
 	rBC_VED = (((rBC_mass/(10**15*rBC_density))*6/3.14159)**(1/3.0))*10**7 #VED in nm with 10^15fg/g and 10^7nm/cm
+	coat_thickness = get_coating_thickness(rBC_VED, LEO_amp, lookup_table)
+
+	##
 	if rBC_VED >=155 and rBC_VED <=180:
 		count_155_180 += 1
-
-	#skip if an undesired record
+	##
+	
+	#note particles records that can't be analysed
 	if meas_scat_amp < 6 :
 		no_scat +=1
 		if rBC_VED >=155 and rBC_VED <=180:
@@ -157,13 +202,26 @@ ORDER BY unix_ts_utc''',
 	if LEO_amp > LF_max:
 		LF_high +=1
 		continue
-	
-	
+
 	if meas_scat_amp < 6:
 		coat_thickness = (91-rBC_VED)/2
+
+	
+	#trajectory clusters (converted to local time above)
+	earliest_traj_time = cluslist[0][0]
+	while event_time > (earliest_traj_time+timedelta(hours=1)):
+		cluslist.pop(0)
+		earliest_traj_time = cluslist[0][0]
+		print 'clusters left', len(cluslist)
+
+	#data for current trajectory
+	traj_time_PST = cluslist[0][0]
+	cluster_no  = cluslist[0][1]
+	rain = cluslist[0][2]
 	
 	
-	#spike times(local time)
+	
+	#spike times(already in local time)
 	event_in_spike = False
 	
 	spike_half_interval = 2
@@ -182,34 +240,12 @@ ORDER BY unix_ts_utc''',
 			if (spike_start <= event_time < spike_end):
 				event_in_spike = True
 				if meas_scat_amp < 6 or LEO_amp > 0:
-					spikes.append([rBC_VED,coat_thickness,event_time, False])
+					spikes.append([rBC_VED,coat_thickness,event_time, rain])
 			
 	if event_in_spike == True:
 		continue	
 
-	##if in a BB time, put this data in BB dict and continue
-	#if (fire_time1[0] <= event_time <= fire_time1[1]) or (fire_time2[0] <= event_time <= fire_time2[1]):
-	#	#BB.append([rBC_VED,coat_thickness,event_time])
-	#	continue
-	
-	#trajectory clusters
-	earliest_traj_time = cluslist[0][0]
-	while event_time > (earliest_traj_time+timedelta(hours=1)):
-		cluslist.pop(0)
-		earliest_traj_time = cluslist[0][0]
-		print 'clusters left', len(cluslist)
-
-	#data for current trajectory
-	traj_time_PST = cluslist[0][0]
-	cluster_no  = cluslist[0][1]
-	rain = cluslist[0][2]
-	
-	#if rainy == 'True':
-	#	rain = True
-	#else:
-	#	rain = False
-
-
+	##non-spike times
 	if ((traj_time_PST-timedelta(hours=1)) <= event_time < (traj_time_PST+timedelta(hours=1))):
 		if meas_scat_amp < 6 or LEO_amp > 0:
 			if cluster_no == 1:
@@ -229,8 +265,8 @@ ORDER BY unix_ts_utc''',
 			
 			
 	
-	if (i % LOG_EVERY_N) == 0:
-		print 'record: ', i
+	if (particles % LOG_EVERY_N) == 0:
+		print 'record: ', particles
 		
 conn.close()
 	
@@ -261,11 +297,9 @@ for list in lists:
 
 #save data
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/')
-file = open('coating thicknesses by air mass for '+str(round(min_BC_VED,2)) +'nm to ' + str(round(max_BC_VED,2))+'nm-spikes_fixed-2hr_clusters-precip_amt.binpickl', 'w')
+file = open('coating thicknesses by air mass for '+str(round(min_BC_VED,2)) +'nm to ' + str(round(max_BC_VED,2))+ 'nm-density_' + str(rBC_density) + '-RI_ '+ str(RI) +'-2hr_clusters-sig_precip_anytime-calib_factor225.binpickl', 'w')
 pickle.dump(data_to_pickle, file)
 file.close()
 
 
-
- 
 

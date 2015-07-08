@@ -22,23 +22,23 @@ import calendar
 
 #analysis parameters
 #data_dir = 'D:/2012/WHI_UBCSP2/Binary/' #'D:/2012/WHI_UBCSP2/Binary/' #'D:/2009/WHI_ECSP2/Binary/'# 'D:/2010/WHI_ECSP2/Binary/'  #'D:/2012/WHI_UBCSP2/Binary/' 
-analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/110nm/'
+analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/From DMT/20120113/199nm PSL/'
 multiple_directories = False
 num_records_to_analyse = 30000#'all'
 LEO_factor = 16  # fit up to 1/this_value of max peak height (ie 1/20 is 5%)
-show_LEO_fit = False
+show_LEO_fit = True
 instrument = 'UBCSP2'
-instrument_locn = 'WHI'
+instrument_locn = 'DMT'
 type_particle = 'PSL' #PSL, nonincand, incand
 start_analysis_at = datetime.strptime('20120105','%Y%m%d')
 end_analysis_at = datetime.strptime('20120526','%Y%m%d')
 analysis_time_start = 0
 analysis_time_end = 24
-FF = -0.4
+FF = 0
 #parameters for settign values of fixed variables in Gaussian fitting
 #note: the program will select calibration data from a time period surrounding (+- 48h) the data being LEO fitted
 calib_instrument = 'UBCSP2'
-calib_instrument_locn = 'WHI'
+calib_instrument_locn = 'DMT'
 calib_type_particle = 'PSL'
 
 #pararmeters used to reject invalid particle records based on scattering peak attributes
@@ -80,7 +80,7 @@ def gaussLEOFit(parameters_dict):
 	
 	#**********get LEO calib parameters
 	#file_date = datetime.strptime(parameters['folder'],'%Y%m%d')
-	file_date = datetime.strptime('20120328','%Y%m%d')
+	file_date = datetime.strptime('20120113','%Y%m%d')
 	file_date_UNIX = calendar.timegm(file_date.timetuple())
 	time_span = 172800 #48h in secs
 	begin_calib_data = file_date_UNIX-time_span

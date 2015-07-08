@@ -20,18 +20,18 @@ from datetime import datetime
 
 
 #data_dir = 'D:/2010/WHI_ECSP2/Binary/' #'D:/2009/WHI_ECSP2/Binary/'# 'D:/2010/WHI_ECSP2/Binary/'  #'D:/2012/WHI_UBCSP2/Binary/' 
-analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/110nm/'#'D:/2012/WHI_UBCSP2/Calibrations/From DMT/20120206/PSL/'# #'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'  #D:/2010/WHI_ECSP2/Calibration/20100305/PSL/Binary/300nm PSL/
+analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/From DMT/20120113/170nm PSL/'#'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/110nm/'#'D:/2012/WHI_UBCSP2/Calibrations/From DMT/20120206/PSL/'# #'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'  #D:/2010/WHI_ECSP2/Calibration/20100305/PSL/Binary/300nm PSL/
 multiple_directories = False
 instrument = 'UBCSP2' #'UBCSP2' #ECSP2
-instrument_locn = 'WHI'
-PSL_size = 110
+instrument_locn = 'DMT'
+PSL_size = 170
 type_particle = 'PSL' #PSL, nonincand, incand
 start_analysis_at = datetime.strptime('20120101','%Y%m%d')
 end_analysis_at = datetime.strptime('20120601','%Y%m%d')
 
 
 #setup
-num_records_to_analyse = 30000
+num_records_to_analyse = 10000
 show_full_fit = False
 
 #pararmeters used to reject invalid particle records based on scattering peak attributes

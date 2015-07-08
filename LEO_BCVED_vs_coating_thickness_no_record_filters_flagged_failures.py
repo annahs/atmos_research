@@ -438,7 +438,7 @@ timestamp = LEO_data_np[:,6]
 
 ####hexbin###
 
-plt.hexbin(BC_VED, LEO_coating_thickness, cmap=cm.jet, gridsize = 50)#, norm= norm) #bins='log', norm=norm
+plt.hexbin(BC_VED, LEO_coating_thickness, cmap=cm.jet, gridsize = 50, bins='log')#, norm= norm) #bins='log', norm=norm
 plt.xlabel('BC_VED')
 plt.ylabel('LEO_coating_thickness')
 #cb = plt.colorbar()

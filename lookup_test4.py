@@ -18,7 +18,7 @@ os.chdir(lookup_dir)
 #************setup********************
 
 wl = 1064 #nm
-core_RI = complex(2.26,1.26)  #from Moteki 2010 (and Laborde and Taylor)
+core_RI = complex(2.0,1.0)  #from Moteki 2010 (and Laborde and Taylor)
 shell_RI = complex(1.5, 0)
 PSL_RI = complex(1.59,0)
 
@@ -27,7 +27,7 @@ scat_cal_limit = 50000
 def scat_amp(Itotal):
 	#calc_scattering_amplitude = 112*Itotal  #calibration fit is in origin file for LJ-EC_SP2
 	#calc_scattering_amplitude = 3.72*Itotal+9.65  #calibration from Aquadag numbers Jason sent for LJ
-	calc_scattering_amplitude = 425*Itotal#584*Itotal # UBCSP2 WHI 2012 ###331.2*Itotal # UBCSP2 WHI 2012 
+	calc_scattering_amplitude = 584*Itotal # UBCSP2 WHI 2012 ###331.2*Itotal # UBCSP2 WHI 2012 
 	#calc_scattering_amplitude = 71.32*Itotal  # ECSP2 WHI 2010
 	
 	return calc_scattering_amplitude
@@ -53,14 +53,14 @@ lookup_table = {}
 #set ranges for integration of scattering
 incr = 0.1
 range1 = []
-i=0#12.5
-while i <= 90:#77.5:
+i=12.5
+while i <= 77.5:
 	range1.append(i)
 	i+=incr
 	
 range2 = []
-i=90#102.5
-while i <= 180:#167.5:
+i=102.5
+while i <= 167.5:
 	range2.append(i)
 	i+=incr	
 	
@@ -158,7 +158,7 @@ for core_rad in core_rad_range:
 
 	
 
-file = open('coating_lookup_table_WHI_2012_UBCSP2-nc(2p26,1p26)-90deg_full_cone.lupckl', 'w')
+file = open('coating_lookup_table_WHI_2012_UBCSP2-nc(2p00,1p00).lupckl', 'w')
 pickle.dump(lookup_table, file)
 file.close()  
 

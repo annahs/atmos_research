@@ -8,7 +8,7 @@ from datetime import datetime
 
 VED_min = 155	
 VED_max = 180
-file_info = '_RI2.26-1.26_density1.8_calib_factor200'
+file_info = '_RI2.26-1.26_density1.8_calib_factor250-sig_precip_anytime'
 
 start_date = datetime.strptime('2012/04/01 00:00', '%Y/%m/%d %H:%M')
 end_date = datetime.strptime('2012/05/31 00:00', '%Y/%m/%d %H:%M')
@@ -16,7 +16,7 @@ end_date = datetime.strptime('2012/05/31 00:00', '%Y/%m/%d %H:%M')
 
 
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/')
-file = open('coating thicknesses by air mass for 153.37nm to 181.12nm-density_1.8-RI_ (2.26+1.26j)-2hr_clusters-precip_amt-calib_factor200.binpickl', 'r')
+file = open('coating thicknesses by air mass for 153.37nm to 181.12nm-density_1.8-RI_ (2.26+1.26j)-2hr_clusters-sig_precip_anytime-calib_factor250.binpickl', 'r')
 coating_data = pickle.load(file)
 file.close()
 
@@ -46,7 +46,11 @@ for air_mass_name, air_mass_info in coating_data.iteritems():
 		rBC_VED = row[0]
 		coat_th = row[1]
 		date = row[2]
-		sig_rain = row[3]
+		sig_rain_str = row[3]
+		if sig_rain_str == 'True':
+			sig_rain = True
+		if sig_rain_str == 'False':
+			sig_rain = False
 		
 		if  (VED_min <= rBC_VED <VED_max) and (start_date <= date <= end_date):
 
@@ -57,23 +61,19 @@ for air_mass_name, air_mass_info in coating_data.iteritems():
 			if var_of_interest == coat_th:
 				data_type = 'Coating Thickness (nm)'
 			
-			if air_mass in coating_info:
-				coating_info[air_mass].append(var_of_interest)
-			else:
-				coating_info[air_mass] = [var_of_interest]
+
 		
-		
-		#if sig_rain == False:
-		#	if air_mass in coating_info:
-		#		coating_info[air_mass].append(var_of_interest)
-		#	else:
-		#		coating_info[air_mass] = [var_of_interest]
-		#		
-		#if sig_rain == True:
-		#	if air_mass in coating_info_sig_rain:
-		#		coating_info_sig_rain[air_mass].append(var_of_interest)
-		#	else:
-		#		coating_info_sig_rain[air_mass] = [var_of_interest]
+			if sig_rain == False:
+				if air_mass in coating_info:
+					coating_info[air_mass].append(var_of_interest)
+				else:
+					coating_info[air_mass] = [var_of_interest]
+					
+			if sig_rain == True:
+				if air_mass in coating_info_sig_rain:
+					coating_info_sig_rain[air_mass].append(var_of_interest)
+				else:
+					coating_info_sig_rain[air_mass] = [var_of_interest]
 
 #####plotting
 stats = []
@@ -84,11 +84,29 @@ for key,data in coating_info.iteritems():
 	stats.append([air_mass, np.median(air_mass_coating_info), np.mean(air_mass_coating_info), np.percentile(air_mass_coating_info, 10),np.percentile(air_mass_coating_info, 90), len(air_mass_coating_info)])
 	print '\n'
 	
+stats_precip = []
+for key,data in coating_info_sig_rain.iteritems():
+	air_mass = key
+	air_mass_coating_info = data
+	print air_mass, np.median(air_mass_coating_info), np.mean(air_mass_coating_info), len(air_mass_coating_info)
+	stats_precip.append([air_mass, np.median(air_mass_coating_info), np.mean(air_mass_coating_info), np.percentile(air_mass_coating_info, 10),np.percentile(air_mass_coating_info, 90), len(air_mass_coating_info)])
+	print '\n'
+	
+	
 #save stats to file 
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/')
-file = open('coating (' + data_type + ') histos by air mass - '+ str(VED_min) + '-' +str(VED_max) + 'nm rBC cores_' + file_info +'.txt', 'w')
+file = open('coating (' + data_type + ') histos by air mass - '+ str(VED_min) + '-' +str(VED_max) + 'nm rBC cores_' + file_info +'-no precip.txt', 'w')
 file.write('air_mass' + '\t' +  'median'  + '\t'+ 'mean' + '\t' + '10th_percentile' + '\t' + '90th_percentile' + '\t' +'number_of_particles' +'\n')
 for row in stats:
+	line = '\t'.join(str(x) for x in row)
+	file.write(line + '\n')
+file.close()	
+	
+#save stats_precip to file 
+os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/')
+file = open('coating (' + data_type + ') histos by air mass - '+ str(VED_min) + '-' +str(VED_max) + 'nm rBC cores_' + file_info +'-precip.txt', 'w')
+file.write('air_mass' + '\t' +  'median'  + '\t'+ 'mean' + '\t' + '10th_percentile' + '\t' + '90th_percentile' + '\t' +'number_of_particles' +'\n')
+for row in stats_precip:
 	line = '\t'.join(str(x) for x in row)
 	file.write(line + '\n')
 file.close()	
@@ -110,8 +128,9 @@ distrs_to_plot = ['Bering','N. Coastal/Continental','N. Pacific','S. Pacific','W
 i = 0
 for distr_to_plot in distrs_to_plot:
 	try:
-		axs[i].hist(coating_info[distr_to_plot], bins=bin_number,histtype='step', normed = 1)
-		axs[i].axvline(np.median(coating_info[distr_to_plot]), color='r', linestyle='--')
+		axs[i].hist(coating_info[distr_to_plot], bins=bin_number,histtype='step', normed = 1, color='red')
+		axs[i].hist(coating_info_sig_rain[distr_to_plot], bins=bin_number,histtype='step', normed = 1, color='blue')
+		#axs[i].axvline(np.median(coating_info[distr_to_plot]), color='r', linestyle='--')
 	except:
 		axs[i].hist([0,0], bins=1,histtype='step', normed = 1)
 		
