@@ -96,6 +96,8 @@ fire_time2 = [datetime.strptime('2010/07/26 09:00', '%Y/%m/%d %H:%M'), datetime.
 ##########open cluslist and read into a python list
 cluslist = []
 CLUSLIST_file = 'C:/hysplit4/working/WHI/2hrly_HYSPLIT_files/all_with_sep_GBPS/CLUSLIST_6-mod'
+CLUSLIST_file = 'C:/hysplit4/working/WHI/2hrly_HYSPLIT_files/all_with_sep_GBPS/CLUSLIST_6-mod-precip_added-sig_precip_any_time'
+'
 with open(CLUSLIST_file,'r') as f:
 	for line in f:
 		newline = line.split()
@@ -108,7 +110,7 @@ with open(CLUSLIST_file,'r') as f:
 cluslist.sort(key=lambda clus_info: clus_info[0])  
 
    
-######this helper method allows cenversion of BC mass from a value arrived at via an old calibration to a value arrived at via a new calibration
+######this helper method allows conversion of BC mass from a value arrived at via an old calibration to a value arrived at via a new calibration
 #quad eqytn = ax2 + bx + c
 def PeakHtFromMass(BC_mass,var_C,var_b,var_a):
     C = var_C   
@@ -259,16 +261,17 @@ for directory in directory_list:
 
 							#pop off any cluslist times that are in the past
 							cluslist_current_datetime = cluslist[0][0] #in PST
-							while end_time_obj > (cluslist_current_datetime + timedelta(hours=3)):
+							while end_time_obj > (cluslist_current_datetime + timedelta(hours=1)):
 								cluslist.pop(0)
 								if len(cluslist):
 									cluslist_current_datetime = cluslist[0][0]
-									continue
 								else:
 									break
 									
 							#get cluster no
 							cluslist_current_cluster_no = cluslist[0][1]
+							rain = cluslist[0][2]
+							
 							
 							#add data to list in cluster dictionaries (1 list per cluster time early night/late night)
 							if ((cluslist_current_datetime-timedelta(hours=3)) <= end_time_obj <= (cluslist_current_datetime+timedelta(hours=3))):

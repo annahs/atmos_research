@@ -8,15 +8,15 @@ from datetime import datetime
 
 VED_min = 155	
 VED_max = 180
-file_info = '_RI2.26-1.26_density1.8_calib_factor250-sig_precip_anytime'
+file_info = '_RI2.26-1.26_density1.8_calib_factor225-sig_precip_72hrs_pre_arrival'
+variable_of_interest = 'Dshell_Dcore' #coat_th
 
 start_date = datetime.strptime('2012/04/01 00:00', '%Y/%m/%d %H:%M')
 end_date = datetime.strptime('2012/05/31 00:00', '%Y/%m/%d %H:%M')
 
 
-
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/')
-file = open('coating thicknesses by air mass for 153.37nm to 181.12nm-density_1.8-RI_ (2.26+1.26j)-2hr_clusters-sig_precip_anytime-calib_factor250.binpickl', 'r')
+file = open('coating thicknesses by air mass for 153.37nm to 181.12nm-density1.8_RI2.26-1.26_calib_factor225-sig_precip_72hrs_pre_arrival.binpickl', 'r')
 coating_data = pickle.load(file)
 file.close()
 
@@ -55,13 +55,12 @@ for air_mass_name, air_mass_info in coating_data.iteritems():
 		if  (VED_min <= rBC_VED <VED_max) and (start_date <= date <= end_date):
 
 			Dshell_Dcore = (rBC_VED+2*coat_th)/rBC_VED
-			var_of_interest =Dshell_Dcore #coat_th or Dshell_Dcore
-			if var_of_interest == Dshell_Dcore:
-				data_type = 'Dshell_Dcore'
-			if var_of_interest == coat_th:
+			if variable_of_interest == 'coat_th':
 				data_type = 'Coating Thickness (nm)'
-			
-
+				var_of_interest =coat_th 
+			if variable_of_interest == 'Dshell_Dcore':
+				data_type = 'Dshell_Dcore'
+				var_of_interest =Dshell_Dcore 
 		
 			if sig_rain == False:
 				if air_mass in coating_info:
@@ -111,8 +110,7 @@ for row in stats_precip:
 	file.write(line + '\n')
 file.close()	
 	
-#plotting
-	
+###plotting
 	
 fig, axes = plt.subplots(7,1, figsize=(6, 12), facecolor='w', edgecolor='k')
 fig.subplots_adjust(hspace = 0., wspace=0.08)
@@ -145,6 +143,60 @@ for distr_to_plot in distrs_to_plot:
 	i+=1
 
 plt.savefig('coating (' + data_type + ') histos by air mass - '+ str(VED_min) + '-' +str(VED_max) + 'nm rBC cores_' + file_info +'.png', bbox_inches='tight')
+
+
+plt.show()      
+
+##box-plots
+fig = plt.figure( figsize=(10, 6))
+ax = fig.add_subplot(111)
+
+distrs_to_plot = ['Bering','N. Coastal/Continental','N. Pacific','S. Pacific','W. Pacific/Asia','>= 24hrs in GBPS','Fresh Emissions']
+
+no_sig_rain_boxplt_data = []
+sig_rain_boxplt_data = []
+
+
+for distr_to_plot in distrs_to_plot:
+	no_sig_rain_boxplt_data.append(coating_info[distr_to_plot])
+	sig_rain_boxplt_data.append(coating_info_sig_rain[distr_to_plot])
+	
+x=np.array([1,2,3,4,5,6,7])
+no_sig_rain = ax.boxplot(no_sig_rain_boxplt_data, whis=[10,90],sym='',positions=x+0.15, widths = 0.2)	
+sig_rain = ax.boxplot(sig_rain_boxplt_data, whis=[10,90],sym='',positions=x-0.15, widths = 0.2)
+
+#legend
+hSR, = ax.plot([1,1],'b-')
+hNR, = ax.plot([1,1],'r-')
+plt.legend((hSR, hNR),('Sig Precip 72hrs pre-arrival', 'No Sig Precip 72hrs pre-arrival'))
+hSR.set_visible(False)
+hNR.set_visible(False)
+
+
+plt.setp(no_sig_rain['boxes'], color='r')
+plt.setp(no_sig_rain['whiskers'], color='r',linestyle='-')
+plt.setp(no_sig_rain['caps'], color='r')
+plt.setp(no_sig_rain['medians'], color='r')
+
+plt.setp(sig_rain['boxes'], color='b')
+plt.setp(sig_rain['whiskers'], color='b',linestyle='-')
+plt.setp(sig_rain['caps'], color='b')
+plt.setp(sig_rain['medians'], color='b')
+
+ax.set_xlim(0,8)
+
+plt.xticks([1,2,3,4,5,6,7], ['Bering','N. Coastal\n/Continental','N. Pacific','S. Pacific','W. Pacific/Asia','>= 24hrs in GBPS','Fresh Emissions'],rotation=60)
+
+ax.yaxis.grid(True, linestyle='-', which='major', color='grey', alpha=1)
+
+if var_of_interest == Dshell_Dcore:
+	ax.set_ylabel('Dp/Dc')
+if var_of_interest == coat_th:
+	ax.set_ylabel('Coating Thickness (nm)')
+if i == 6: 
+	axs[i].set_xlabel(data_type)
+
+plt.savefig('coating (' + data_type + ') boxplots by air mass - '+ str(VED_min) + '-' +str(VED_max) + 'nm rBC cores_' + file_info +'.png', bbox_inches='tight')
 
 
 plt.show()      

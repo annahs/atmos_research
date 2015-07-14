@@ -18,7 +18,7 @@ os.chdir(lookup_dir)
 #************setup********************
 
 wl = 1064 #nm
-core_RI = complex(1.95,0.79) #complex(2.26,1.26)  #from Moteki 2010 (and Laborde and Taylor)
+core_RI = complex(2.,1.) #complex(2.26,1.26)  #from Moteki 2010 (and Laborde and Taylor)
 shell_RI = complex(1.5, 0)
 PSL_RI = complex(1.59,0)
 
@@ -51,7 +51,7 @@ while core_radius <= 110: #220nm dia
 lookup_table = {}
 
 #set ranges for integration of scattering
-incr = 1
+incr = 0.5
 range1 = []
 i=12.5
 while i <= 77.5:
@@ -158,7 +158,7 @@ for core_rad in core_rad_range:
 
 	
 
-file = open('coating_lookup_table_WHI_2012_UBCSP2-nc(1p95,0p79)-calib_scale_factor225.lupckl', 'w')
+file = open('coating_lookup_table_WHI_2012_UBCSP2-nc(2p00,1p00)-calib_scale_factor225.lupckl', 'w')
 pickle.dump(lookup_table, file)
 file.close()  
 

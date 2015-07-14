@@ -36,10 +36,11 @@ import math
 #coat_thickness_from_actual_scat_amp FLOAT
 #UNIQUE (sp2b_file, file_index, instr)
 
+file_info = '_RI2.26-1.26_calib_factor225-sig_precip_any_time'
+
 #mie parametrs to use
 lookup_file = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/lookup_tables/coating_lookup_table_WHI_2012_UBCSP2-nc(2p26,1p26)-calib_scale_factor225.lupckl'
 rBC_density = 1.8
-RI = complex(2.26,1.26)
 
 lookup = open(lookup_file, 'r')
 lookup_table = pickle.load(lookup)
@@ -297,7 +298,7 @@ for list in lists:
 
 #save data
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/')
-file = open('coating thicknesses by air mass for '+str(round(min_BC_VED,2)) +'nm to ' + str(round(max_BC_VED,2))+ 'nm-density_' + str(rBC_density) + '-RI_ '+ str(RI) +'-2hr_clusters-sig_precip_anytime-calib_factor225.binpickl', 'w')
+file = open('coating thicknesses by air mass for '+str(round(min_BC_VED,2)) +'nm to ' + str(round(max_BC_VED,2))+ 'nm-density' +str(rBC_density) + file_info +'.binpickl', 'w')
 pickle.dump(data_to_pickle, file)
 file.close()
 
