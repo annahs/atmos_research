@@ -9,7 +9,7 @@ from scipy.optimize import curve_fit
 class ParticleRecord:
 	
 	
-	def __init__(self, record, acq_rate, timezone):
+	def __init__(self, record, acq_rate):
 		self.timestamp = np.nan
 		
 		self.acqPoints = []
@@ -56,12 +56,12 @@ class ParticleRecord:
 		self.LF_y_vals_to_use = []
 		
 		
-		self.importFromBinary(record, acq_rate, timezone)
+		self.importFromBinary(record, acq_rate)
 		
 		
 	#Misc methods
 	
-	def importFromBinary(self, record, acq_rate, timezone):
+	def importFromBinary(self, record, acq_rate):
 		
 		start_byte = 0
 		#get the data record length (180 for UBCSP2 2012 - present, 300 for ECSP2 2009, 100 for CalTech SP2 at Soledad)
@@ -141,12 +141,11 @@ class ParticleRecord:
 		####end data grab####
 		####################
 		
-		#this is The seconds since midnight LOCAL time when the current buffer of data was acquired
+		#Time/10000 is Seconds Since Midnight Jan 1, 1904 UTC divided by 10000. Time Remainder is the remainder of the full time stamp after that division.
 		labview_timestamp = time_10000[0]*10000+time_remainder[0]
 		
 		#this combines the above with The time position within the buffer of data at which the event was found.  gives UNIXts inUTC
 		self.timestamp  = labview_timestamp+event_index[0]/acq_rate-2082844800 #UNIX epoch is 1 Jan 1970, Labview epoch is 1 Jan 1904 therefore LVts_to_UNIXts = -2082844800 
-		
 	
 		#self.flag = flag[0]
 

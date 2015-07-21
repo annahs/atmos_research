@@ -5,15 +5,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import calendar
+import os
 
 conn = sqlite3.connect('C:/projects/dbs/SP2_data.db')
 c = conn.cursor()
 instrument = 'UBCSP2'
-location = 'DMT' #WHI or DMT
+location = 'POLAR6' #WHI or DMT
 type_particle = 'PSL' #PSL, nonincand, incand
-size = 269.
-start_date = datetime(2010, 4, 1)
-end_date = datetime(2012, 6, 01)
+size = 240.
+start_date = datetime(2015, 1, 1)
+end_date = datetime(2015, 12, 1)
 start_date_ts = calendar.timegm(start_date.timetuple())
 end_date_ts = calendar.timegm(end_date.timetuple())
 
@@ -40,7 +41,8 @@ end_date_ts = calendar.timegm(end_date.timetuple())
 #rBC_mass_fg FLOAT,
 #coat_thickness_nm FLOAT,
 	
-c.execute('''SELECT FF_scat_amp, actual_scat_amp, sp2b_file, file_index FROM SP2_coating_analysis WHERE instr=? and particle_type=? and particle_dia=? and file_index<? and unix_ts_utc>=? and unix_ts_utc<?''', (instrument,type_particle, size,1000 ,start_date_ts,end_date_ts))
+c.execute('''SELECT FF_scat_amp, actual_scat_amp, sp2b_file, file_index FROM SP2_coating_analysis WHERE instr=? and particle_type=? and particle_dia=? and unix_ts_utc>=? and unix_ts_utc<?''', 
+(instrument,type_particle, size ,start_date_ts,end_date_ts))
 #c.execute('''SELECT actual_scat_amp, LF_scat_amp FROM SP2_coating_analysis WHERE instr=? and particle_type=? and particle_dia=? and instr_locn=? and file_index<?''', (instrument,type_particle, size, location, 500))
 
 result = c.fetchall()
@@ -49,7 +51,8 @@ x = [row[0] for row in result]
 y = [row[1] for row in result]
 
 
-print len(y), len(x)
+print len(x), np.median(x) , np.mean(x), np.percentile(x,10), np.percentile(x,90), 'FG'
+print len(y), np.median(y) , np.mean(y), np.percentile(y,10), np.percentile(y,90), 'actual'
 
 
 #print len(x), np.median(x), np.mean(x)
@@ -57,8 +60,8 @@ print len(y), len(x)
 
 #print 'FF med', np.median(x)
 #print 'actual med', np.median(y)
-label1 = [row[2] for row in result] 
-label2 = [row[3] for row in result]
+#label1 = [row[2] for row in result] 
+#label2 = [row[3] for row in result]
 
 
 conn.close()
@@ -99,8 +102,13 @@ conn.close()
 
 fig = plt.figure()
 ax = fig.add_subplot(111)
-ax.hist(x, bins=60,range=(0,3000), histtype='step', color = 'black',linewidth=1.5, label = 'Actual scattering amplitude (au)' )
-ax.hist(y, bins=60,range=(0,3000), histtype='step', color = 'red',linewidth=1.5,  label = 'LEO-fit scattering amplitude (au)' )
-
+ax.hist(x, bins=300,range=(0,4000), histtype='step', color = 'black',linewidth=1.5, label = 'Actual scat amp (au)' )
+ax.hist(y, bins=300,range=(0,4000), histtype='step', color = 'red',linewidth=1.5,  label = 'full Gauss fit scat amp (au)' )
+plt.text (0.1,0.94, str(size) + 'nm PSL', transform=ax.transAxes)
 plt.legend()
+
+os.chdir('C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/')
+plt.savefig('Netcare Spring 2015 - scattering ' + str(size) + 'nm PSL - full Gauss fit and actual scattering amplitude.png', bbox_inches='tight')
+
+
 plt.show()

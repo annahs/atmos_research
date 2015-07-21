@@ -17,20 +17,20 @@ import sqlite3
 
 
 
-current_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'
-instrument = 'WHI_UBCSP2'
-instrument_locn = 'WHI'
-PSL_size = 200
+current_dir = 'D:/2015/NETCARE_UBC_SP2/calibration data/20150129/PSL300/'
+instrument = 'UBCSP2'
+instrument_locn = 'POLAR6'
+PSL_size = 300
 type_particle = 'PSL'
 os.chdir(current_dir)
 
 #setup
-num_records_to_analyse = 10000
+num_records_to_analyse = 'all'
 show_full_fit = False
 
 #pararmeters used to reject invalid particle records based on scattering peak attributes
-min_peakheight = 20
-max_peakheight = 3500
+min_peakheight = 10
+max_peakheight = 4000
 min_peakpos = 20
 max_peakpos = 125
 
@@ -52,47 +52,54 @@ parameters = {
 'YAG_min' : 4,
 'YAG_max' : 6,
 'min_good_points' : 10,
-#show plots?
-'show_plot':False,
+#show hk plots?
+'show_plot':True,
 }
+parameters ['folder'] = '20150129'
 
 #setup database
 conn = sqlite3.connect('C:/projects/dbs/SP2_data.db')
 c = conn.cursor()
 
-c.execute('''CREATE TABLE if not exists SP2_coating_analysis(
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-sp2b_file TEXT, 
-file_index INT, 
-instr TEXT,
-instr_locn TEXT,
-particle_type TEXT,		
-particle_dia FLOAT,				
-date TIMESTAMP,
-actual_scat_amp FLOAT,
-actual_peak_pos INT,
-FF_scat_amp FLOAT,
-FF_peak_pos INT,
-FF_gauss_width FLOAT,
-zeroX_to_peak FLOAT,
-LF_scat_amp FLOAT,
-incand_amp FLOAT,
-UNIQUE (sp2b_file, file_index, instr)
-)''')
 
-#particle_type = PSL, nonincand, incand
-#particle_dia = only known for PSL  
+#c.execute('''CREATE TABLE if not exists SP2_coating_analysis(
+#id INTEGER PRIMARY KEY AUTOINCREMENT,
+#sp2b_file TEXT, 			eg 20120405x001.sp2b
+#file_index INT, 			
+#instr TEXT,				eg UBCSP2, ECSP2
+#instr_locn TEXT,			eg WHI, DMT, POLAR6
+#particle_type TEXT,		eg PSL, nonincand, incand, Aquadag
+#particle_dia FLOAT,				
+#unix_ts_utc FLOAT,
+#actual_scat_amp FLOAT,
+#actual_peak_pos INT,
+#FF_scat_amp FLOAT,
+#FF_peak_pos INT,
+#FF_gauss_width FLOAT,
+#zeroX_to_peak FLOAT,
+#LF_scat_amp FLOAT,
+#incand_amp FLOAT,
+#lag_time_fit_to_incand FLOAT,
+#LF_baseline_pct_diff FLOAT,
+#rBC_mass_fg FLOAT,
+#coat_thickness_nm FLOAT,
+#zero_crossing_posn FLOAT,
+#UNIQUE (sp2b_file, file_index, instr)
+#)''')
+
+
 
 #*******HK ANALYSIS************ 
 
 ###use for hk files with no timestamp (just time since midnight) (this should work for the EC polar flights in spring 2012,also for ECSP2 for WHI 20100610 to 20100026, UBCSP2 prior to 20120405)
-avg_flow = hk_new_no_ts_LEO.find_bad_hk_durations_no_ts(parameters) 
-parameters['avg_flow'] = avg_flow
+#avg_flow = hk_new_no_ts_LEO.find_bad_hk_durations_no_ts(parameters) 
+#parameters['avg_flow'] = avg_flow
 #bad_durations = []
 
 ###use for hk files with timestamp (this is for the UBCSP2 after 20120405)
 #avg_flow = hk_new.find_bad_hk_durations(parameters)
 #parameters['avg_flow'] = avg_flow
+
 
 #*************LEO routine************
 		
@@ -128,7 +135,7 @@ for file in os.listdir('.'):
 			
 			##Import and parse binary
 			record = f.read(record_size)
-			particle_record = ParticleRecord(record, parameters['acq_rate'], parameters['timezone'])	
+			particle_record = ParticleRecord(record, parameters['acq_rate'])	
 			event_time = particle_record.timestamp
 			
 			###### FITTING AND ANALYSIS ########          
@@ -179,7 +186,7 @@ for file in os.listdir('.'):
 					#put particle into database or update record
 					c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr, instr_locn, particle_type, particle_dia) VALUES (?,?,?,?,?,?)''', (file, record_index,instrument, instrument_locn,type_particle,PSL_size))
 					c.execute('''UPDATE SP2_coating_analysis SET 
-					date=?, 
+					unix_ts_utc=?, 
 					actual_scat_amp=?, 
 					actual_peak_pos=?, 
 					FF_scat_amp=?, 

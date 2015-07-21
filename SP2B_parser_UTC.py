@@ -1,4 +1,4 @@
-#parse SP2 binary files and record particles incandesence data 
+#parse SP2 binary files and record particles incandescence data 
 #data recorded is particle_event_start_time(UNIXtime UTC), particle_event_end_time(UNIXtime UTC), incand_flag, incand_sat_flag, BC_mass(fg), incand_height(au), NB_incand_height(au)
 #time is in UTC
 

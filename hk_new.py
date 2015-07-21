@@ -1,4 +1,4 @@
-#look through hk files to find periods of bad sample flow or laser power. Log these so incandesence data collected during these times can be ignored.
+#look through hk files to find periods of bad sample flow or laser power. Log these so incandescence data collected during these times can be ignored.
 #outputs times in UTC
 #use where hk columns 1,3,4 = timestamp(UTC), measured sample flow, Yag power
 
@@ -19,12 +19,12 @@ def find_bad_hk_durations(parameters):
 	for file in os.listdir('.'):
 		if file.endswith('.hk'):
 			print file
-			hk_filedata = np.genfromtxt(file, delimiter="\t", skip_header=1, usecols=(1,3,4)) #timestamp (UTC), measured sample flow, Yag power
+			hk_filedata = np.genfromtxt(file, delimiter="\t", skip_header=1, usecols=(1,3,8)) #timestamp (UTC), measured sample flow, Yag power
 			hk_alldata = np.concatenate((hk_alldata, hk_filedata), axis=0)
 
 	#conversion for labview timestamp to UNIX timestamp (in s). UNIX epoch is 1 Jan 1970, Labview epoch is 1 Jan 1904
 	LVts_to_UNIXts = -2082844800 #http://www.onlineconversion.com/unix_time.htm
-	timezone = parameters['timezone']*3600
+	#timezone = parameters['timezone']*3600
 	date = datetime.datetime.utcfromtimestamp(hk_alldata[0,0]+LVts_to_UNIXts) #UTC
 
 	#calc mean and sd for YAG power and set conf level. Also set min and max values        

@@ -7,8 +7,8 @@ import sys
 from pymiecoated import Mie as pyMie
 import math
 
-rad = 0.1605/2
-nparticle = complex(2.26,1.26)# complex(1.59, 0.0)
+rad = 0.269/2
+nparticle = complex(1.59, 0.0) #complex(2.26,1.26)# 
 wl = 1.064
 fwd_angles = [12.5,77.5]
 bck_angles = [102.5,167.5]
@@ -56,7 +56,7 @@ unpol_bac = (a2+b2)
 
 
 overall = np.mean([unpol_fwd,unpol_bac])*math.pi/2
-print overall*584
+print 'holopy', overall
 
 
 #xs = Mie.calc_cross_sections(sphere, optics)
@@ -141,4 +141,4 @@ for theta in range2:
 
 Itot = np.mean([Itot_fwd*incr,Itot_back*incr])*math.pi/2
 	
-print 'py', Itot*574
+print 'pymiecoated', Itot

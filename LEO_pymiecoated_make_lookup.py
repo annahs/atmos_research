@@ -11,7 +11,8 @@ from pprint import pprint
 #lookup_dir = 'C:/Users/Sarah Hanna/Documents/Data/LEO fitting/LJ-EC-SP2/lookup tables'
 #lookup_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/SP2_2010/BB period 2010/EC_SP2/lookup tables/'
 #lookup_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/SP2_2010/FT periods 2012/lookup tables/'
-lookup_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/lookup_tables/'
+#lookup_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/lookup_tables/'
+lookup_dir = 'C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/lookup tables/'
 
 os.chdir(lookup_dir)
 
@@ -27,8 +28,9 @@ scat_cal_limit = 50000
 def scat_amp(Itotal):
 	#calc_scattering_amplitude = 112*Itotal  #calibration fit is in origin file for LJ-EC_SP2
 	#calc_scattering_amplitude = 3.72*Itotal+9.65  #calibration from Aquadag numbers Jason sent for LJ
-	calc_scattering_amplitude = 425*Itotal#584*Itotal # UBCSP2 WHI 2012 ###331.2*Itotal # UBCSP2 WHI 2012 
 	#calc_scattering_amplitude = 71.32*Itotal  # ECSP2 WHI 2010
+	#calc_scattering_amplitude = 425*Itotal#584*Itotal # UBCSP2 WHI 2012 
+	calc_scattering_amplitude = 545*Itotal  # UBCSP2 POLAR6 2015-spring - 545 from slope of PSL calib plot, 446 from 200nm PSL alone
 	
 	return calc_scattering_amplitude
 	
@@ -53,14 +55,14 @@ lookup_table = {}
 #set ranges for integration of scattering
 incr = 0.1
 range1 = []
-i=0#12.5
-while i <= 90:#77.5:
+i=2.5
+while i <=77.5:
 	range1.append(i)
 	i+=incr
 	
 range2 = []
-i=90#102.5
-while i <= 180:#167.5:
+i=102.5
+while i <= 167.5:
 	range2.append(i)
 	i+=incr	
 	
@@ -158,7 +160,7 @@ for core_rad in core_rad_range:
 
 	
 
-file = open('coating_lookup_table_WHI_2012_UBCSP2-nc(2p26,1p26)-90deg_full_cone.lupckl', 'w')
+file = open('coating_lookup_table_POLAR6_2015_UBCSP2-nc(2p26,1p26)-fullPSLcalib_used_factor545.lupckl', 'w')
 pickle.dump(lookup_table, file)
 file.close()  
 
