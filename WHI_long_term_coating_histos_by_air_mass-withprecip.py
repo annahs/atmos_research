@@ -9,7 +9,7 @@ from datetime import datetime
 VED_min = 155	
 VED_max = 180
 file_info = '_RI2.26-1.26_density1.8_calib_factor225-sig_precip_72hrs_pre_arrival'
-variable_of_interest = 'Dshell_Dcore' #coat_th
+variable_of_interest = 'coat_th' #coat_th
 
 start_date = datetime.strptime('2012/04/01 00:00', '%Y/%m/%d %H:%M')
 end_date = datetime.strptime('2012/05/31 00:00', '%Y/%m/%d %H:%M')

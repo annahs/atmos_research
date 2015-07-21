@@ -36,7 +36,7 @@ import math
 #coat_thickness_from_actual_scat_amp FLOAT
 #UNIQUE (sp2b_file, file_index, instr)
 
-file_info = '_RI2.26-1.26_calib_factor225-sig_precip_any_time'
+file_info = '_RI2.26-1.26_calib_factor225'
 
 #mie parametrs to use
 lookup_file = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/lookup_tables/coating_lookup_table_WHI_2012_UBCSP2-nc(2p26,1p26)-calib_scale_factor225.lupckl'
@@ -79,9 +79,9 @@ for spike in spike_times_full:
 
 #open cluslist and read into a python list (convert UTC to local time here)
 cluslist = []
-#CLUSLIST_file = 'C:/hysplit4/working/WHI/2hrly_HYSPLIT_files/all_with_sep_GBPS/CLUSLIST_6-mod-precip_amount_added'
+CLUSLIST_file = 'C:/hysplit4/working/WHI/2hrly_HYSPLIT_files/all_with_sep_GBPS/CLUSLIST_6-mod-precip_amount_added'
 #CLUSLIST_file = 'C:/hysplit4/working/WHI/2hrly_HYSPLIT_files/all_with_sep_GBPS/CLUSLIST_6-mod-precip_added-sig_precip_72hrs_pre_arrival'
-CLUSLIST_file = 'C:/hysplit4/working/WHI/2hrly_HYSPLIT_files/all_with_sep_GBPS/CLUSLIST_6-mod-precip_added-sig_precip_any_time'
+#CLUSLIST_file = 'C:/hysplit4/working/WHI/2hrly_HYSPLIT_files/all_with_sep_GBPS/CLUSLIST_6-mod-precip_added-sig_precip_any_time'
 
 with open(CLUSLIST_file,'r') as f:
 	for line in f:

@@ -8,7 +8,7 @@ from datetime import datetime
 
 VED_min = 155	
 VED_max = 180
-file_info = '_RI2.26-1.26_density1.8_calib_factor200'
+file_info = '_RI2.26-1.26_density1.8_calib_factor225'
 
 start_date = datetime.strptime('2012/04/01 00:00', '%Y/%m/%d %H:%M')
 end_date = datetime.strptime('2012/05/31 00:00', '%Y/%m/%d %H:%M')
@@ -16,7 +16,7 @@ end_date = datetime.strptime('2012/05/31 00:00', '%Y/%m/%d %H:%M')
 
 
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/')
-file = open('coating thicknesses by air mass for 153.37nm to 181.12nm-density_1.8-RI_ (2.26+1.26j)-2hr_clusters-precip_amt-calib_factor200.binpickl', 'r')
+file = open('coating thicknesses by air mass for 153.37nm to 181.12nm-density1.8_RI2.26-1.26_calib_factor225.binpickl', 'r')
 coating_data = pickle.load(file)
 file.close()
 
