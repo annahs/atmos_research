@@ -19,26 +19,26 @@ from datetime import datetime
 
 
 
-#data_dir = 'D:/2010/WHI_ECSP2/Binary/' #'D:/2009/WHI_ECSP2/Binary/'# 'D:/2010/WHI_ECSP2/Binary/'  #'D:/2012/WHI_UBCSP2/Binary/' 
-analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/From DMT/20120113/170nm PSL/'#'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/110nm/'#'D:/2012/WHI_UBCSP2/Calibrations/From DMT/20120206/PSL/'# #'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'  #D:/2010/WHI_ECSP2/Calibration/20100305/PSL/Binary/300nm PSL/
-multiple_directories = False
+data_dir = 'D:/2015/NETCARE_UBC_SP2/flight data/'  #'D:/2010/WHI_ECSP2/Binary/' #'D:/2009/WHI_ECSP2/Binary/'# 'D:/2010/WHI_ECSP2/Binary/'  #'D:/2012/WHI_UBCSP2/Binary/' 
+#analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/From DMT/20120113/170nm PSL/'#'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/110nm/'#'D:/2012/WHI_UBCSP2/Calibrations/From DMT/20120206/PSL/'# #'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'  #D:/2010/WHI_ECSP2/Calibration/20100305/PSL/Binary/300nm PSL/
+multiple_directories = True
 instrument = 'UBCSP2' #'UBCSP2' #ECSP2
-instrument_locn = 'DMT'
+instrument_locn = 'POLAR6'
 PSL_size = 170
-type_particle = 'PSL' #PSL, nonincand, incand
-start_analysis_at = datetime.strptime('20120101','%Y%m%d')
-end_analysis_at = datetime.strptime('20120601','%Y%m%d')
+type_particle = 'nonincand' #PSL, nonincand, incand, Aquadag
+start_analysis_at = datetime.strptime('20150108','%Y%m%d')
+end_analysis_at = datetime.strptime('20150601','%Y%m%d')
 
 
 #setup
-num_records_to_analyse = 10000
-show_full_fit = False
+num_records_to_analyse = 'all'
+show_full_fit = True
 
 #pararmeters used to reject invalid particle records based on scattering peak attributes
-min_peakheight = 20
-max_peakheight = 3500
+min_peakheight = 10
+max_peakheight = 3700
 min_peakpos = 20
-max_peakpos = 250
+max_peakpos = 160
 
 record_size_bytes = 1498 #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458)
 
@@ -49,11 +49,11 @@ c = conn.cursor()
 
 #c.execute('''CREATE TABLE if not exists SP2_coating_analysis(
 #id INTEGER PRIMARY KEY AUTOINCREMENT,
-#sp2b_file TEXT, 
-#file_index INT, 
-#instr TEXT,
-#instr_locn TEXT,
-#particle_type TEXT,		
+#sp2b_file TEXT, 			eg 20120405x001.sp2b
+#file_index INT, 			
+#instr TEXT,				eg UBCSP2, ECSP2
+#instr_locn TEXT,			eg WHI, DMT, POLAR6
+#particle_type TEXT,		eg PSL, nonincand, incand, Aquadag
 #particle_dia FLOAT,				
 #unix_ts_utc FLOAT,
 #actual_scat_amp FLOAT,
@@ -80,10 +80,10 @@ parameters = {
 #will be set by hk analysis
 'avg_flow':120, #in vccm
 #parameter to find bad flow durations
-'flow_min' : 115,
-'flow_max' : 125,
-'YAG_min' : 4,
-'YAG_max' : 6,
+'flow_min' : 400,
+'flow_max' : 1000,
+'YAG_min' : 25,
+'YAG_max' : 35,
 'min_good_points' : 10,
 #show plots?
 'show_plot':True
@@ -99,11 +99,12 @@ def gaussFullFit(parameters_dict):
 	####use for hk files with no timestamp (just time since midnight) (this should work for the EC polar flights in spring 2012,also for ECSP2 for WHI 20100610 to 20100026, UBCSP2 prior to 20120405)
 	#avg_flow = hk_new_no_ts_LEO.find_bad_hk_durations_no_ts(parameters) 
 	#parameters['avg_flow'] = avg_flow
-	bad_durations = []
+	#bad_durations = []
 
 	##use for hk files with timestamp (this is for the UBCSP2 after 20120405)
 	#avg_flow = hk_new.find_bad_hk_durations(parameters)  #writes bad durations in UTC
 	#parameters['avg_flow'] = avg_flow
+
 
 	#*************LEO routine************
 	
@@ -140,10 +141,10 @@ def gaussFullFit(parameters_dict):
 				##Import and parse binary
 				record = f.read(record_size)
 				try:
-					particle_record = ParticleRecord(record, parameters['acq_rate'], parameters['timezone'])
+					particle_record = ParticleRecord(record, parameters['acq_rate'])
 				except:
 					print 'corrupt particle record'
-					#input("Press Enter to continue...")
+					input("Press Enter to continue...")
 					continue
 				event_time = particle_record.timestamp
 				
@@ -207,33 +208,34 @@ def gaussFullFit(parameters_dict):
 								zero_cross_to_peak = (zero_crossing_pt - fit_peak_pos)
 								
 								#put particle into database or update record
-								c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr, instr_locn, particle_type, particle_dia) VALUES (?,?,?,?,?,?)''', (file, record_index,instrument, instrument_locn,type_particle,PSL_size))
-								c.execute('''UPDATE SP2_coating_analysis SET 
-								unix_ts_utc=?, 
-								actual_scat_amp=?, 
-								actual_peak_pos=?, 
-								FF_scat_amp=?, 
-								FF_peak_pos=?, 
-								FF_gauss_width=?, 
-								zeroX_to_peak=?
-								WHERE sp2b_file=? and file_index=? and instr=?''', 
-								(event_time,
-								actual_max_value,
-								actual_max_pos,
-								fit_scattering_amp,
-								fit_peak_pos,
-								fit_gauss_width,
-								zero_cross_to_peak,
-								file, record_index,instrument))
+								#c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr, instr_locn, particle_type) VALUES (?,?,?,?,?)''', 
+								#(file, record_index,instrument, instrument_locn,type_particle))
+								#c.execute('''UPDATE SP2_coating_analysis SET 
+								#unix_ts_utc=?, 
+								#actual_scat_amp=?, 
+								#actual_peak_pos=?, 
+								#FF_scat_amp=?, 
+								#FF_peak_pos=?, 
+								#FF_gauss_width=?, 
+								#zeroX_to_peak=?
+								#WHERE sp2b_file=? and file_index=? and instr=?''', 
+								#(event_time,
+								#actual_max_value,
+								#actual_max_pos,
+								#fit_scattering_amp,
+								#fit_peak_pos,
+								#fit_gauss_width,
+								#zero_cross_to_peak,
+								#file, record_index,instrument))
 
 												
 								#plot particle fit if desired
 								if show_full_fit == True:
 									x_vals = particle_record.getAcqPoints()
-									y_vals = particle_record.getScatteringSignal()	
+									y_vals = particle_record.getScatteringSignal()
 									fit_result = particle_record.FF_results
-									print datetime.utcfromtimestamp(event_time)
-									print record_index, actual_max_value
+									#print datetime.utcfromtimestamp(event_time)
+									print record_index, fit_gauss_width, zero_cross_to_peak			
 									
 									fig = plt.figure()
 									ax1 = fig.add_subplot(111)

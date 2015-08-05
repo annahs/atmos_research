@@ -19,7 +19,7 @@ def find_bad_hk_durations(parameters):
 	for file in os.listdir('.'):
 		if file.endswith('.hk'):
 			print file
-			hk_filedata = np.genfromtxt(file, delimiter="\t", skip_header=1, usecols=(1,3,8)) #timestamp (UTC), measured sample flow, Yag power
+			hk_filedata = np.genfromtxt(file, delimiter="\t", skip_header=1, usecols=(1,5,9)) #timestamp (UTC), measured sample flow, Yag power (1,3,8)
 			hk_alldata = np.concatenate((hk_alldata, hk_filedata), axis=0)
 
 	#conversion for labview timestamp to UNIX timestamp (in s). UNIX epoch is 1 Jan 1970, Labview epoch is 1 Jan 1904
@@ -33,8 +33,8 @@ def find_bad_hk_durations(parameters):
 	laser_CIsds = 2
 	flow_min = parameters['flow_min']
 	flow_max = parameters['flow_max']
-	laser_min = lasermean-0.5*lasermean
-	laser_max = lasermean+0.5*lasermean
+	laser_min = parameters['YAG_min']#lasermean-0.5*lasermean
+	laser_max = parameters['YAG_max']#lasermean+0.5*lasermean
 
 	#generate YAG and flow plots
 	plt.figure(1)

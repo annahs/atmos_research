@@ -5,6 +5,7 @@ import numpy as np
 from struct import *
 import sys
 from scipy.optimize import curve_fit
+import math
 
 class ParticleRecord:
 	
@@ -337,8 +338,9 @@ class ParticleRecord:
 		p_guess = [guess_a,guess_u,guess_sig]
 		
 		def fullGauss(x, a, u, sig):
-			return baseline+a*np.exp((-(x-u)**2)/(2*sig**2))
-		
+			return baseline+a*np.exp((-(x-u)**2)/(2*sig**2))  #Gaussian
+			#return baseline + (2*a/math.pi)*(sig/(4*(x-u)**2 + sig**2)) #Lorentzian - not good!
+			
 		#run the fitting
 		try:
 			popt, pcov = curve_fit(fullGauss, x_vals, y_vals, p0=p_guess)
@@ -358,39 +360,48 @@ class ParticleRecord:
 		#run the scatteringPeakInfo method to retrieve various peak attributes 
 		self.scatteringPeakInfo()
 		
+		#get the baseline
+		baseline = self.scatteringBaseline
+		
 		#get the zero-crossing for the particle
 		zero_crossing_pt_LEO = self.zeroCrossing()
 		
-		#set parameters for fitting
-		baseline = self.scatteringBaseline
-		
-		#LEO max index sets the x-limit for fitting based on the desired magnification factor
-		LEO_max_index = int(round(zero_crossing_pt_LEO-zeroX_to_LEO_limit))
-		self.LF_max_index = LEO_max_index
-		LEO_min_index = 0
-		
-		x_vals_all = self.getAcqPoints()
-		self.LF_x_vals_to_use = x_vals_all[LEO_min_index:LEO_max_index]
+		if zero_crossing_pt_LEO < 0:  #ie we can't find the zero crossing
+			self.LF_scattering_amp = -2
+			self.LF_baseline = -2
+			self.LF_results = []
+			self.LF_max_index = -2
+			self.beam_center_pos = -2
+			
+		else:
+			#LEO max index sets the x-limit for fitting based on the desired magnification factor
+			LEO_max_index = int(round(zero_crossing_pt_LEO-zeroX_to_LEO_limit))
+			self.LF_max_index = LEO_max_index
+			LEO_min_index = 0
+			
+			x_vals_all = self.getAcqPoints()
+			self.LF_x_vals_to_use = x_vals_all[LEO_min_index:LEO_max_index]
 
-		y_vals_all = self.getScatteringSignal()
-		self.LF_y_vals_to_use = y_vals_all[LEO_min_index:LEO_max_index]
+			y_vals_all = self.getScatteringSignal()
+			self.LF_y_vals_to_use = y_vals_all[LEO_min_index:LEO_max_index]
 
-		self.beam_center_pos = zero_crossing_pt_LEO-calib_zeroX_to_peak
-						
-		def LEOGauss(x, a, b):
-			return b+a*np.exp((-(x-self.beam_center_pos)**2)/(2*calib_gauss_width**2))
+			self.beam_center_pos = zero_crossing_pt_LEO-calib_zeroX_to_peak
+							
+			def LEOGauss(x, a, b):
+				return b+a*np.exp((-(x-self.beam_center_pos)**2)/(2*calib_gauss_width**2)) #Gaussian
+			
 
-		#run the fitting
-		try:
-			popt, pcov = curve_fit(LEOGauss, self.LF_x_vals_to_use, self.LF_y_vals_to_use)
-		except:
-			popt, pcov = [-1,-1], [np.nan, np.nan] 
+			#run the fitting
+			try:
+				popt, pcov = curve_fit(LEOGauss, self.LF_x_vals_to_use, self.LF_y_vals_to_use)
+			except:
+				popt, pcov = [-1,-1], [np.nan, np.nan] 
 
-		self.LF_scattering_amp = popt[0] 
-		self.LF_baseline = popt[1]
+			self.LF_scattering_amp = popt[0] 
+			self.LF_baseline = popt[1]
 
-		fit_result = []
-		for x in x_vals_all:
-			fit_result.append(LEOGauss(x,popt[0],popt[1]))
-		self.LF_results = fit_result
+			fit_result = []
+			for x in x_vals_all:
+				fit_result.append(LEOGauss(x,popt[0],popt[1]))
+			self.LF_results = fit_result
 				

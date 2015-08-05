@@ -30,7 +30,7 @@ def scat_amp(Itotal):
 	#calc_scattering_amplitude = 3.72*Itotal+9.65  #calibration from Aquadag numbers Jason sent for LJ
 	#calc_scattering_amplitude = 71.32*Itotal  # ECSP2 WHI 2010
 	#calc_scattering_amplitude = 425*Itotal#584*Itotal # UBCSP2 WHI 2012 
-	calc_scattering_amplitude = 545*Itotal  # UBCSP2 POLAR6 2015-spring - 545 from slope of PSL calib plot, 446 from 200nm PSL alone
+	calc_scattering_amplitude = 446*Itotal  # UBCSP2 POLAR6 2015-spring - 545 from slope of PSL calib plot, 446 from 200nm PSL alone
 	
 	return calc_scattering_amplitude
 	
@@ -160,7 +160,7 @@ for core_rad in core_rad_range:
 
 	
 
-file = open('coating_lookup_table_POLAR6_2015_UBCSP2-nc(2p26,1p26)-fullPSLcalib_used_factor545.lupckl', 'w')
+file = open('coating_lookup_table_POLAR6_2015_UBCSP2-nc(2p26,1p26)-200nmPSLcalib_used_factor446.lupckl', 'w')
 pickle.dump(lookup_table, file)
 file.close()  
 

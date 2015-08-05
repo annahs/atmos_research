@@ -25,7 +25,7 @@ data_dir = data_dir = 'D:/2015/NETCARE_UBC_SP2/flight data/'#'D:/2012/WHI_UBCSP2
 #analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'
 multiple_directories = True
 num_records_to_analyse = 100#'all'
-LEO_factor = 10#16  # fit up to 1/this_value of max peak height (ie 1/20 is 5%)
+LEO_factor = 16#16  # fit up to 1/this_value of max peak height (ie 1/20 is 5%)
 show_LEO_fit = True
 instrument = 'UBCSP2'
 instrument_locn = 'POLAR6'
@@ -34,7 +34,7 @@ start_analysis_at = datetime.strptime('20150405','%Y%m%d')
 end_analysis_at = datetime.strptime('20150406','%Y%m%d')
 analysis_time_start = 0
 analysis_time_end = 24
-FF = -2
+FF = 0
 #parameters for setting values of fixed variables in Gaussian fitting
 #note: the program will select calibration data from a time period surrounding (+- 48h) the data being LEO fitted
 calib_instrument = 'UBCSP2'
@@ -74,6 +74,8 @@ parameters = {
 'show_plot':False,
 }
 
+def fullGauss(x, b, a, u, sig):
+	return b+a*np.exp((-(x-u)**2)/(2*sig**2)) 
 
 def gaussLEOFit(parameters_dict):
 	print parameters['folder']
@@ -128,21 +130,24 @@ def gaussLEOFit(parameters_dict):
 				#**********get LEO calib parameters from nonincand reals
 				
 				if (record_index % 100) == 0 or record_index == 0:
-					time_span = 2.5 #in secs
+					time_span = 30 #in secs
 					begin_calib_data = event_time-time_span
 					end_calib_data = event_time+time_span
 					#get parameters for fixing variables in Gaussian fitting
-					c.execute('''SELECT FF_gauss_width, zeroX_to_peak FROM SP2_coating_analysis WHERE instr=? and instr_locn=? and particle_type=? and unix_ts_utc>=? and unix_ts_utc<? and FF_gauss_width is not null and zeroX_to_peak is not null''', 
+					c.execute('''SELECT FF_gauss_width, zeroX_to_peak, FF_scat_amp FROM SP2_coating_analysis WHERE instr=? and instr_locn=? and particle_type=? and unix_ts_utc>=? and unix_ts_utc<? and FF_gauss_width is not null and zeroX_to_peak is not null ''', 
 					(calib_instrument,calib_instrument_locn,calib_type_particle, begin_calib_data, end_calib_data))
 					result = c.fetchall()
 					print len(result)
 					mean_gauss_width = np.nanmean([row[0] for row in result])+FF
-					mean_zeroX_to_peak = np.nanmean([row[1] for row in result]) 
+					mean_zeroX_to_peak = np.nanmean([row[1] for row in result])
+					mean_FF_scat_amp = np.nanmean([row[2] for row in result]) 
 
 					#calculate half-width at x% point (eg 5% for factor 20)  
 					HWxM = math.sqrt(2*math.log(LEO_factor))*(mean_gauss_width-FF)
 					zeroX_to_LEO_limit = HWxM + mean_zeroX_to_peak
 
+					
+		
 				#******
 				
 				
@@ -175,12 +180,12 @@ def gaussLEOFit(parameters_dict):
 					
 					#for calibration purposes we only grab files where we had a successful fullGauss fit 
 					if type_particle == 'nonincand' or type_particle == 'PSL':
-						c.execute('''SELECT * FROM SP2_coating_analysis WHERE instr=? and instr_locn=? and particle_type=? and sp2b_file=? and file_index=?''', 
-						(instrument,instrument_locn,type_particle, file, record_index))
+						c.execute('''SELECT * FROM SP2_coating_analysis WHERE instr=? and instr_locn=? and particle_type=? and sp2b_file=? and file_index=?''', (instrument,instrument_locn,type_particle, file, record_index))
 						result = c.fetchone()
 						if result is not None:
 							analyze_this_particle = True
-							
+							c.execute('''SELECT FF_scat_amp FROM SP2_coating_analysis WHERE instr=? and instr_locn=? and particle_type=? and sp2b_file=? and file_index=?''', (instrument,instrument_locn,type_particle, file, record_index))
+							FF_scat_amp = c.fetchone()[0]
 					#for looking at incandescent particles we will try a LEO fit if scattering and incandescent peaks high enough
 					if type_particle == 'incand':
 						
@@ -232,39 +237,62 @@ def gaussLEOFit(parameters_dict):
 						if LEO_max_fit_index < 5 or LEO_max_fit_index > max_peakpos: #error locating LEO fitting index
 							LEO_amp = -3  #-2 in these values indicates a failure in the initial look for a zero-crossing, -3 indicates outside the range set here
 							LEO_baseline = -3
-						if LEO_amp <0:
-							LEO_amp = None
-						c.execute('''UPDATE SP2_coating_analysis SET 
-							LF_scat_amp=?,
-							LF_baseline_pct_diff=?,
-							zero_crossing_posn=?
-							WHERE sp2b_file=? and file_index=? and instr=?''',
-							(LEO_amp,
-							LF_percent_diff_baseline,
-							zero_crossing_pt,
-							file,record_index,instrument))
+						#c.execute('''UPDATE SP2_coating_analysis SET 
+						#	LF_scat_amp=?,
+						#	LF_baseline_pct_diff=?,
+						#	zero_crossing_posn=?
+						#	WHERE sp2b_file=? and file_index=? and instr=?''',
+						#	(LEO_amp,
+						#	LF_percent_diff_baseline,
+						#	zero_crossing_pt,
+						#	file,record_index,instrument))
+						
+						#xsec method
+						fit_result = particle_record.LF_results
+						x_vals_all = particle_record.getAcqPoints()		
+						y_vals_all = particle_record.getScatteringSignal()
+						beam_profile = []
+						xsec = []
+						xsec_diff = []
+						prev_full_gauss_yval = np.nan
+						for x in x_vals_all:
+							full_gauss_yval = fullGauss(x,actual_baseline, FF_scat_amp, particle_record.beam_center_pos, mean_gauss_width)
+							xsec_value = y_vals_all[x]/full_gauss_yval
+							xsec_prev_value = y_vals_all[x-1]/prev_full_gauss_yval
+							xsec_diff_value = (xsec_value-xsec_prev_value)/xsec_value
+
+							beam_profile.append(full_gauss_yval)
+							xsec.append(xsec_value)
+							xsec_diff.append(xsec_diff_value)
+							
+							prev_full_gauss_yval = full_gauss_yval
+							
 						#plot particle fit if desired				
 						if show_LEO_fit == True:# and incand_pk_amp > min_incand_amp:
-						
-							x_vals_all = particle_record.getAcqPoints()
-							y_vals_all = particle_record.getScatteringSignal()	
+							
+	
 							y_vals_split = particle_record.getSplitDetectorSignal()
 							y_vals_incand = particle_record.getWidebandIncandSignal()
-							fit_result = particle_record.LF_results		
+									
 												
 							print file, 'record: ',record_index, zero_crossing_pt
 							fig = plt.figure()
-							ax1 = fig.add_subplot(111)
+							ax1 = fig.add_subplot(211)
 							ax1.plot(x_vals_all,y_vals_all,'o', markerfacecolor='None')  
-							try:
-								ax1.plot(x_vals_all,fit_result, 'blue')
-							except:
-								print 'no fit result'
-							ax1.plot(particle_record.LF_x_vals_to_use,particle_record.LF_y_vals_to_use, color = 'black',linewidth=3)
+							#try:
+							#	ax1.plot(x_vals_all,fit_result, 'blue')
+							#except:
+							#	print 'no fit result'
+							#ax1.plot(particle_record.LF_x_vals_to_use,particle_record.LF_y_vals_to_use, color = 'black',linewidth=3)
 							#ax1.plot(x_vals_all, y_vals_split, 'o', color ='green')
-							ax1.plot(x_vals_all, y_vals_incand, color ='red')
+							ax1.plot(x_vals_all, beam_profile, 'o', color ='green')
+							
 							plt.axvline(x=zero_crossing_pt, ymin=0, ymax=1)
 							plt.axvline(x=particle_record.beam_center_pos, ymin=0, ymax=1, color='red')
+							
+							ax2 = fig.add_subplot(212)
+							ax2.plot(x_vals_all, xsec, '*', color ='red')
+							
 							plt.show()
 
 							

@@ -17,16 +17,17 @@ import sqlite3
 
 
 
-current_dir = 'D:/2015/NETCARE_UBC_SP2/calibration data/20150129/PSL300/'
+current_dir = 'D:/2015/NETCARE_UBC_SP2/calibration data/20150129/PSL200/'
+#current_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'
 instrument = 'UBCSP2'
 instrument_locn = 'POLAR6'
-PSL_size = 300
+PSL_size = 200
 type_particle = 'PSL'
 os.chdir(current_dir)
 
 #setup
 num_records_to_analyse = 'all'
-show_full_fit = False
+show_full_fit = True
 
 #pararmeters used to reject invalid particle records based on scattering peak attributes
 min_peakheight = 10
@@ -184,8 +185,9 @@ for file in os.listdir('.'):
 					zero_cross_to_peak = (zero_crossing_pt - fit_peak_pos)
 					
 					#put particle into database or update record
-					c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr, instr_locn, particle_type, particle_dia) VALUES (?,?,?,?,?,?)''', (file, record_index,instrument, instrument_locn,type_particle,PSL_size))
+					c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr, instr_locn, particle_type) VALUES (?,?,?,?,?)''', (file, record_index,instrument, instrument_locn,type_particle))
 					c.execute('''UPDATE SP2_coating_analysis SET 
+					particle_dia=?,
 					unix_ts_utc=?, 
 					actual_scat_amp=?, 
 					actual_peak_pos=?, 
@@ -194,7 +196,8 @@ for file in os.listdir('.'):
 					FF_gauss_width=?, 
 					zeroX_to_peak=?
 					WHERE sp2b_file=? and file_index=? and instr=?''', 
-					(event_time,
+					(PSL_size,
+					event_time,
 					actual_max_value,
 					actual_max_pos,
 					fit_scattering_amp,
