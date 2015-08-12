@@ -5,6 +5,7 @@ import numpy as np
 from struct import *
 import sys
 from scipy.optimize import curve_fit
+import scipy.special
 import math
 
 class ParticleRecord:
@@ -46,7 +47,7 @@ class ParticleRecord:
 		self.zeroCrossingPos = np.nan
 		self.FF_scattering_amp = np.nan
 		self.FF_peak_pos = np.nan     
-		self.FF_gauss_width = np.nan
+		self.FF_width = np.nan
 		self.FF_results = []
 		self.LF_scattering_amp = np.nan
 		self.LF_max_index = np.nan
@@ -152,6 +153,7 @@ class ParticleRecord:
 
 	def getAcqPoints(self):
 		return self.acqPoints
+	
 		
 	def isSingleParticle(self):
 		#determine if it's a single particle by looking at scattering profile and seeing if rising and falling slopes of teh gaussian are roughly equal. Will not be the case if shoulder, dbl pk, etc
@@ -322,6 +324,9 @@ class ParticleRecord:
 		return zero_crossing
 		
 		
+		
+
+		
 	def fullGaussFit(self):
 		#run the scatteringPeakInfo method to retrieve various peak attributes 
 		self.scatteringPeakInfo()
@@ -349,7 +354,7 @@ class ParticleRecord:
 		
 		self.FF_scattering_amp = popt[0]
 		self.FF_peak_pos = popt[1]   
-		self.FF_gauss_width = popt[2]
+		self.FF_width = popt[2]
 		fit_result = []
 		for x in x_vals:
 			fit_result.append(fullGauss(x,popt[0],popt[1],popt[2]))
@@ -404,4 +409,125 @@ class ParticleRecord:
 			for x in x_vals_all:
 				fit_result.append(LEOGauss(x,popt[0],popt[1]))
 			self.LF_results = fit_result
+			
+
+	def GCASFit(self):
+		#run the scatteringPeakInfo method to retrieve various peak attributes 
+		self.scatteringPeakInfo()
+		
+		#set parameters for fitting
+		baseline = self.scatteringBaseline
+		x_vals = np.array(self.getAcqPoints())
+		y_vals = np.array(self.getScatteringSignal()	)
+		
+		#initial values for amplitude(a) center(u) and gauss width(sig)
+		guess_a = self.scatteringMax  
+		guess_u = self.scatteringMaxPos
+		guess_sig = 10
+		p_guess = [53000,73,17, -0.031,-0.1]
+		
+		def GCAS(x, a, xc, w, a3, a4):
+			return baseline + (a /(w*math.sqrt(2*math.pi)))*np.exp(-((x-xc)/w)**2/2.)*(1+np.abs((a3/6)*(((x-xc)/w)**3-3.*((x-xc)/w))+ (a4/24)*( ((x-xc)/w)**4 -6.*((x-xc)/w)**3 + 3 ) ))
+						
+		#run the fitting
+		#try:
+		popt, pcov = curve_fit(GCAS, x_vals, y_vals, p0=p_guess)
+		#except:
+		#	popt, pcov = [np.nan, np.nan, np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan, np.nan, np.nan]   
+		
+		self.FF_scattering_amp = popt[0]
+		self.FF_peak_pos = popt[1]   
+		self.FF_width = popt[2]
+		fit_result = []
+		for x in x_vals:
+			fit_result.append(GCAS(x,popt[0],popt[1],popt[2],popt[3],popt[4]))
+		self.FF_results = fit_result
+				
+
+	def GiddingsFit(self):
+		#run the scatteringPeakInfo method to retrieve various peak attributes 
+		self.scatteringPeakInfo()
+		
+		#set parameters for fitting
+		baseline = self.scatteringBaseline
+		x_vals = np.array(self.getAcqPoints()) + 1 #avoids divide by zero in Giddings fit
+		y_vals = np.array(self.getScatteringSignal())
+		
+		#initial values for amplitude(a) center(u) and gauss width(sig)
+		guess_a = self.scatteringMax  
+		guess_u = self.scatteringMaxPos
+		guess_sig = 10
+		p_guess = [53000,73,2]
+		
+		
+		def Giddings(x, a, xc, w):
+			# Note: scipy.special.iv is the modified Bessel function of the first kind
+			return baseline + (a/w)*np.sqrt(xc/x)*(scipy.special.iv(0,(2*np.sqrt(xc*x)/w))) * np.exp((-x-xc)/w)
+
+				
+		#run the fitting
+		try:
+			popt, pcov = curve_fit(Giddings, x_vals, y_vals, p0=p_guess)
+		except:
+			popt, pcov = [np.nan, np.nan, np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan, np.nan, np.nan]   
+				
+		fit_result = []
+		for x in x_vals:
+			fit_result.append(Giddings(x,popt[0],popt[1],popt[2]))
+		
+	
+		self.FF_results = fit_result
+		self.FF_scattering_amp = np.max(fit_result)-baseline#popt[0]
+		self.FF_peak_pos = popt[1]   
+		self.FF_width = popt[2]
+		
+	def leoGiddingsFit(self,zeroX_to_LEO_limit,calib_zeroX_to_peak,calib_gauss_width):
+		#run the scatteringPeakInfo method to retrieve various peak attributes 
+		self.scatteringPeakInfo()
+		
+		#get the baseline
+		baseline = self.scatteringBaseline
+		
+		#get the zero-crossing for the particle
+		zero_crossing_pt_LEO = self.zeroCrossing()
+		
+		if zero_crossing_pt_LEO < 0:  #ie we can't find the zero crossing
+			self.LF_scattering_amp = -2
+			self.LF_baseline = -2
+			self.LF_results = []
+			self.LF_max_index = -2
+			self.beam_center_pos = -2
+			
+		else:
+			#LEO max index sets the x-limit for fitting based on the desired magnification factor
+			LEO_max_index = int(round(zero_crossing_pt_LEO-zeroX_to_LEO_limit))
+		
+			self.LF_max_index = LEO_max_index
+			LEO_min_index = 0
+			
+			x_vals_all =  np.array(self.getAcqPoints()) + 1 #avoids divide by zero in Giddings fit
+			self.LF_x_vals_to_use = x_vals_all[LEO_min_index:LEO_max_index]
+
+			y_vals_all =  np.array(self.getScatteringSignal())
+			self.LF_y_vals_to_use = y_vals_all[LEO_min_index:LEO_max_index]
+
+			self.beam_center_pos = zero_crossing_pt_LEO-calib_zeroX_to_peak
+							
+			def LEOGiddings(x, a):
+				# Note: scipy.special.iv is the modified Bessel function of the first kind
+				return baseline + (a/calib_gauss_width)*np.sqrt(self.beam_center_pos/x)*(scipy.special.iv(0,(2*np.sqrt(self.beam_center_pos*x)/calib_gauss_width))) * np.exp((-x-self.beam_center_pos)/calib_gauss_width)
+
+			#run the fitting
+			try:
+				popt, pcov = curve_fit(LEOGiddings, self.LF_x_vals_to_use, self.LF_y_vals_to_use)
+			except:
+				popt, pcov = [-1], [np.nan] 
+	
+
+			fit_result = []
+			for x in x_vals_all:
+				fit_result.append(LEOGiddings(x,popt[0]))
+			self.LF_results = fit_result
+			self.LF_scattering_amp = np.max(fit_result)-baseline#popt[0] 
+			self.LF_baseline = np.nan
 				
