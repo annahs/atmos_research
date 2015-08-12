@@ -7,6 +7,8 @@ from datetime import datetime
 from datetime import timedelta
 import pickle
 import copy
+from pyhdf.SD import SD, SDC, SDS
+
 
 timezone = -8
 calib_stability_uncertainty = 0.1
@@ -14,6 +16,20 @@ calib_stability_uncertainty = 0.1
 #fire times
 fire_time1 = [datetime.strptime('2009/07/27 00:00', '%Y/%m/%d %H:%M'), datetime.strptime('2009/08/08 00:00', '%Y/%m/%d %H:%M')] #row_datetimes follwing Takahama et al (2011) doi:10.5194/acp-11-6367-2011 #PST
 fire_time2 = [datetime.strptime('2010/07/26 09:00', '%Y/%m/%d %H:%M'), datetime.strptime('2010/07/28 09:30', '%Y/%m/%d %H:%M')] #jason's BC clear report #PST
+
+##sampling times
+sampling_times_file = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/Junwei_runs/WHI_SP2_6h_rBC_mass_concs.txt'
+sampling_times = []
+with open(sampling_times_file,'r') as f:
+	f.readline()
+	for line in f:
+		newline = line.split()
+		sampling_date = newline[0]
+		sampling_time = newline[1]
+		sampling_datetime = datetime(int(sampling_date[0:4]),int(sampling_date[5:7]),int(sampling_date[8:10]),int(sampling_time[0:2]))
+		sampling_times.append(sampling_datetime)
+		
+
 
 #open cluslist and read into a python list
 cluslist = []
@@ -30,18 +46,9 @@ with open(CLUSLIST_file,'r') as f:
 # sort cluslist by row_datetime in place		
 cluslist.sort(key=lambda clus_info: clus_info[0])  
 
+#make a copy for sorting the GeosChem data 
+cluslist_GC = copy.deepcopy(cluslist)
 
-#make a copy for sorting the GeosChem data and get rid of all early night points since we don't have GC data for the early night anyways
-cluslist_GC = []
-cluslist_copy = copy.copy(cluslist)
-
-for line in cluslist_copy:
-	traj_datetime = line[0]
-	cluster_no = line[1]
-	if traj_datetime.hour == 5:
-		cluslist_GC.append([traj_datetime,cluster_no])
- 
- 
 ############Meaurements
 #get full rBC record (in PST and 10 min binned intervals) and put in dictionaries keyed by date 
 rBC_24h_data = {} #does not include BB data
@@ -265,87 +272,93 @@ for date, mass_data in rBC_FT_data_cluster_BB.iteritems():
 	
 ###################GEOS-Chem
 
-data_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/sarahWhistlerData'
+GC_data = {}
+
+data_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/Junwei_runs/no_biomass/'
 os.chdir(data_dir)
 
-level = 10 #1-47 #10 is closest to WHI avg P (WHI 95% CI = 770-793)
-level_up = level+1
-level_dn = level-1
+lat = 20 #20 corresponds to 50deg 
+lon = 7 #7 corresponds to -122.5deg
+level = 9 #1-47 #9 is closest to WHI avg P (WHI 95% CI = 770-793)
 
 molar_mass_BC = 12.0107 #in g/mol
 ng_per_g = 10**9
 R = 8.3144621 # in m3*Pa/(K*mol)
 GEOS_Chem_factor = 10**-9
 
-GC_24h_FR = []
-GC_24h_BB = []
+pressure = []
+for file in os.listdir(data_dir):
+	if file.endswith('.hdf'): 
 
-for file in os.listdir('.'):
-	if file.endswith('24h.txt'):
+		file_year = int(file[2:6])
+		file_month = int(file[6:8])
+		file_day = int(file[8:10])
+		file_hour = int(file[11:13])
 		
-		with open(file, 'r') as f:
+		if 3 <= file_hour < 15:  #ignore any times not in the 2000-0800 PST window (0400-1600 UTC)
+			hdf_file = SD(file, SDC.READ)
+			#pprint(hdf_file.datasets())
 			
-			while True:
+			pressures = hdf_file.select('PEDGE-$::PSURF')
+			pressure.append(pressures[level,lat,lon])
+			lats = hdf_file.select('LAT')
+			lons = hdf_file.select('LON')
+			#print lats[lat], lons[lon]
+			
+			if file_hour < 9:
+				period_midtime = datetime(file_year,file_month,file_day,23) - timedelta(days=1) #this is the early night period of 2000-0200 PST (mid time is 2300 of the previous day when converting from UTC to PST)
 				
-				BCline_all = f.readline()
-				Templine_all = f.readline()
-				Pressureline_all = f.readline()
-				boxheightline_all = f.readline()
-					
-				if not (BCline_all and Templine_all and Pressureline_all and boxheightline_all):
-					break
-				
-				BCline = BCline_all.split(',')
-				Templine = Templine_all.split(',')
-				Pressureline = Pressureline_all.split(',')
-				
-				date = datetime.strptime(BCline[0], '%Y%m%d')
-				
-				T = float(Templine[level]) # in K
-				P = float(Pressureline[level])*100 #original data in hPa, this converts to Pa
+			if 9 <= file_hour < 15:	
+				period_midtime = datetime(file_year,file_month,file_day,05) #this is the late night period of 0200-0800 PST 
+			
+			if period_midtime not in GC_data:
+				GC_data[period_midtime] = [[],[],[],'']
 
-				BC_conc_ppb = float(BCline[level]) # in molBC/molAIR 
+			i=0
+			for layer in [level, level-1, level+1]:
+				hydrophilic_BC = hdf_file.select('IJ-AVG-$::BCPI') #3d conc data in ppbv (molBC/molAIR)
+				hydrophobic_BC = hdf_file.select('IJ-AVG-$::BCPO')
+			
+				total_BC_ppbv = hydrophilic_BC[layer,lat,lon] + hydrophobic_BC[layer,lat,lon]
+				Factor =  (1000 * 1e2 * 1e6 * 1e-9) / (8.31 * 273)
+				BC_conc_ngm3 = total_BC_ppbv*molar_mass_BC*ng_per_g*GEOS_Chem_factor*(101325/(R*273))  #101325/(R*273) corrects to STP 	
+				temp_BC = total_BC_ppbv * Factor * 12 *1000
+				if period_midtime in sampling_times:
+					GC_data[period_midtime][i].append(BC_conc_ngm3)
+				i+=1
 
-				#correction to STP
-				volume_ambient = (R*T)/(P)
-				volume_STP = volume_ambient*(P/101325)*(273/T)
-				STP_correction_factor =  volume_ambient/volume_STP
-				BC_conc_ngm3 = STP_correction_factor*BC_conc_ppb*molar_mass_BC*ng_per_g*GEOS_Chem_factor/(R*T/P)  #this is per /m3 ambient so for STP must mult by vol_amb/vol_stp	
-				
-				###get data for levels above and below curent
-				T_up = float(Templine[level_up]) # in K
-				P_up = float(Pressureline[level_up])*100 #original data in hPa, this converts to Pa
-				BC_conc_ppb_up = float(BCline[level_up]) # in molBC/molAIR 
-				volume_ambient_up = (R*T_up)/(P_up)
-				volume_STP_up = volume_ambient_up*(P_up/101325)*(273/T_up)
-				STP_correction_factor_up =  volume_ambient_up/volume_STP_up
-				BC_conc_ngm3_up = STP_correction_factor_up*BC_conc_ppb_up*molar_mass_BC*ng_per_g*GEOS_Chem_factor/(R*T_up/P_up)  #this is per /m3 ambient so for STP must mult by vol_amb/vol_stp
-				
-				T_dn = float(Templine[level_dn]) # in K
-				P_dn = float(Pressureline[level_dn])*100 #original data in hPa, this converts to Pa
-				BC_conc_ppb_dn = float(BCline[level_dn]) # in molBC/molAIR 		
-				volume_ambient_dn = (R*T_dn)/(P_dn)
-				volume_STP_dn = volume_ambient_dn*(P_dn/101325)*(273/T_dn)
-				STP_correction_factor_dn =  volume_ambient_dn/volume_STP_dn
-				BC_conc_ngm3_dn = STP_correction_factor_dn*BC_conc_ppb_dn*molar_mass_BC*ng_per_g*GEOS_Chem_factor/(R*T_dn/P_dn)  #this is per /m3 ambient so for STP must mult by vol_amb/vol_stp
-				
-				BC_conc_ngm3_lower_limit = min(BC_conc_ngm3_up,BC_conc_ngm3_dn,BC_conc_ngm3)
-				BC_conc_ngm3_upper_limit = max(BC_conc_ngm3_up,BC_conc_ngm3_dn,BC_conc_ngm3)
-				pos_y_err = BC_conc_ngm3_upper_limit - BC_conc_ngm3
-				neg_y_err = BC_conc_ngm3 - BC_conc_ngm3_lower_limit
-				mean_rel_err = ((pos_y_err+neg_y_err)/2)/BC_conc_ngm3
-				
-				#FR data
-				if date >= datetime.strptime('20090628', '%Y%m%d') and date <= datetime.strptime('20090816', '%Y%m%d'):
-					GC_24h_FR.append([BC_conc_ngm3,mean_rel_err])
-				if date >= datetime.strptime('20100610', '%Y%m%d') and date <= datetime.strptime('20100727', '%Y%m%d'):
-					GC_24h_FR.append([BC_conc_ngm3,mean_rel_err])
-				if date >= datetime.strptime('20120405', '%Y%m%d') and date <= datetime.strptime('20120531', '%Y%m%d'):
-					GC_24h_FR.append([BC_conc_ngm3,mean_rel_err])
-					
-				#BB data
-				if (date >= datetime.strptime('2009/07/27', '%Y/%m/%d') and date < datetime.strptime('2009/08/08', '%Y/%m/%d')) or date == datetime.strptime('2010/07/26', '%Y/%m/%d') or date == datetime.strptime('2010/07/27', '%Y/%m/%d'):
-					GC_24h_BB.append([BC_conc_ngm3,mean_rel_err])
+			hdf_file.end()	
+
+#print np.mean(pressure)
+
+#assign clusters
+for line in cluslist_GC:
+	
+	cluster_datetime = line[0]
+	cluster_no = line[1]
+	
+	#if cluster_datetime in sampling_times:
+	if cluster_no == 4:
+		cluster = 'Cont'	
+	
+	if cluster_no == 9:
+		cluster = 'GBPS'
+		
+	if cluster_no in [6,8]:
+		cluster = 'SPac'
+	
+	if cluster_no in [2,7]:
+		cluster = 'LRT'
+
+	if cluster_no in [1,3,5,10]:
+		cluster = 'NPac'
+	
+	if (fire_time1[0] <= cluster_datetime <= fire_time1[1]) or (fire_time2[0] <= cluster_datetime <= fire_time2[1]):
+		cluster = 'BB'
+
+	for period_midtime in GC_data:
+		if period_midtime == cluster_datetime:
+			GC_data[period_midtime][3] = cluster
 
 
 GC_6h_NPac = [] 
@@ -356,105 +369,35 @@ GC_6h_GBPS = []
 GC_6h_BB = []	
 GC_6h_all_non_BB = []			
 
-for file in os.listdir('.'):
-	if file.endswith('N.txt'):  #these are the night files (2-4 and 5-7 PST)
+for period_midtime in GC_data:
+	
+	cluster = GC_data[period_midtime][3]
+	mean_BC_conc = np.nanmean(GC_data[period_midtime][0])
+	mean_BC_conc_lvl_dn = np.nanmean(GC_data[period_midtime][1])
+	mean_BC_conc_lvl_up = np.nanmean(GC_data[period_midtime][2])
 
-		with open(file, 'r') as f:
-			
-			while True:
-				BCline_all = f.readline()
-				Templine_all = f.readline()
-				Pressureline_all = f.readline()
-				boxheightline_all = f.readline()
-				
-				if not (BCline_all and Templine_all and Pressureline_all and boxheightline_all):
-					break
-
-				BCline = BCline_all.split(',')
-				Templine = Templine_all.split(',')
-				Pressureline = Pressureline_all.split(',')
-				
-				date = datetime.strptime(BCline[0], '%Y%m%d')
-				
-				T = float(Templine[level]) # in K
-				P = float(Pressureline[level])*100 #original data in hPa, this converts to Pa
-				BC_conc_ppb = float(BCline[level]) # in molBC/molAIR 
-				#correction to STP
-				volume_ambient = (R*T)/(P)
-				volume_STP = volume_ambient*(P/101325)*(273/T)
-				STP_correction_factor =  volume_ambient/volume_STP
-				BC_conc_ngm3 = STP_correction_factor*BC_conc_ppb*molar_mass_BC*ng_per_g*GEOS_Chem_factor/(R*T/P)  #this is per /m3 ambient so for STP must mult by vol_amb/vol_stp	
-			
-				###get data for levels above and below curent
-				T_up = float(Templine[level_up]) # in K
-				P_up = float(Pressureline[level_up])*100 #original data in hPa, this converts to Pa
-				BC_conc_ppb_up = float(BCline[level_up]) # in molBC/molAIR 
-				volume_ambient_up = (R*T_up)/(P_up)
-				volume_STP_up = volume_ambient_up*(P_up/101325)*(273/T_up)
-				STP_correction_factor_up =  volume_ambient_up/volume_STP_up
-				BC_conc_ngm3_up = STP_correction_factor_up*BC_conc_ppb_up*molar_mass_BC*ng_per_g*GEOS_Chem_factor/(R*T_up/P_up)  #this is per /m3 ambient so for STP must mult by vol_amb/vol_stp
-				
-				T_dn = float(Templine[level_dn]) # in K
-				P_dn = float(Pressureline[level_dn])*100 #original data in hPa, this converts to Pa
-				BC_conc_ppb_dn = float(BCline[level_dn]) # in molBC/molAIR 		
-				volume_ambient_dn = (R*T_dn)/(P_dn)
-				volume_STP_dn = volume_ambient_dn*(P_dn/101325)*(273/T_dn)
-				STP_correction_factor_dn =  volume_ambient_dn/volume_STP_dn
-				BC_conc_ngm3_dn = STP_correction_factor_dn*BC_conc_ppb_dn*molar_mass_BC*ng_per_g*GEOS_Chem_factor/(R*T_dn/P_dn)  #this is per /m3 ambient so for STP must mult by vol_amb/vol_stp
-				
-				BC_conc_ngm3_lower_limit = min(BC_conc_ngm3_up,BC_conc_ngm3_dn,BC_conc_ngm3)
-				BC_conc_ngm3_upper_limit = max(BC_conc_ngm3_up,BC_conc_ngm3_dn,BC_conc_ngm3)
-				pos_y_err = BC_conc_ngm3_upper_limit - BC_conc_ngm3
-				neg_y_err = BC_conc_ngm3 - BC_conc_ngm3_lower_limit
-				mean_rel_err = ((pos_y_err+neg_y_err)/2)/BC_conc_ngm3
-			
-							
-				if date > datetime.strptime('20120531', '%Y%m%d'):
-					break
-                
-				#pop off any cluslist times that are in the past
-				cluslist_current_datetime = cluslist_GC[0][0] #in PST
-				cluslist_current_date = datetime(cluslist_current_datetime.year, cluslist_current_datetime.month, cluslist_current_datetime.day)
-
-				while date > cluslist_current_date:
-
-					cluslist_GC.pop(0)
-					if len(cluslist_GC):
-						cluslist_current_datetime = cluslist_GC[0][0]
-						cluslist_current_date = datetime(cluslist_current_datetime.year, cluslist_current_datetime.month, cluslist_current_datetime.day)
-						continue
-					else:
-						break
-
-				#get cluster no
-				cluslist_current_cluster_no = cluslist_GC[0][1]
-
-				if cluslist_current_date == date:
-				
-					if (fire_time1[0] <= cluslist_current_date <= fire_time1[1]) or (fire_time2[0] <= cluslist_current_date <= fire_time2[1]):
-						GC_6h_BB.append([BC_conc_ngm3,mean_rel_err])
-						continue
-						
-					if cluslist_current_cluster_no == 9:
-						GC_6h_GBPS.append([BC_conc_ngm3,mean_rel_err])
-						GC_6h_all_non_BB.append([BC_conc_ngm3,mean_rel_err])
-							
-					if cluslist_current_cluster_no == 4:
-						GC_6h_Cont.append([BC_conc_ngm3,mean_rel_err])
-						GC_6h_all_non_BB.append([BC_conc_ngm3,mean_rel_err])
-						
-					if cluslist_current_cluster_no in [6,8]:
-						GC_6h_SPac.append([BC_conc_ngm3,mean_rel_err])
-						GC_6h_all_non_BB.append([BC_conc_ngm3,mean_rel_err])
-						
-					if cluslist_current_cluster_no in [2,7]:
-						GC_6h_LRT.append([BC_conc_ngm3,mean_rel_err])
-						GC_6h_all_non_BB.append([BC_conc_ngm3,mean_rel_err])
-						
-					if cluslist_current_cluster_no in [1,3,5,10]:
-						GC_6h_NPac.append([BC_conc_ngm3,mean_rel_err])
-						GC_6h_all_non_BB.append([BC_conc_ngm3,mean_rel_err])
-					
+	BC_conc_ngm3_lower_limit = min(mean_BC_conc,mean_BC_conc_lvl_dn,mean_BC_conc_lvl_up)
+	BC_conc_ngm3_upper_limit = max(mean_BC_conc,mean_BC_conc_lvl_dn,mean_BC_conc_lvl_up)
+	pos_y_err = BC_conc_ngm3_upper_limit - mean_BC_conc
+	neg_y_err = mean_BC_conc - BC_conc_ngm3_lower_limit
+	mean_rel_err = ((pos_y_err+neg_y_err)/2)/mean_BC_conc
+	
+	if cluster == 'BB':
+		GC_6h_BB.append([mean_BC_conc,mean_rel_err])
+	if cluster == 'Cont':
+		GC_6h_Cont.append([mean_BC_conc,mean_rel_err])
+	if cluster == 'GBPS':
+		GC_6h_GBPS.append([mean_BC_conc,mean_rel_err])
+	if cluster == 'NPac':
+		GC_6h_NPac.append([mean_BC_conc,mean_rel_err])
+	if cluster == 'SPac':
+		GC_6h_SPac.append([mean_BC_conc,mean_rel_err])
+	if cluster == 'LRT':
+		GC_6h_LRT.append([mean_BC_conc,mean_rel_err])
+	
+	if cluster != 'BB':
+		GC_6h_all_non_BB.append([mean_BC_conc,mean_rel_err])
+	
 
 			
 #print out percentile data and uncertainties
@@ -476,9 +419,9 @@ print 'SP2'
 for key, value in stats_SP2.iteritems():
 	mass_concs = [row[0] for row in value[0]]
 	mass_concs_rel_errs = [row[1] for row in value[0]]
-	print key,'no. of samples: ', len(mass_concs)
-	print key,'mass concs', np.percentile(mass_concs, 10),np.percentile(mass_concs, 50), np.percentile(mass_concs, 90), np.mean(mass_concs) 
-	print key,'errs',np.percentile(mass_concs_rel_errs, 50), np.mean(mass_concs_rel_errs)	
+	#print key,'no. of samples: ', len(mass_concs)
+	#print key,'mass concs', np.percentile(mass_concs, 10),np.percentile(mass_concs, 50), np.percentile(mass_concs, 90), np.mean(mass_concs) 
+	#print key,'errs',np.percentile(mass_concs_rel_errs, 50), np.mean(mass_concs_rel_errs)	
 	stats_SP2[key].append(np.percentile(mass_concs, 50))
 	file_list.append([key,np.percentile(mass_concs, 10),np.percentile(mass_concs, 50), np.percentile(mass_concs, 90), np.mean(mass_concs),np.mean(mass_concs_rel_errs)])
 	
@@ -493,14 +436,12 @@ for row in file_list:
 file.close()	
 
 stats_GC = {
-'GC_24h_FR':[GC_24h_FR],
-'GC_24h_BB':[GC_24h_BB],
-'GC_6h_NPac':[GC_6h_NPac],
-'GC_6h_SPac':[GC_6h_SPac],
-'GC_6h_Cont':[GC_6h_Cont],
-'GC_6h_LRT':[GC_6h_LRT],
-'GC_6h_GBPS':[GC_6h_GBPS],
-'GC_6h_BB':[GC_6h_BB],
+#'GC_6h_NPac':[GC_6h_NPac],
+#'GC_6h_SPac':[GC_6h_SPac],
+#'GC_6h_Cont':[GC_6h_Cont],
+#'GC_6h_LRT':[GC_6h_LRT],
+#'GC_6h_GBPS':[GC_6h_GBPS],
+#'GC_6h_BB':[GC_6h_BB],
 'GC_6h_all_non_BB':[GC_6h_all_non_BB],
 }
 	
@@ -510,12 +451,11 @@ for key, value in stats_GC.iteritems():
 	mass_concs = [row[0] for row in value[0]]
 	mass_concs_rel_errs = [row[1] for row in value[0]]
 	print key,'mass concs', np.percentile(mass_concs, 10),np.percentile(mass_concs, 50), np.percentile(mass_concs, 90), np.mean(mass_concs) 
-	print key,'rel err', np.mean(mass_concs_rel_errs)	
+	#print key,'rel err', np.mean(mass_concs_rel_errs)	
 	stats_GC[key].append(np.percentile(mass_concs, 50))
 
 
-
-
+sys.exit()
 ###################plotting
 SP2_6h_NPac_m = [row[0] for row in SP2_6h_NPac]
 SP2_6h_SPac_m = [row[0] for row in SP2_6h_SPac]
@@ -525,9 +465,6 @@ SP2_6h_GBPS_m = [row[0] for row in SP2_6h_GBPS]
 SP2_6h_BB_m = [row[0] for row in SP2_6h_BB]
 SP2_6h_all_non_BB_m = [row[0] for row in SP2_6h_all_non_BB]
 
-SP2_24h_FR_m = [row[0] for row in SP2_24h_FR]
-SP2_24h_BB_m = [row[0] for row in SP2_24h_BB]
-
 GC_6h_NPac_m = [row[0] for row in GC_6h_NPac]
 GC_6h_SPac_m = [row[0] for row in GC_6h_SPac]
 GC_6h_Cont_m = [row[0] for row in GC_6h_Cont]
@@ -536,8 +473,6 @@ GC_6h_GBPS_m = [row[0] for row in GC_6h_GBPS]
 GC_6h_BB_m = [row[0] for row in GC_6h_BB]
 GC_6h_all_non_BB_m = [row[0] for row in GC_6h_all_non_BB]
 
-GC_24h_FR_m = [row[0] for row in GC_24h_FR]
-GC_24h_BB_m = [row[0] for row in GC_24h_BB]
 
 fig = plt.figure(figsize=(12,6))
 
@@ -666,77 +601,10 @@ plt.subplots_adjust(hspace=0.05)
 plt.subplots_adjust(wspace=0.05)
 
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/')
-plt.savefig('histograms -clustered GEOS-Chem and measurements - 6h FT.png',bbox_inches='tight')
+plt.savefig('histograms -clustered GEOS-Chem and measurements - 6h FT - JW_wet_scavenging.png',bbox_inches='tight')
 
 plt.show()
 	
-	
-###################plotting 2
-fig = plt.figure(figsize=(10,8))
-
-bin_number_FR = 30
-UL_FR = 360
-bin_range_FR = (0,UL_FR)
-
-bin_number_BB = 26
-UL_BB = 610
-bin_range_BB = (0,UL_BB)
-
-ax1 = plt.subplot2grid((2,2), (0,0), colspan=1)
-ax2 = plt.subplot2grid((2,2), (0,1), colspan=1, sharey=ax1)
-
-						
-ax6 = plt.subplot2grid((2,2), (1,0), colspan=1)
-ax7 = plt.subplot2grid((2,2), (1,1), colspan=1, sharey=ax6)
-
-
-
-#SP2
-ax1.hist(SP2_24h_FR_m,bins = bin_number_FR, range = bin_range_FR)
-ax1.xaxis.set_visible(True)
-ax1.yaxis.set_visible(True)
-ax1.set_ylabel('frequency - Measurements')
-ax1.text(0.25, 0.80,'Full Record \n(not including BB periods)', transform=ax1.transAxes)
-#ax1.set_ylim(0,40)
-ax1.xaxis.tick_top()
-ax1.xaxis.set_label_position('top') 
-ax1.xaxis.set_ticks(np.arange(0, UL_FR, 100))
-ax1.axvline(stats_SP2['SP2_24h_FR'][1], color= 'black', linestyle = '--')
-
-
-
-ax2.hist(SP2_24h_BB_m,bins = bin_number_BB, range = bin_range_BB)
-ax2.xaxis.set_visible(True)
-ax2.yaxis.set_visible(False)
-ax2.text(0.25, 0.88,'Biomass Burning Periods', transform=ax2.transAxes)
-ax2.xaxis.tick_top()
-ax2.xaxis.set_label_position('top') 
-ax2.xaxis.set_ticks(np.arange(0, UL_BB, 100))
-ax2.axvline(stats_SP2['SP2_24h_BB'][1], color= 'black', linestyle = '--')
-
-#GC
-ax6.hist(GC_24h_FR_m,bins = bin_number_FR, range = bin_range_FR, color = 'green')
-ax6.xaxis.set_visible(True)
-ax6.yaxis.set_visible(True)
-ax6.set_ylabel('frequency - GEOS-Chem')
-ax6.xaxis.set_ticks(np.arange(0, UL_FR, 100))
-ax6.axvline(stats_GC['GC_24h_FR'][1], color= 'black', linestyle = '--')
-
-
-ax7.hist(GC_24h_BB_m,bins = bin_number_BB, range = bin_range_BB, color = 'green')
-ax7.xaxis.set_visible(True)
-ax7.yaxis.set_visible(False)
-ax7.xaxis.set_ticks(np.arange(0, UL_BB, 100))
-ax7.axvline(stats_GC['GC_24h_BB'][1], color= 'black', linestyle = '--')
-
-plt.figtext(0.35,0.06, '24h rBC mass concentration (ng/m3 - STP)')
-
-plt.subplots_adjust(hspace=0.07)
-plt.subplots_adjust(wspace=0.07)
-
-plt.savefig('histograms - GEOS-Chem and measurements - BB and FR(lessBB) - 24h.png')#,bbox_inches='tight')
-
-plt.show()
 
 ###################plotting 3
 fig = plt.figure(figsize=(6,8))
@@ -769,7 +637,7 @@ ax2.hist(GC_6h_all_non_BB_m,bins = bin_number_all_FT, range = bin_range_all_FT, 
 ax2.xaxis.set_visible(True)
 ax2.yaxis.set_visible(True)
 ax2.set_ylabel('frequency - GEOS-Chem')
-ax2.xaxis.set_ticks(np.arange(0, UL_FR, 50))
+ax2.xaxis.set_ticks(np.arange(0, UL_all_FT, 50))
 ax2.axvline(stats_GC['GC_6h_all_non_BB'][1], color= 'black', linestyle = '--')
 ax2.set_xlabel('6h rBC mass concentration (ng/m3 - STP)')
 
@@ -778,7 +646,7 @@ ax2.set_xlabel('6h rBC mass concentration (ng/m3 - STP)')
 plt.subplots_adjust(hspace=0.07)
 plt.subplots_adjust(wspace=0.07)
 
-plt.savefig('histograms - GEOS-Chem and measurements - all non-BB FT - 6h.png',bbox_inches='tight')
+plt.savefig('histograms - GEOS-Chem and measurements - all non-BB FT - 6h - JW_wet_scavenging.png',bbox_inches='tight')
 
 plt.show()
 
