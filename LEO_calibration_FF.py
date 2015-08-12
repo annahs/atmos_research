@@ -1,3 +1,7 @@
+#this script is used to fit the full SP2 scattering signal of real particles 
+#when run for non-incandescent reals this gives a set of data that can be used to set the fixed LEO fit parameters (width and centre position) over time
+
+
 import sys
 import os
 import datetime
@@ -18,21 +22,17 @@ from datetime import datetime
 
 
 
-
+#setup
 data_dir = 'D:/2015/NETCARE_UBC_SP2/flight data/'  #'D:/2010/WHI_ECSP2/Binary/' #'D:/2009/WHI_ECSP2/Binary/'# 'D:/2010/WHI_ECSP2/Binary/'  #'D:/2012/WHI_UBCSP2/Binary/' 
-#analysis_dir = 'D:/2012/WHI_UBCSP2/Calibrations/From DMT/20120113/170nm PSL/'#'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/110nm/'#'D:/2012/WHI_UBCSP2/Calibrations/From DMT/20120206/PSL/'# #'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'  #D:/2010/WHI_ECSP2/Calibration/20100305/PSL/Binary/300nm PSL/
-multiple_directories = True
 instrument = 'UBCSP2' #'UBCSP2' #ECSP2
 instrument_locn = 'POLAR6'
-PSL_size = 170
-type_particle = 'nonincand' #PSL, nonincand, incand, Aquadag
-start_analysis_at = datetime.strptime('20150108','%Y%m%d')
-end_analysis_at = datetime.strptime('20150601','%Y%m%d')
-
-
-#setup
-num_records_to_analyse = 'all'
+type_particle = 'nonincand' #nonincand, incand, Aquadag
+start_analysis_at = datetime.strptime('20150405','%Y%m%d')
+end_analysis_at = datetime.strptime('20150406','%Y%m%d')
+num_records_to_analyse = 1000#'all'
+fit_function = 'Gauss' #Gauss or Giddings
 show_full_fit = True
+LEO_fit_percent = 0.05
 
 #pararmeters used to reject invalid particle records based on scattering peak attributes
 min_peakheight = 10
@@ -47,8 +47,6 @@ record_size_bytes = 1498 #size of a single particle record in bytes(UBC_SP2 = 14
 conn = sqlite3.connect('C:/projects/dbs/SP2_data.db')
 c = conn.cursor()
 
-#c.execute('''CREATE TABLE if not exists SP2_coating_analysis(
-#id INTEGER PRIMARY KEY AUTOINCREMENT,
 #sp2b_file TEXT, 			eg 20120405x001.sp2b
 #file_index INT, 			
 #instr TEXT,				eg UBCSP2, ECSP2
@@ -69,6 +67,10 @@ c = conn.cursor()
 #rBC_mass_fg FLOAT,
 #coat_thickness_nm FLOAT,
 #zero_crossing_posn FLOAT,
+#coat_thickness_from_actual_scat_amp FLOAT,
+#FF_fit_function TEXT,
+#LF_fit_function TEXT,
+#zeroX_to_LEO_limit FLOAT
 #UNIQUE (sp2b_file, file_index, instr)
 #)''')
 
@@ -89,13 +91,17 @@ parameters = {
 'show_plot':True
 }
 
-
+def find_nearest(array,value):   #get index of value in array closest to value
+	idx = (np.abs(array-value)).argmin()
+	return idx
 	
 def gaussFullFit(parameters_dict):
 	
 	
 	#*******HK ANALYSIS************ 
 
+	#####comment this out if it's been run once
+	
 	####use for hk files with no timestamp (just time since midnight) (this should work for the EC polar flights in spring 2012,also for ECSP2 for WHI 20100610 to 20100026, UBCSP2 prior to 20120405)
 	#avg_flow = hk_new_no_ts_LEO.find_bad_hk_durations_no_ts(parameters) 
 	#parameters['avg_flow'] = avg_flow
@@ -172,7 +178,9 @@ def gaussFullFit(parameters_dict):
 				if not number_bad_durations or event_time < bad_duration_start_time:  
 
 					#run the scatteringPeakInfo method to retrieve various peak attributes 
-					particle_record.scatteringPeakInfo()		
+					particle_record.scatteringPeakInfo()
+					actual_scat_signal = particle_record.getScatteringSignal()
+					scattering_baseline = particle_record.scatteringBaseline
 					actual_max_value = particle_record.scatteringMax
 					actual_max_pos = particle_record.scatteringMaxPos
 					
@@ -181,7 +189,7 @@ def gaussFullFit(parameters_dict):
 					incand_max = particle_record.incandMax
 					
 
-					#check to see if incandescencen is negligible, scattering signal is over threshold, is in a reasonable position, and no double peaks
+					#check to see if incandescence is negligible, scattering signal is over threshold, is in a reasonable position, and no double peaks
 					if incand_max < 5. and actual_max_value > min_peakheight and actual_max_value < max_peakheight and actual_max_pos > min_peakpos and actual_max_pos < max_peakpos:
 						
 						#check zero crossing posn
@@ -200,33 +208,51 @@ def gaussFullFit(parameters_dict):
 							if particle_record.doublePeak==False:
 							
 								
-								particle_record.fullGaussFit()
+							
+								if fit_function == 'Giddings':
+									particle_record.GiddingsFit()
+									
+								if fit_function == 'Gauss':
+									particle_record.fullGaussFit()
 								
+								LEO_limit =  (actual_max_value)*LEO_fit_percent+scattering_baseline
+								rising_signal = actual_scat_signal[0:actual_max_pos]
+								LEO_limit_index = find_nearest(rising_signal,LEO_limit)
+								zero_cross_to_LEO_limit = zero_crossing_pt - LEO_limit_index
+																
 								fit_peak_pos = particle_record.FF_peak_pos
-								fit_gauss_width = particle_record.FF_gauss_width
+								fit_width = particle_record.FF_width
 								fit_scattering_amp = particle_record.FF_scattering_amp
 								zero_cross_to_peak = (zero_crossing_pt - fit_peak_pos)
 								
 								#put particle into database or update record
-								#c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr, instr_locn, particle_type) VALUES (?,?,?,?,?)''', 
-								#(file, record_index,instrument, instrument_locn,type_particle))
-								#c.execute('''UPDATE SP2_coating_analysis SET 
-								#unix_ts_utc=?, 
-								#actual_scat_amp=?, 
-								#actual_peak_pos=?, 
-								#FF_scat_amp=?, 
-								#FF_peak_pos=?, 
-								#FF_gauss_width=?, 
-								#zeroX_to_peak=?
-								#WHERE sp2b_file=? and file_index=? and instr=?''', 
-								#(event_time,
-								#actual_max_value,
-								#actual_max_pos,
-								#fit_scattering_amp,
-								#fit_peak_pos,
-								#fit_gauss_width,
-								#zero_cross_to_peak,
-								#file, record_index,instrument))
+								c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr) VALUES (?,?,?)''', 
+								(file, record_index,instrument))
+								c.execute('''UPDATE SP2_coating_analysis SET 
+								instr_locn=?, 
+								particle_type=?,
+								unix_ts_utc=?, 
+								actual_scat_amp=?, 
+								actual_peak_pos=?, 
+								FF_fit_function=?,
+								FF_scat_amp=?, 
+								FF_peak_pos=?, 
+								FF_gauss_width=?, 
+								zeroX_to_peak=?,
+								zeroX_to_LEO_limit=?								
+								WHERE sp2b_file=? and file_index=? and instr=?''', 
+								(instrument_locn,
+								type_particle,
+								event_time,
+								actual_max_value,
+								actual_max_pos,
+								fit_function,
+								fit_scattering_amp,
+								fit_peak_pos,
+								fit_width,
+								zero_cross_to_peak,
+								zero_cross_to_LEO_limit,
+								file, record_index,instrument))
 
 												
 								#plot particle fit if desired
@@ -235,12 +261,13 @@ def gaussFullFit(parameters_dict):
 									y_vals = particle_record.getScatteringSignal()
 									fit_result = particle_record.FF_results
 									#print datetime.utcfromtimestamp(event_time)
-									print record_index, fit_gauss_width, zero_cross_to_peak			
+									print record_index, fit_width, zero_cross_to_peak			
 									
 									fig = plt.figure()
 									ax1 = fig.add_subplot(111)
 									ax1.plot(x_vals,y_vals,'o', markerfacecolor='None')   
 									ax1.plot(x_vals,fit_result, 'red')
+									conn.commit()
 									plt.show()
 
 							
@@ -252,24 +279,19 @@ def gaussFullFit(parameters_dict):
 
 
 
-if multiple_directories == True:
-	os.chdir(data_dir)
-	for directory in os.listdir(data_dir):
-		if os.path.isdir(directory) == True and directory.startswith('20'):
-			parameters['folder']= directory
-			folder_date = datetime.strptime(directory, '%Y%m%d')		
-			if folder_date >= start_analysis_at and folder_date <= end_analysis_at:
-				parameters['directory']=os.path.abspath(directory)
-				os.chdir(parameters['directory'])
-				gaussFullFit(parameters)
-				os.chdir(data_dir)
-	conn.close()	
 
-else:
-	parameters['directory']=os.path.abspath(analysis_dir)
-	os.chdir(parameters['directory'])
-	gaussFullFit(parameters)
-	conn.close()
+os.chdir(data_dir)
+for directory in os.listdir(data_dir):
+	if os.path.isdir(directory) == True and directory.startswith('20'):
+		parameters['folder']= directory
+		folder_date = datetime.strptime(directory, '%Y%m%d')		
+		if folder_date >= start_analysis_at and folder_date < end_analysis_at:
+			parameters['directory']=os.path.abspath(directory)
+			os.chdir(parameters['directory'])
+			gaussFullFit(parameters)
+			os.chdir(data_dir)
+conn.close()	
+
 
 
 	

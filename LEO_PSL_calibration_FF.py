@@ -1,3 +1,7 @@
+#this script is used to do a full fit (Gauss or other) on PSL signals from the SP2
+#this can be used to calibrate the instrument's scattering response to the Mie calculated scattering of a PSL
+#in reality we can simply use the actual peak scattering amplitude for the calibration, so doing a fit is useful mostly for diagnosing the fitting procedure
+
 import sys
 import os
 import datetime
@@ -17,11 +21,11 @@ import sqlite3
 
 
 
-current_dir = 'D:/2015/NETCARE_UBC_SP2/calibration data/20150129/PSL200/'
+current_dir = 'D:/2015/NETCARE_UBC_SP2/calibration data/20150129/PSL240/'
 #current_dir = 'D:/2012/WHI_UBCSP2/Calibrations/20120328/PSL/Binary/200nm/'
 instrument = 'UBCSP2'
 instrument_locn = 'POLAR6'
-PSL_size = 200
+PSL_size = 240
 type_particle = 'PSL'
 os.chdir(current_dir)
 
@@ -63,8 +67,6 @@ conn = sqlite3.connect('C:/projects/dbs/SP2_data.db')
 c = conn.cursor()
 
 
-#c.execute('''CREATE TABLE if not exists SP2_coating_analysis(
-#id INTEGER PRIMARY KEY AUTOINCREMENT,
 #sp2b_file TEXT, 			eg 20120405x001.sp2b
 #file_index INT, 			
 #instr TEXT,				eg UBCSP2, ECSP2
@@ -85,6 +87,10 @@ c = conn.cursor()
 #rBC_mass_fg FLOAT,
 #coat_thickness_nm FLOAT,
 #zero_crossing_posn FLOAT,
+#coat_thickness_from_actual_scat_amp FLOAT,
+#FF_fit_function TEXT,
+#LF_fit_function TEXT,
+#zeroX_to_LEO_limit FLOAT
 #UNIQUE (sp2b_file, file_index, instr)
 #)''')
 
@@ -92,6 +98,8 @@ c = conn.cursor()
 
 #*******HK ANALYSIS************ 
 
+#####comment this out if it's been run once
+	
 ###use for hk files with no timestamp (just time since midnight) (this should work for the EC polar flights in spring 2012,also for ECSP2 for WHI 20100610 to 20100026, UBCSP2 prior to 20120405)
 #avg_flow = hk_new_no_ts_LEO.find_bad_hk_durations_no_ts(parameters) 
 #parameters['avg_flow'] = avg_flow
@@ -103,7 +111,6 @@ c = conn.cursor()
 
 
 #*************LEO routine************
-		
 for file in os.listdir('.'):
 	
 	if file.endswith('.sp2b'):
@@ -176,8 +183,9 @@ for file in os.listdir('.'):
 				
 				#check to see if scattering signal is over threshold, is in a reasonable position, and no double peaks
 				if actual_max_value > min_peakheight and actual_max_value < max_peakheight and actual_max_pos > min_peakpos and actual_max_pos < max_peakpos and particle_record.doublePeak==False and zero_crossing_pt > 0 : 
-					
-					particle_record.fullGaussFit()
+					print record_index
+					particle_record.GiddingsFit()
+					#particle_record.fullGaussFit()
 					
 					fit_peak_pos = particle_record.FF_peak_pos
 					fit_gauss_width = particle_record.FF_gauss_width
@@ -185,8 +193,10 @@ for file in os.listdir('.'):
 					zero_cross_to_peak = (zero_crossing_pt - fit_peak_pos)
 					
 					#put particle into database or update record
-					c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr, instr_locn, particle_type) VALUES (?,?,?,?,?)''', (file, record_index,instrument, instrument_locn,type_particle))
+					c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr) VALUES (?,?,?)''', (file, record_index,instrument))
 					c.execute('''UPDATE SP2_coating_analysis SET 
+					instr_locn=?,
+					particle_type=?,
 					particle_dia=?,
 					unix_ts_utc=?, 
 					actual_scat_amp=?, 
@@ -196,7 +206,9 @@ for file in os.listdir('.'):
 					FF_gauss_width=?, 
 					zeroX_to_peak=?
 					WHERE sp2b_file=? and file_index=? and instr=?''', 
-					(PSL_size,
+					(instrument_locn,
+					type_particle,
+					PSL_size,
 					event_time,
 					actual_max_value,
 					actual_max_pos,
@@ -212,7 +224,17 @@ for file in os.listdir('.'):
 						y_vals = particle_record.getScatteringSignal()	
 						fit_result = particle_record.FF_results
 						
-						print record_index, actual_max_value
+						##os.chdir('C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/')
+						#file = open('NETCARE POLAR6 2015 Spring PSL data for full gauss fit ' + str(file) + '-' + str(record_index) + '.txt', 'w')
+						#file.write('acq_points' + '\t' + 'scattering_signal' + '\t' + 'Full_gauss_fit_result' + '\t' + 'file' + '\t' +'record_index' + '\n')
+						#i=0
+						#for value in x_vals: 
+						#	file.write(str(value) + '\t' + str(y_vals[i]) + '\t' + str(fit_result[i]) + '\n')
+						#	i+=1
+						#file.close()
+						##os.chdir(current_dir)
+						
+						print record_index, actual_max_value, np.max(fit_result)
 						
 						fig = plt.figure()
 						ax1 = fig.add_subplot(111)
@@ -225,6 +247,8 @@ for file in os.listdir('.'):
 			record_index+=1   
 				
 		f.close()
+
+
 		
 conn.commit()
 conn.close()
