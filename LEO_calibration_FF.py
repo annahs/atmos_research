@@ -27,17 +27,17 @@ data_dir = 'D:/2015/NETCARE_UBC_SP2/flight data/'  #'D:/2010/WHI_ECSP2/Binary/' 
 instrument = 'UBCSP2' #'UBCSP2' #ECSP2
 instrument_locn = 'POLAR6'
 type_particle = 'nonincand' #nonincand, incand, Aquadag
-start_analysis_at = datetime.strptime('20150405','%Y%m%d')
-end_analysis_at = datetime.strptime('20150406','%Y%m%d')
-num_records_to_analyse = 1000#'all'
+start_analysis_at = datetime(2015,4,5)
+end_analysis_at = 	datetime(2015,4,6)
+num_records_to_analyse = 'all'# 'all'
 fit_function = 'Gauss' #Gauss or Giddings
-show_full_fit = True
+show_full_fit = False
 LEO_fit_percent = 0.05
 
 #pararmeters used to reject invalid particle records based on scattering peak attributes
 min_peakheight = 10
 max_peakheight = 3700
-min_peakpos = 20
+min_peakpos = 40
 max_peakpos = 160
 
 record_size_bytes = 1498 #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458)
@@ -217,7 +217,7 @@ def gaussFullFit(parameters_dict):
 								
 								LEO_limit =  (actual_max_value)*LEO_fit_percent+scattering_baseline
 								rising_signal = actual_scat_signal[0:actual_max_pos]
-								LEO_limit_index = find_nearest(rising_signal,LEO_limit)
+								LEO_limit_index = find_nearest(rising_signal,LEO_limit)+1 #plus 1 to avoid picking the index below
 								zero_cross_to_LEO_limit = zero_crossing_pt - LEO_limit_index
 																
 								fit_peak_pos = particle_record.FF_peak_pos
@@ -267,7 +267,7 @@ def gaussFullFit(parameters_dict):
 									ax1 = fig.add_subplot(111)
 									ax1.plot(x_vals,y_vals,'o', markerfacecolor='None')   
 									ax1.plot(x_vals,fit_result, 'red')
-									conn.commit()
+									#conn.commit()
 									plt.show()
 
 							

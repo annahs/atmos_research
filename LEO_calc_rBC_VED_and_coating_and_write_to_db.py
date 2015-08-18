@@ -38,11 +38,12 @@ c = conn.cursor()
 c2 = conn.cursor()
 
 instrument = 'UBCSP2'
-instrument_locn = 'WHI'
+instrument_locn = 'POLAR6'
 type_particle = 'incand'
-start_date = '20120101'
-end_date = '20120601'
-lookup_file = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/lookup_tables/coating_lookup_table_WHI_2012_UBCSP2-neg_coat.lupckl'
+start_date = datetime(2015,4,5)
+end_date =   datetime(2015,4,6)
+max_file_index = 10000
+lookup_file = 'C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/lookup tables/coating_lookup_table_POLAR6_2015_UBCSP2-nc(2p26,1p26)-fullPSLcalib_used_factor545.lupckl'
 rBC_density = 1.8 
 incand_sat = 3750
 LF_max = 45000 #above this is unreasonable
@@ -54,15 +55,17 @@ lookup.close()
 
 
 
-begin_data = calendar.timegm(datetime.strptime(start_date,'%Y%m%d').timetuple())
-end_data = calendar.timegm(datetime.strptime(end_date,'%Y%m%d').timetuple())
+begin_data = calendar.timegm(start_date.timetuple())
+end_data = calendar.timegm(end_date.timetuple())
 
 
-def get_rBC_mass(incand_pk_ht, year):
-	if year == 2012:
+def get_rBC_mass(incand_pk_ht, instrument, year):
+	if year == 2012 and instrument=='UBCSP2':
 		rBC_mass = 0.003043*incand_pk_ht + 0.24826 #AD corrected linear calibration for UBCSP2 at WHI 2012
-	if year == 2010:
-		rBC_mass = 0.01081*incand_pk_ht - 0.32619  #AD corrected linear calibration for ECSP2 at WHI 2010
+	if year == 2010 and instrument=='ECSP2':
+		rBC_mass = 0.01081*incand_pk_ht - 0.32619  #AD corrected linear calibration for ECSP2 at WHI 2010if year == 2010 and instrument=='ECSP2':
+	if year == 2015 and instrument=='UBCSP2':
+		rBC_mass = 0.00202*incand_pk_ht + 0.15284  #AD corrected linear calibration for ECSP2 at WHI 2010
 	return rBC_mass
 
 def get_coating_thickness(BC_VED,LEO_amp,coating_lookup_table):
@@ -90,10 +93,11 @@ def get_coating_thickness(BC_VED,LEO_amp,coating_lookup_table):
 
 LOG_EVERY_N = 10000
 
+test=[]
 i = 0
 for row in c.execute('''SELECT incand_amp, LF_scat_amp, unix_ts_utc, sp2b_file, file_index, instr FROM SP2_coating_analysis 
-WHERE instr=? and instr_locn=? and particle_type=? and incand_amp<? and LF_scat_amp<? and unix_ts_utc>=? and unix_ts_utc<?''', 
-(instrument,instrument_locn,type_particle,incand_sat,LF_max,begin_data,end_data)):
+WHERE instr=? and instr_locn=? and particle_type=? and incand_amp<? and LF_scat_amp<? and unix_ts_utc>=? and unix_ts_utc<? and file_index<=?''', 
+(instrument,instrument_locn,type_particle,incand_sat,LF_max,begin_data,end_data,max_file_index)):
 	incand_amp = row[0]
 	LF_amp = row[1]
 	event_time = datetime.utcfromtimestamp(row[2])
@@ -101,13 +105,16 @@ WHERE instr=? and instr_locn=? and particle_type=? and incand_amp<? and LF_scat_
 	index = row[4]
 	instrt = row[5]
 	
-	rBC_mass = get_rBC_mass(incand_amp, event_time.year)
+	rBC_mass = get_rBC_mass(incand_amp, instrt, event_time.year)
 	if rBC_mass >= 0.25 and LF_amp < 45000 and LF_amp > 0:
 		rBC_VED = (((rBC_mass/(10**15*rBC_density))*6/3.14159)**(1/3.0))*10**7 #VED in nm with 10^15fg/g and 10^7nm/cm
 		coat_th = get_coating_thickness(rBC_VED,LF_amp,lookup_table)
 	else:
 		rBC_VED = None
 		coat_th = None
+	
+	if rBC_VED >= 155 and rBC_VED <180:
+		test.append([rBC_VED,coat_th])
 	
 	
 	c2.execute('''UPDATE SP2_coating_analysis SET rBC_mass_fg=?, coat_thickness_nm=? WHERE sp2b_file=? and file_index=? and instr=?''', (rBC_mass,coat_th, file,index,instrt))
@@ -120,5 +127,15 @@ conn.commit()
 conn.close()
 
 
+#test plot
+ved = [row[0] for row in test]
+coat = [row[1] for row in test]
+print np.nanmedian(coat)
 
 
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.hist(coat, bins=20,range=(-50,200), histtype='step', color = 'black')
+
+
+plt.show()

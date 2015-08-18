@@ -13,10 +13,10 @@ c = conn.cursor()
 instrument = 'UBCSP2'
 location = 'POLAR6' #WHI or DMT
 type_particle = 'nonincand' #PSL, nonincand, incand
-fit_function = 'Giddings' #Gauss or Giddings
+fit_function = 'Gauss' #Gauss or Giddings
 size = 240.
 start_date = datetime(2015,4,5)
-end_date = datetime(2015,4,6)
+end_date =   datetime(2015,4,6)
 start_date_ts = calendar.timegm(start_date.timetuple())
 end_date_ts = calendar.timegm(end_date.timetuple())
 
@@ -66,6 +66,7 @@ x = []
 y = []
 j = []
 k = []
+l = []
 
 for row in result:
 	if row[0] != None:
@@ -73,12 +74,13 @@ for row in result:
 		x.append(row[1])
 		j.append(row[1])
 		k.append(row[0])
+		l.append(row[0]/row[1])
 		
 
 		
-print len(x), np.nanmedian(x) , np.nanmean(x), 'actual'
+print len(x), np.nanmedian(x) , np.nanmean(x), np.percentile(x,10), np.percentile(x,90), 'actual'
 
-print len(y), np.nanmedian(y) , np.nanmean(y), 'LF'
+print len(y), np.nanmedian(y) , np.nanmean(y), np.percentile(y,10), np.percentile(y,90), 'LF'
 
 #print x
 #print y
@@ -128,14 +130,33 @@ plt.ylabel('LF_scat_amp')
 plt.plot([0, 3600], [0, 3600], 'k-')
 plt.show()
 
-########hist
+########hist1
 
 fig = plt.figure()
 ax = fig.add_subplot(111)
 ax.hist(j, bins=100,range=(0,4000), histtype='step', color = 'black',linewidth=1.5, label = 'Actual scat amp (au)' )
 ax.hist(k, bins=100,range=(0,4000), histtype='step', color = 'red',linewidth=1.5,  label = 'LF scat amp (au)' )
-ax.axvline(np.nanmedian(j), color= 'black')
-ax.axvline(np.nanmedian(k), color= 'red')
+ax.axvline(np.nanmedian(j), color= 'black',  label = 'Actual median' )
+ax.axvline(np.nanmedian(k), color= 'red',  label = 'LEO median')
+#plt.text (0.1,0.94, str(size) + 'nm PSL', transform=ax.transAxes)
+plt.legend()
+
+#plt.savefig('Netcare Spring 2015 - scattering ' + str(size) + 'nm PSL - full Gauss fit and actual scattering amplitude.png', bbox_inches='tight')
+
+
+plt.show()
+
+
+########hist1
+print 'median ratio', np.nanmedian(l)
+
+fig = plt.figure()
+ax = fig.add_subplot(111)
+#ax.hist(j, bins=100,range=(0,4000), histtype='step', color = 'black',linewidth=1.5, label = 'Actual scat amp (au)' )
+ax.hist(l, bins=100,range=(0,10), histtype='step', color = 'red',linewidth=1.5,  label = 'LF scat amp/Actual scat amp' )
+ax.axvline(np.nanmedian(l), color= 'black',  label = 'median ratio')
+ax.axvline(1, color= 'red',  label = '1')
+plt.xlim(0,10)
 #plt.text (0.1,0.94, str(size) + 'nm PSL', transform=ax.transAxes)
 plt.legend()
 
