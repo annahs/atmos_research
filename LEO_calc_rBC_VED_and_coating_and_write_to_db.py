@@ -40,9 +40,9 @@ c2 = conn.cursor()
 instrument = 'UBCSP2'
 instrument_locn = 'POLAR6'
 type_particle = 'incand'
-start_date = datetime(2015,4,5)
-end_date =   datetime(2015,4,6)
-max_file_index = 10000
+start_date = datetime(2015,4,21)
+end_date =   datetime(2015,4,22)
+max_file_index = 100000
 lookup_file = 'C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/lookup tables/coating_lookup_table_POLAR6_2015_UBCSP2-nc(2p26,1p26)-fullPSLcalib_used_factor545.lupckl'
 rBC_density = 1.8 
 incand_sat = 3750
@@ -93,11 +93,10 @@ def get_coating_thickness(BC_VED,LEO_amp,coating_lookup_table):
 
 LOG_EVERY_N = 10000
 
-test=[]
 i = 0
 for row in c.execute('''SELECT incand_amp, LF_scat_amp, unix_ts_utc, sp2b_file, file_index, instr FROM SP2_coating_analysis 
-WHERE instr=? and instr_locn=? and particle_type=? and incand_amp<? and LF_scat_amp<? and unix_ts_utc>=? and unix_ts_utc<? and file_index<=?''', 
-(instrument,instrument_locn,type_particle,incand_sat,LF_max,begin_data,end_data,max_file_index)):
+WHERE instr=? and instr_locn=? and particle_type=? and incand_amp<? and LF_scat_amp<? and unix_ts_utc>=? and unix_ts_utc<?''', 
+(instrument,instrument_locn,type_particle,incand_sat,LF_max,begin_data,end_data)):
 	incand_amp = row[0]
 	LF_amp = row[1]
 	event_time = datetime.utcfromtimestamp(row[2])
@@ -113,10 +112,6 @@ WHERE instr=? and instr_locn=? and particle_type=? and incand_amp<? and LF_scat_
 		rBC_VED = None
 		coat_th = None
 	
-	if rBC_VED >= 155 and rBC_VED <180:
-		test.append([rBC_VED,coat_th])
-	
-	
 	c2.execute('''UPDATE SP2_coating_analysis SET rBC_mass_fg=?, coat_thickness_nm=? WHERE sp2b_file=? and file_index=? and instr=?''', (rBC_mass,coat_th, file,index,instrt))
 	
 	i+=1
@@ -127,15 +122,3 @@ conn.commit()
 conn.close()
 
 
-#test plot
-ved = [row[0] for row in test]
-coat = [row[1] for row in test]
-print np.nanmedian(coat)
-
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ax.hist(coat, bins=20,range=(-50,200), histtype='step', color = 'black')
-
-
-plt.show()

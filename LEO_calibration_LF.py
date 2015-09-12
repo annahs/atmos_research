@@ -30,15 +30,15 @@ import time
 data_dir = data_dir = 'D:/2015/NETCARE_UBC_SP2/flight data/'#'D:/2012/WHI_UBCSP2/Binary/' #'D:/2012/WHI_UBCSP2/Binary/' #'D:/2009/WHI_ECSP2/Binary/'# 'D:/2010/WHI_ECSP2/Binary/'  #'D:/2012/WHI_UBCSP2/Binary/' 
 instrument = 'UBCSP2'
 instrument_locn = 'POLAR6'
-type_particle = 'incand' #PSL, nonincand, incand
+type_particle = 'nonincand' #PSL, nonincand, incand
 start_analysis_at = datetime(2015,4,5)
 end_analysis_at = 	datetime(2015,4,6)
 analysis_time_start = 0  #use this to retrict analysis to a particular time of day
 analysis_time_end = 24
-num_records_to_analyse = 'all'
-fit_function = 'Gauss' #Gauss or Giddings
+num_records_to_analyse = 500 #'all'
+fit_function = 'Giddings' #Gauss or Giddings
 show_LEO_fit = False
-FF = -2.7 #fudge factor for fit_width
+FF = 0.5#-2.7 #fudge factor for fit_width
 
 #pararmeters used to assess incandescent peak
 min_incand_amp = 20  #for 2015 polar6 flights an incand pk amp of 48 corresponds to a particle with BC mass of 0.25fg, which is ~65nm
@@ -49,7 +49,7 @@ max_LEOpos = 100 #if the fit is using more than this number of points there is s
 calib_instrument = 'UBCSP2'
 calib_instrument_locn = 'POLAR6'
 calib_type_particle = 'nonincand'
-calib_time_span = 1800 #in secs  #the program will select calibration data from +- this time period surrounding the data being LEO fitted
+calib_time_span = 240*60 #in secs  #the program will select calibration data from +- this time period surrounding the data being LEO fitted
 
 #binary record size
 record_size_bytes = 1498 #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458)
@@ -131,22 +131,43 @@ def gaussLEOFit(parameters_dict):
 				particle_record = ParticleRecord(record, parameters['acq_rate'])	
 				event_time = particle_record.timestamp #UNIXts in UTC
 				
-				#**********get LEO calib parameters from nonincand reals
+
 				
-				if (record_index % 100) == 0 or record_index == 0:
-					time_span = calib_time_span #in secs
-					begin_calib_data = event_time-time_span
-					end_calib_data = event_time+time_span
-					#get parameters for fixing variables in Gaussian fitting
-					c.execute('''SELECT FF_gauss_width, zeroX_to_peak, zeroX_to_LEO_limit FROM SP2_coating_analysis 
-					WHERE instr=? and instr_locn=? and particle_type=? and unix_ts_utc>=? and unix_ts_utc<? and FF_fit_function=? and FF_gauss_width is not null and zeroX_to_peak is not null''', 
-					(calib_instrument,calib_instrument_locn,calib_type_particle, begin_calib_data, end_calib_data,fit_function))
-					result = c.fetchall()
-					
-					mean_calib_fit_width = np.nanmean([row[0] for row in result])+FF
-					mean_zeroX_to_peak = np.nanmean([row[1] for row in result]) 
-					mean_zeroX_to_LEO_limit = np.nanmean([row[2] for row in result])
-					#print 'number of calib particles = ',len(result)
+		
+				
+				#**********get LEO calib parameters from nonincand reals
+				if fit_function == 'Gauss':
+					if (record_index % 10000) == 0 or record_index == 0:
+						time_span = calib_time_span #in secs
+						begin_calib_data = event_time-time_span
+						end_calib_data = event_time+time_span
+						#get parameters for fixing variables in Gaussian fitting
+						c.execute('''SELECT FF_gauss_width, zeroX_to_peak, zeroX_to_LEO_limit FROM SP2_coating_analysis 
+						WHERE instr=? and instr_locn=? and particle_type=? and unix_ts_utc>=? and unix_ts_utc<? and FF_fit_function=? and FF_gauss_width is not null and zeroX_to_peak is not null''', 
+						(calib_instrument,calib_instrument_locn,calib_type_particle, begin_calib_data, end_calib_data,fit_function))
+						result = c.fetchall()
+						
+						mean_calib_fit_width = np.nanmean([row[0] for row in result])+FF
+						mean_zeroX_to_peak = np.nanmean([row[1] for row in result])
+						mean_zeroX_to_LEO_limit = np.nanmean([row[2] for row in result])
+						print 'number of calib particles = ',len(result),mean_zeroX_to_LEO_limit
+						
+				if fit_function == 'Giddings':
+					if (record_index % 10000) == 0 or record_index == 0:
+						time_span = calib_time_span #in secs
+						begin_calib_data = event_time-time_span
+						end_calib_data = event_time+time_span
+						#get parameters for fixing variables in Gaussian fitting
+						c.execute('''SELECT FF_gauss_width, zeroX_to_peak, zeroX_to_LEO_limit FROM SP2_coating_analysis_Giddings_fit 
+						WHERE instr=? and instr_locn=? and particle_type=? and unix_ts_utc>=? and unix_ts_utc<? and FF_fit_function=? and FF_gauss_width is not null and zeroX_to_peak is not null''', 
+						(calib_instrument,calib_instrument_locn,calib_type_particle, begin_calib_data, end_calib_data,fit_function))
+						result = c.fetchall()
+						
+						mean_calib_fit_width = np.nanmean([row[0] for row in result])+FF
+						mean_zeroX_to_peak = np.nanmean([row[1] for row in result])
+						mean_zeroX_to_LEO_limit = np.nanmean([row[2] for row in result])
+						print 'number of calib particles = ',len(result),mean_zeroX_to_LEO_limit
+						
 
 				#******
 				
@@ -178,13 +199,23 @@ def gaussLEOFit(parameters_dict):
 					zero_crossing_pt = particle_record.zeroCrossing()
 					analyze_this_particle = False
 					
-					#for calibration purposes we only grab files where we had a successful fullGauss fit 
+					#for calibration purposes we only grab files where we had a successful fullGauss or FullGiddings fit 
+				
 					if type_particle == 'nonincand':
-						c.execute('''SELECT * FROM SP2_coating_analysis WHERE instr=? and instr_locn=? and particle_type=? and sp2b_file=? and file_index=?''', 
-						(instrument,instrument_locn,type_particle, file, record_index))
-						result = c.fetchone()
-						if result is not None:
-							analyze_this_particle = True
+					
+						if fit_function == 'Gauss':
+							c.execute('''SELECT * FROM SP2_coating_analysis WHERE instr=? and instr_locn=? and particle_type=? and sp2b_file=? and file_index=?''', 
+							(instrument,instrument_locn,type_particle, file, record_index))
+							result = c.fetchone()
+							if result is not None:
+								analyze_this_particle = True
+								
+						if fit_function == 'Giddings':
+							c.execute('''SELECT * FROM SP2_coating_analysis_Giddings_fit WHERE instr=? and instr_locn=? and particle_type=? and sp2b_file=? and file_index=?''', 
+							(instrument,instrument_locn,type_particle, file, record_index))
+							result = c.fetchone()
+							if result is not None:
+								analyze_this_particle = True
 							
 					#for looking at incandescent particles we will try a LEO fit if scattering and incandescent peaks high enough
 					if type_particle == 'incand':
@@ -199,26 +230,48 @@ def gaussLEOFit(parameters_dict):
 
 							scattering_pk_amp = particle_record.scatteringMax
 							lag_time_pts = incand_pk_pos-scat_pk_pos
-		
-							c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr) VALUES (?,?,?)''', 
-								(file, record_index,instrument))
-							c.execute('''UPDATE SP2_coating_analysis SET 
-							instr_locn=?,
-							particle_type=?,
-							unix_ts_utc=?, 
-							actual_scat_amp=?, 
-							incand_amp=?,
-							lag_time_fit_to_incand=?,	
-							zero_crossing_posn=?
-							WHERE sp2b_file=? and file_index=? and instr=?''', 
-							(instrument_locn,
-							type_particle,
-							event_time,
-							scattering_pk_amp,
-							incand_pk_amp,
-							lag_time_pts,
-							zero_crossing_pt,
-							file, record_index,instrument))
+							
+							if fit_function == 'Gauss':
+								c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr) VALUES (?,?,?)''', 
+									(file, record_index,instrument))
+								c.execute('''UPDATE SP2_coating_analysis SET 
+								instr_locn=?,
+								particle_type=?,
+								unix_ts_utc=?, 
+								actual_scat_amp=?, 
+								incand_amp=?,
+								lag_time_fit_to_incand=?,	
+								zero_crossing_posn=?
+								WHERE sp2b_file=? and file_index=? and instr=?''', 
+								(instrument_locn,
+								type_particle,
+								event_time,
+								scattering_pk_amp,
+								incand_pk_amp,
+								lag_time_pts,
+								zero_crossing_pt,
+								file, record_index,instrument))
+								
+							if fit_function == 'Giddings':
+								c.execute('''INSERT or IGNORE into SP2_coating_analysis_Giddings_fit (sp2b_file, file_index, instr) VALUES (?,?,?)''', 
+									(file, record_index,instrument))
+								c.execute('''UPDATE SP2_coating_analysis_Giddings_fit SET 
+								instr_locn=?,
+								particle_type=?,
+								unix_ts_utc=?, 
+								actual_scat_amp=?, 
+								incand_amp=?,
+								lag_time_fit_to_incand=?,	
+								zero_crossing_posn=?
+								WHERE sp2b_file=? and file_index=? and instr=?''', 
+								(instrument_locn,
+								type_particle,
+								event_time,
+								scattering_pk_amp,
+								incand_pk_amp,
+								lag_time_pts,
+								zero_crossing_pt,
+								file, record_index,instrument))
 							
 							analyze_this_particle = True
 						
@@ -241,31 +294,45 @@ def gaussLEOFit(parameters_dict):
 						if LEO_max_fit_index < min_LEOpos or LEO_max_fit_index > max_LEOpos: #error locating LEO fitting index
 							LEO_amp = -3  #-2 in these values indicates a failure in the initial look for a zero-crossing, -3 indicates outside the range set here ie not enough data points for fitting
 							LEO_baseline = -3
-
-						c.execute('''UPDATE SP2_coating_analysis SET 
-							LF_scat_amp=?,
-							LF_baseline_pct_diff=?,
-							zero_crossing_posn=?,
-							LF_fit_function=?
-							WHERE sp2b_file=? and file_index=? and instr=?''',
-							(LEO_amp,
-							LF_percent_diff_baseline,
-							zero_crossing_pt,
-							fit_function,
-							file,record_index,instrument))
+							
+						if fit_function == 'Gauss':
+							c.execute('''UPDATE SP2_coating_analysis SET 
+								LF_scat_amp=?,
+								LF_baseline_pct_diff=?,
+								zero_crossing_posn=?,
+								LF_fit_function=?
+								WHERE sp2b_file=? and file_index=? and instr=?''',
+								(LEO_amp,
+								LF_percent_diff_baseline,
+								zero_crossing_pt,
+								fit_function,
+								file,record_index,instrument))
+					
+						if fit_function == 'Giddings':
+							c.execute('''UPDATE SP2_coating_analysis_Giddings_fit SET 
+								LF_scat_amp=?,
+								LF_baseline_pct_diff=?,
+								zero_crossing_posn=?,
+								LF_fit_function=?
+								WHERE sp2b_file=? and file_index=? and instr=?''',
+								(LEO_amp,
+								LF_percent_diff_baseline,
+								zero_crossing_pt,
+								fit_function,
+								file,record_index,instrument))
 						
 						###########
 						#plot particle fit if desired				
-						if show_LEO_fit == True:# and incand_pk_amp > min_incand_amp:
+						if show_LEO_fit == True :#and incand_pk_amp > 1300:
 						
 							x_vals_all = particle_record.getAcqPoints()
 							y_vals_all = particle_record.getScatteringSignal()	
 							y_vals_split = particle_record.getSplitDetectorSignal()
 							y_vals_incand = particle_record.getWidebandIncandSignal()
 							fit_result = particle_record.LF_results		
-												
-							print file, 'record: ',record_index, incand_pk_amp, LEO_amp, LEO_max_fit_index
-							print  'core VED', ((((0.00202*incand_pk_amp+0.15284)/(10**15*1.8))*6/3.14159)**(1/3.0))*10**7
+							print event_time
+							print file, 'record: ',record_index, LEO_amp, LEO_max_fit_index
+							#print  'core VED', ((((0.00202*incand_pk_amp+0.15284)/(10**15*1.8))*6/3.14159)**(1/3.0))*10**7
 							fig = plt.figure()
 							ax1 = fig.add_subplot(111)
 							ax1.plot(x_vals_all,y_vals_all,'o', markerfacecolor='None')  
@@ -287,7 +354,7 @@ def gaussLEOFit(parameters_dict):
 		
 		c.close() 
 		t1 = time.time()
-		print t1-t0
+		print (t1-t0)/60
 	
 os.chdir(data_dir)
 for directory in os.listdir(data_dir):

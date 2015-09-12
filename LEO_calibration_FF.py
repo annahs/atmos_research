@@ -28,11 +28,13 @@ instrument = 'UBCSP2' #'UBCSP2' #ECSP2
 instrument_locn = 'POLAR6'
 type_particle = 'nonincand' #nonincand, incand, Aquadag
 start_analysis_at = datetime(2015,4,5)
-end_analysis_at = 	datetime(2015,4,6)
-num_records_to_analyse = 'all'# 'all'
-fit_function = 'Gauss' #Gauss or Giddings
+end_analysis_at = 	datetime(2015,4,10)
+num_records_to_analyse = 2000# 'all'
+fit_function = 'Giddings' #Gauss or Giddings
 show_full_fit = False
 LEO_fit_percent = 0.05
+
+
 
 #pararmeters used to reject invalid particle records based on scattering peak attributes
 min_peakheight = 10
@@ -226,35 +228,68 @@ def gaussFullFit(parameters_dict):
 								zero_cross_to_peak = (zero_crossing_pt - fit_peak_pos)
 								
 								#put particle into database or update record
-								c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr) VALUES (?,?,?)''', 
-								(file, record_index,instrument))
-								c.execute('''UPDATE SP2_coating_analysis SET 
-								instr_locn=?, 
-								particle_type=?,
-								unix_ts_utc=?, 
-								actual_scat_amp=?, 
-								actual_peak_pos=?, 
-								FF_fit_function=?,
-								FF_scat_amp=?, 
-								FF_peak_pos=?, 
-								FF_gauss_width=?, 
-								zeroX_to_peak=?,
-								zeroX_to_LEO_limit=?								
-								WHERE sp2b_file=? and file_index=? and instr=?''', 
-								(instrument_locn,
-								type_particle,
-								event_time,
-								actual_max_value,
-								actual_max_pos,
-								fit_function,
-								fit_scattering_amp,
-								fit_peak_pos,
-								fit_width,
-								zero_cross_to_peak,
-								zero_cross_to_LEO_limit,
-								file, record_index,instrument))
+								if fit_function == 'Gauss':
+									c.execute('''INSERT or IGNORE into SP2_coating_analysis (sp2b_file, file_index, instr) VALUES (?,?,?)''', 
+									(file, record_index,instrument))
+									c.execute('''UPDATE SP2_coating_analysis SET 
+									instr_locn=?, 
+									particle_type=?,
+									unix_ts_utc=?, 
+									actual_scat_amp=?, 
+									actual_peak_pos=?, 
+									FF_fit_function=?,
+									FF_scat_amp=?, 
+									FF_peak_pos=?, 
+									FF_gauss_width=?, 
+									zeroX_to_peak=?,
+									zeroX_to_LEO_limit=?,	
+									FF_fit_function =?
+									WHERE sp2b_file=? and file_index=? and instr=?''', 
+									(instrument_locn,
+									type_particle,
+									event_time,
+									actual_max_value,
+									actual_max_pos,
+									fit_function,
+									fit_scattering_amp,
+									fit_peak_pos,
+									fit_width,
+									zero_cross_to_peak,
+									zero_cross_to_LEO_limit,
+									fit_function,
+									file, record_index,instrument))
 
-												
+								if fit_function == 'Giddings':
+									c.execute('''INSERT or IGNORE into SP2_coating_analysis_Giddings_fit (sp2b_file, file_index, instr) VALUES (?,?,?)''', 
+									(file, record_index,instrument))
+									c.execute('''UPDATE SP2_coating_analysis_Giddings_fit SET 
+									instr_locn=?, 
+									particle_type=?,
+									unix_ts_utc=?, 
+									actual_scat_amp=?, 
+									actual_peak_pos=?, 
+									FF_fit_function=?,
+									FF_scat_amp=?, 
+									FF_peak_pos=?, 
+									FF_gauss_width=?, 
+									zeroX_to_peak=?,
+									zeroX_to_LEO_limit=?,	
+									FF_fit_function =?
+									WHERE sp2b_file=? and file_index=? and instr=?''', 
+									(instrument_locn,
+									type_particle,
+									event_time,
+									actual_max_value,
+									actual_max_pos,
+									fit_function,
+									fit_scattering_amp,
+									fit_peak_pos,
+									fit_width,
+									zero_cross_to_peak,
+									zero_cross_to_LEO_limit,
+									fit_function,
+									file, record_index,instrument))
+									
 								#plot particle fit if desired
 								if show_full_fit == True:
 									x_vals = particle_record.getAcqPoints()

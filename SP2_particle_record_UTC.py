@@ -275,7 +275,7 @@ class ParticleRecord:
 		split_max_value = np.max(self.splitData)
 		split_min_value = np.min(self.splitData)
 	
-		if (self.splitBaseline-split_min_value) >= 140 and (split_max_value-self.splitBaseline) >=140:  #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
+		if (self.splitBaseline-split_min_value) >= 150 and (split_max_value-self.splitBaseline) >=150:  #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
 			try:
 				for index in range(split_min_index, split_max_index+1): #go to max +1 because 'range' function is not inclusive
 					if self.splitData[index] < self.splitBaseline:
@@ -303,7 +303,7 @@ class ParticleRecord:
 		split_min_value = np.min(self.splitData)
 		
 		
-		if (self.splitBaseline-split_min_value) >= 140 and (split_max_value-self.splitBaseline) >= 140: #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
+		if (self.splitBaseline-split_min_value) >= 150 and (split_max_value-self.splitBaseline) >= 150: #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
 			try:
 				for index in range(split_max_index, split_min_index+1):  #go to max +1 because 'range' function is not inclusive
 					if self.splitData[index] > self.splitBaseline:
@@ -375,7 +375,7 @@ class ParticleRecord:
 			self.LF_scattering_amp = -2
 			self.LF_baseline = -2
 			self.LF_results = []
-			self.LF_max_index = -2
+			#self.LF_max_index = -2
 			self.beam_center_pos = -2
 			
 		else:

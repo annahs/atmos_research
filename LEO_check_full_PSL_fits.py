@@ -13,10 +13,10 @@ c = conn.cursor()
 instrument = 'UBCSP2'
 location = 'POLAR6' #WHI or DMT
 type_particle = 'nonincand' #PSL, nonincand, incand
-fit_function = 'Gauss' #Gauss or Giddings
+fit_function = 'Giddings' #Gauss or Giddings
 size = 240.
 start_date = datetime(2015,4,5)
-end_date =   datetime(2015,4,6)
+end_date =   datetime(2015,4,22)
 start_date_ts = calendar.timegm(start_date.timetuple())
 end_date_ts = calendar.timegm(end_date.timetuple())
 
@@ -52,7 +52,7 @@ end_date_ts = calendar.timegm(end_date.timetuple())
 #)''')
 	
 
-c.execute('''SELECT LF_scat_amp, actual_scat_amp, sp2b_file, file_index  FROM SP2_coating_analysis 
+c.execute('''SELECT LF_scat_amp, actual_scat_amp, sp2b_file, file_index  FROM SP2_coating_analysis_Giddings_fit 
 WHERE instr=? and particle_type=? and unix_ts_utc>=? and unix_ts_utc<? and FF_fit_function=? and LF_fit_function=? and file_index<?''', 
 (instrument,type_particle, start_date_ts,end_date_ts,fit_function,fit_function,500))
 
@@ -123,10 +123,12 @@ def onpick(event):
 	print label
 	
 fig.canvas.mpl_connect('pick_event', onpick)
-ax.set_xlim([0,3600])
-ax.set_ylim([0,3600])
+ax.set_xlim([100,5000])
+ax.set_ylim([100,5000])
 plt.xlabel('actual_scat_amp')
 plt.ylabel('LF_scat_amp')
+ax.set_xscale('log')
+ax.set_yscale('log')
 plt.plot([0, 3600], [0, 3600], 'k-')
 plt.show()
 
