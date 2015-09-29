@@ -20,12 +20,13 @@ timezone = timedelta(hours = 1)
 endpointsPARIS =  {}
 
 dir = 'C:/Users/Sarah Hanna/Documents/Data/French_campaign/Backtrajectories_biodetect-working/'
+dir = 'C:/Users/Sarah Hanna/Documents/Data/French_campaign/Biodetect_48hours-working/'
 os.chdir(dir)
 
 clusters = []
 cluster_no = 1	
 for file in os.listdir('.'):
-	if file.endswith('11mean.tdump'):
+	if file.endswith('4mean.tdump'):
 		
 		tdump_file = open(file, 'r')
 		print file
@@ -67,10 +68,17 @@ for file in os.listdir('.'):
 
 #plottting
 ###set up the basemap instance  
-lat_pt = 55.
+lat_pt = 52.
 lon_pt = 0.
-	
+
+#5-day bts	
 m = Basemap(width=5500000,height=5500000,
+			rsphere=(6378137.00,6356752.3142),
+			resolution='l',area_thresh=1000.,projection='lcc',
+			lat_1=47.,lat_2=55,lat_0=lat_pt,lon_0=lon_pt)
+
+#48 hour bts	
+m = Basemap(width=3300000,height=3300000,
 			rsphere=(6378137.00,6356752.3142),
 			resolution='l',area_thresh=1000.,projection='lcc',
 			lat_1=47.,lat_2=55,lat_0=lat_pt,lon_0=lon_pt)
@@ -78,14 +86,14 @@ m = Basemap(width=5500000,height=5500000,
 	
 fig = plt.figure(figsize=(10,10))
 ax = fig.add_subplot(111)
-m.drawmapboundary(fill_color='white') 
-
-#rough shapes 
+#m.drawmapboundary(fill_color='white') 
+#
+##rough shapes 
 m.drawcoastlines()
-m.fillcontinents(color='#FFFFBF',lake_color='#ABD9E9',zorder=0)
+#m.fillcontinents(color='#FFFFBF',lake_color='#ABD9E9',zorder=0)
 m.drawcountries()
 
-
+m.bluemarble()
 
 ####other data
 
@@ -97,7 +105,7 @@ m.drawcountries()
 parallels = np.arange(0.,81,10.)
 m.drawparallels(parallels,labels=[False,True,True,False])
 meridians = np.arange(10.,351.,20.)
-m.drawmeridians(meridians,labels=[True,False,False,True])
+m.drawmeridians(meridians,labels=[False,False,False,True])
 
 
 
@@ -129,7 +137,7 @@ plt.legend(loc = 3)
 dir = 'C:/Users/Sarah Hanna/Documents/Data/French_campaign/'
 os.chdir(dir)
 
-plt.savefig('PARIS_cluster_means_from_HYSPLIT_11.png', bbox_inches='tight') 
+plt.savefig('PARIS_cluster_means_from_HYSPLIT_48hr_backtrajectories-4clusters.png', bbox_inches='tight') 
 plt.show()
 
 
