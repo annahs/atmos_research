@@ -10,6 +10,8 @@ from datetime import datetime
 from datetime import timedelta
 import pickle
 from scipy.io import netcdf
+from matplotlib.patches import Polygon
+
 
 
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record')
@@ -19,10 +21,10 @@ os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record')
 
 lat_pt = 50.06
 lon_pt = -142.96
-plt_lat_min = 45
-plt_lat_max = 56#44.2
-plt_lon_min = -137
-plt_lon_max = -113
+plt_lat_min = 46
+plt_lat_max = 55#44.2
+plt_lon_min = -136
+plt_lon_max = -114
 
 #m = Basemap(projection='npstere',boundinglat=30,lon_0=270,resolution='l')
 
@@ -92,19 +94,29 @@ WHI_x,WHI_y = m(WHI_lon, WHI_lat)
 plt.text(WHI_x-33000,WHI_y+25000,'WHI')
 m.plot(WHI_x,WHI_y, color='red', marker='*', linestyle = 'None',markersize = 10, label = 'WHI')
 
-#CanAM4 gridpoints
-lons_inarea = [row[0] for row in coords]
-lats_inarea = [row[1] for row in coords]
-
-x,y = m(lons_inarea, lats_inarea)
-m.plot(x,y, color='green', marker='o', linestyle = 'None', label = 'CanAM4 grid points',markersize = 8)
+##CanAM4 gridpoints
+#lons_inarea = [row[0] for row in coords]
+#lats_inarea = [row[1] for row in coords]
+#
+#x,y = m(lons_inarea, lats_inarea)
+#m.plot(x,y, color='green', marker='o', linestyle = 'None', label = 'CanAM4 grid points',markersize = 8)
 
 #GEOS-Chem grid point
 GC_lon = -122.500
 GC_lat = 50.000
 x,y = m(GC_lon, GC_lat)
-m.plot(x,y, color='orange', marker='o', linestyle = 'None', label = 'GEOS-Chem grid point',markersize = 8)
+#m.plot(x,y, color='green', marker='o', linestyle = 'None', label = 'GEOS-Chem grid point',markersize = 8)
 
+def draw_screen_poly( lats, lons, m):
+    x, y = m( lons, lats )
+    xy = zip(x,y)
+    poly = Polygon( xy, facecolor='grey', alpha=0.4 )
+    plt.gca().add_patch(poly)
+
+#GEOS-Chem grid box
+lats = [51,51,49,49,51]
+lons = [-125,-120,-120,-125,-125]
+draw_screen_poly( lats, lons, m)
 
 #label Vancouer and Seattle
 Van_lon = -123.1
