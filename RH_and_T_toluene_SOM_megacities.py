@@ -348,3 +348,114 @@ plt.savefig(data_dir + 'RH_and_T_for_global_megacities-high_RH_cities.png',  bbo
 plt.show()
 
 
+###plotting 2
+
+
+city_ordered_list = ['Tokyo','Jakarta','Seoul','Delhi','Shanghai','Karachi','New York','Mexico City','Beijing','Sao Paulo','Lagos','Mumbai','Osaka','Manila','Cairo']		
+
+
+high_RH_color = 'green'
+low_RH_color = 'red'
+span_alpha = 0.2
+
+
+fig, axes = plt.subplots(5,3, figsize=(12, 12), facecolor='w', edgecolor='k')
+fig.subplots_adjust(hspace = 0., wspace=0.08)
+
+axs = axes.ravel()
+
+i=0
+for city in city_ordered_list:
+	RH_plot_data = []
+	T_plot_data = []
+	for month in range (1,13):                                                                  
+		RH_plot_data.append(cities[city][0][month])                                    
+		T_plot_data.append(cities[city][1][month]) 
+	
+	T_RH = axs[i].boxplot(RH_plot_data, whis=[10,90],sym='')
+	plt.setp(T_RH['boxes'], color=RH_color)
+	plt.setp(T_RH['whiskers'], color=RH_color,linestyle='-')
+	plt.setp(T_RH['caps'], color=RH_color)
+	plt.setp(T_RH['medians'], color=RH_color)
+	axs[i].set_ylim(0,RH_lim)
+	axs[i].set_ylabel('')
+	axs[i].text(label_x_pos, label_y_pos,city,transform=axs[i].transAxes)
+	axs[i].yaxis.grid(True, linestyle='-', which='major', color='grey', alpha=1)
+	if i in [0,1,2]:
+		axs[i].xaxis.tick_top()
+		axs[i].set_xticklabels(months)	
+	if i in [0,3,6,9,12]:
+		axs[i].set_ylabel('%RH', color = RH_color)
+	else:
+		axs[i].set_yticklabels([])
+	if i in [13]:
+		axs[i].set_xlabel('month')
+	#if i == 5:
+	#	axs[i].axes.get_yaxis().set_visible(False)
+	#	axs[i].axes.get_xaxis().set_visible(False)
+	
+	if city == 'Tokyo':
+		axs[i].axvspan(5.5,9.5, facecolor=high_RH_color, alpha=span_alpha)
+	if city == 'Jakarta':
+		axs[i].axvspan(0.5,12.5, facecolor=high_RH_color, alpha=span_alpha)
+	if city == 'Seoul':
+		axs[i].axvspan(6.5,7.5, facecolor=high_RH_color, alpha=span_alpha)
+	if city == 'Delhi':
+		axs[i].axvspan(2.5,6.5, facecolor=low_RH_color, alpha=span_alpha)
+	if city == 'Shanghai':
+		axs[i].axvspan(5.5,9.5, facecolor=high_RH_color, alpha=span_alpha)
+	if city == 'Karachi':
+		axs[i].axvspan(5.5,8.5, facecolor=high_RH_color, alpha=span_alpha)
+		axs[i].axvspan(0.5,4.5, facecolor=low_RH_color, alpha=span_alpha)
+		axs[i].axvspan(9.5,12.5, facecolor=low_RH_color, alpha=span_alpha)
+	if city == 'New York':
+		print city
+	if city == 'Mexico City':
+		axs[i].axvspan(0.5,5.5, facecolor=low_RH_color, alpha=span_alpha)
+		axs[i].axvspan(11.5,12.5, facecolor=low_RH_color, alpha=span_alpha)
+	if city == 'Beijing':
+		axs[i].axvspan(0.5,5.5, facecolor=low_RH_color, alpha=span_alpha)
+		axs[i].axvspan(10.5,12.5, facecolor=low_RH_color, alpha=span_alpha)
+	if city == 'Sao Paulo':
+		axs[i].axvspan(0.5,1.5, facecolor=high_RH_color, alpha=span_alpha)
+	if city == 'Lagos':
+		axs[i].axvspan(1.5,11.5, facecolor=high_RH_color, alpha=span_alpha)
+	if city == 'Mumbai':
+		axs[i].axvspan(4.5,9.5, facecolor=high_RH_color, alpha=span_alpha)
+	if city == 'Osaka':
+		axs[i].axvspan(6.5,7.5, facecolor=high_RH_color, alpha=span_alpha)
+	if city == 'Manila':
+		axs[i].axvspan(0.5,12.5, facecolor=high_RH_color, alpha=span_alpha)
+	if city == 'Cairo':
+		axs[i].axvspan(2.5,5.5, facecolor=low_RH_color, alpha=span_alpha)
+
+	
+	#axs[i].axhline(45, color= 'g',)
+	#axs[i].axhline(17, color= 'r',)
+
+	
+	axT = axs[i].twinx()		
+	T_T = axT.boxplot(T_plot_data, whis=[10,90],sym='')
+	plt.setp(T_T['boxes'], color=temp_color)
+	plt.setp(T_T['whiskers'], color=temp_color,linestyle='-')
+	plt.setp(T_T['caps'], color=temp_color)
+	plt.setp(T_T['medians'], color=temp_color)
+	axT.set_ylim(T_min,T_lim)
+	axT.yaxis.grid(True, linestyle=':', which='major', color='grey', alpha=1)
+	axT.set_ylabel('')
+	axT.yaxis.set_visible(True)
+	axT.set_xticklabels(months)
+	if i in [2,5,8,11,14]:
+		axT.set_ylabel('Temperature (C)', color = temp_color)
+	else:
+		axT.set_yticklabels([])
+		
+	i+=1
+
+
+
+plt.savefig(data_dir + 'RH_and_T_for_global_megacities.png',  bbox_inches='tight') 
+
+plt.show()
+
+
