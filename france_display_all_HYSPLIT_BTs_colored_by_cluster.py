@@ -9,6 +9,7 @@ from datetime import timedelta
 import pickle
 import copy
 from mpl_toolkits.basemap import Basemap
+import matplotlib.colors
 
 
 
@@ -26,8 +27,9 @@ for number in [1,2,3,4]:
 
 #48 hour files
 CLUSLIST_file = 'C:/Users/Sarah Hanna/Documents/Data/French_campaign/Biodetect_48hours-working/CLUSLIST_4'
-
+mn_height = []
 with open(CLUSLIST_file,'r') as f:
+	
 	for line in f:
 		newline = line.split()
 		cluster = int(newline[0])
@@ -37,23 +39,30 @@ with open(CLUSLIST_file,'r') as f:
 		endpoints = []
 		data_start = False
 
+		i=0
 		for line in tdump_file:
 			newline = line.split()
 
 			if data_start == True:
 				lat = float(newline[9])
 				lon = float(newline[10])
+				height = float(newline[11])
 			
-				endpoint = [lat, lon]
+				if cluster == 1 and i == 48:
+					mn_height.append(height)
+			
+				endpoint = [lat, lon,height]
 				endpoints.append(endpoint)
-				
+				i+=1
 			if newline[1] == 'PRESSURE':
 				data_start = True
-		
+			
+			
 		tdump_file.close() 
 		
 		cluster_endpoints[cluster].append(endpoints)
 		
+print np.mean(mn_height)
 
 		
 #plottting
@@ -77,7 +86,7 @@ m = Basemap(width=2600000,height=2600000,
 
 			
 fig, axes = plt.subplots(2,3, figsize=(12, 10), facecolor='w', edgecolor='k')
-fig.subplots_adjust(hspace = 0.1, wspace=0.2)
+fig.subplots_adjust(hspace = 0.1, wspace=0.25)
 
 axs = axes.ravel()
 
@@ -109,9 +118,15 @@ for cluster_no in clusters:
 		np_endpoints = np.array(row)
 		lats = np_endpoints[:,0] 
 		lons = np_endpoints[:,1]
+		heights = np_endpoints[:,2]
 		x,y = m(lons,lats)
-		bt = m.plot(x,y,color=colors[cluster_no])
-
+		#bt = m.plot(x,y,color=colors[cluster_no])
+		bt = m.scatter(x,y, c=heights, cmap=plt.get_cmap('jet'),edgecolors='none', marker = 'o')
+		#lim = bt.get_clim()
+		#print lim
+		plt.clim(0,1000)
+	cb = plt.colorbar()
+	cb.set_label('height (m)', rotation=270)
 
 dir = 'C:/Users/Sarah Hanna/Documents/Data/French_campaign/'
 os.chdir(dir)

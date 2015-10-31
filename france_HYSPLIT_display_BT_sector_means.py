@@ -42,6 +42,7 @@ for file in os.listdir('.'):
 			if data_start == True:
 				lat = float(newline[9])
 				lon = float(newline[10])
+				height = float(newline[11])
 				#pressure = float(newline[11]) #in hPa
 				year =  int(newline[2])
 				month = int(newline[3])
@@ -50,7 +51,7 @@ for file in os.listdir('.'):
 				Py_datetime_UTC = datetime(year, month, day, hour)
 				Py_datetime = Py_datetime_UTC + timezone
 				
-				endpoint = [lat, lon]
+				endpoint = [lat, lon,height]
 				endpoints.append(endpoint)
 				
 			if newline[1] == 'PRESSURE':
@@ -126,12 +127,15 @@ for cluster_no in clusters:
 	np_endpoints = np.array(endpointsPARIS[cluster_no])
 	lats = np_endpoints[:,0] 
 	lons = np_endpoints[:,1]
-	#pressure = np_endpoints[:,2]
+	heights = np_endpoints[:,2]
 	x,y = m(lons,lats)
 	#bt = m.scatter(x,y, c=pressure, cmap=plt.get_cmap('jet'),edgecolors='none')
-	bt = m.plot(x,y,linewidth = linewidth, color =colors[cluster_no])#, label = labels[cluster_no])
-	
+	#bt = m.plot(x,y,linewidth = linewidth, color =colors[cluster_no])#, label = labels[cluster_no])
+	bt = m.scatter(x,y, c=heights, cmap=plt.get_cmap('jet'),edgecolors='none', marker = 'o')
 	i+=1
+	
+cb = plt.colorbar()
+cb.set_label('height (m)', rotation=270)
 
 plt.legend(loc = 3)
 dir = 'C:/Users/Sarah Hanna/Documents/Data/French_campaign/'
