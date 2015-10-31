@@ -285,8 +285,8 @@ ng_per_g = 10**9
 R = 8.3144621 # in m3*Pa/(K*mol)
 GEOS_Chem_factor = 10**-9
 
-start_hour = 4
-end_hour = 16
+start_hour = 3
+end_hour = 15
 i=0
 for GC_run in GC_runs: #the runs are 'default','Vancouver_emission','wet_scavenging','no_biomass','All_together'
 	print GC_run
@@ -391,6 +391,8 @@ LRT_data =  [[],[],[],[],[]]
 box_plot_data = [NPac_data,SPac_data,Cont_data,GBPS_data,LRT_data]
 SP2_data_to_plot = [SP2_6h_NPac_m,SP2_6h_SPac_m,SP2_6h_Cont_m,SP2_6h_GBPS_m,SP2_6h_LRT_m]
 clusters = ['NPac','SPac','Cont','GBPS','LRT']
+errors =  {'NPac':[],'SPac':[],'Cont':[],'GBPS':[],'LRT':[], 'all':[]}
+
 
 all_nonBB_GC_data = []
 
@@ -403,10 +405,16 @@ for cluster in clusters:
 		
 		#get the default GC data for all air masses combined
 		mean_BC_conc_nonBB_default = np.nanmean(GC_data[period_midtime][0]) 
+		err_BC_conc_nonBB_default = np.std(GC_data[period_midtime][0])   #standard error of the mean
+		rel_err = err_BC_conc_nonBB_default/mean_BC_conc_nonBB_default
+		errors['all'].append(rel_err)
 		all_nonBB_GC_data.append(mean_BC_conc_nonBB_default)
 
+		
+		
 		if GC_cluster == cluster:
 			mean_BC_conc_default = np.nanmean(GC_data[period_midtime][0])
+			errors[cluster].append(rel_err)
 			box_plot_data[i][0].append(mean_BC_conc_default)
 			
 			mean_BC_conc_Vancouver_emission = np.nanmean(GC_data[period_midtime][1])
@@ -431,8 +439,19 @@ for cluster in clusters:
 SP2_data_to_plot.insert(0,all_nonBB_GC_data)
 SP2_data_to_plot.insert(0,SP2_6h_all_non_BB_m)
 
-
+print 'all_GC_data'
 print np.percentile(all_nonBB_GC_data, 10),np.percentile(all_nonBB_GC_data, 50), np.percentile(all_nonBB_GC_data, 90), np.mean(all_nonBB_GC_data) 
+rel_err = np.mean(errors['all'])
+print np.percentile(all_nonBB_GC_data, 10)*rel_err,np.percentile(all_nonBB_GC_data, 50)*rel_err, np.percentile(all_nonBB_GC_data, 90)*rel_err, np.mean(all_nonBB_GC_data)*rel_err 	
+i=0
+for cluster_data in box_plot_data:  # cluster[0] is SP2, cluster[1] is default
+	cluster = clusters[i]
+	print cluster
+	rel_err = np.mean(errors[cluster])
+	print np.percentile(cluster_data[1], 10),        np.percentile(cluster_data[1], 50),         np.percentile(cluster_data[1], 90),         np.mean(cluster_data[1]) 	
+	print np.percentile(cluster_data[1], 10)*rel_err,np.percentile(cluster_data[1], 50)*rel_err, np.percentile(cluster_data[1], 90)*rel_err, np.mean(cluster_data[1])*rel_err 	
+	i+=1
+	
 
 #*******PLOTTING*************
 
@@ -548,6 +567,146 @@ ax5.xaxis.set_label_position('top')
 ax5.xaxis.set_ticks(np.arange(0, FT_UL, incr))
 ax5.axvline(np.nanmedian(SP2_6h_Cont_m), color= 'black', linestyle = '--')
 
+#GC  - note  list 0 in box_plot_data is now the SP2 data, 1 is default, 2 = Vancouver_emission',' 3 =wet_scavenging',' 4= no_biomass','5 = All_together'
+NPac_default = box_plot_data[0][1]
+SPac_default = box_plot_data[1][1]
+Cont_default = box_plot_data[2][1]
+GBPS_default = box_plot_data[3][1]
+LRT_default  = box_plot_data[4][1]
+
+
+ax6.hist(NPac_default,bins = bin_number, range = bin_range, color = 'green') 
+ax6.xaxis.set_visible(True)
+ax6.yaxis.set_visible(True)
+ax6.set_ylabel('frequency - GEOS-Chem')
+ax6.xaxis.set_ticks(np.arange(0, FT_UL, incr))
+ax6.axvline(np.nanmedian(NPac_default), color= 'black', linestyle = '--')
+
+ax7.hist(SPac_default,bins = bin_number, range = bin_range, color = 'green')
+ax7.xaxis.set_visible(True)
+ax7.yaxis.set_visible(False)
+ax7.xaxis.set_ticks(np.arange(0, FT_UL, incr))
+ax7.axvline(np.nanmedian(SPac_default), color= 'black', linestyle = '--')
+
+ax8.hist(Cont_default,bins = bin_number, range = bin_range, color = 'green') 
+ax8.xaxis.set_visible(True)
+ax8.yaxis.set_visible(False)
+ax8.set_xlabel('6h rBC mass concentration (ng/m3 - STP)')
+ax8.xaxis.set_ticks(np.arange(0, FT_UL, incr))
+ax8.axvline(np.nanmedian(Cont_default), color= 'black', linestyle = '--')
+
+ax9.hist(GBPS_default,bins = bin_number, range = bin_range, color = 'green')
+ax9.xaxis.set_visible(True)
+ax9.yaxis.set_visible(False)
+ax9.xaxis.set_ticks(np.arange(0, FT_UL, incr))
+ax9.axvline(np.nanmedian(GBPS_default), color= 'black', linestyle = '--')
+
+ax10.hist(LRT_default,bins = bin_number, range = bin_range, color = 'green')
+ax10.xaxis.set_visible(True)
+ax10.yaxis.set_visible(False)
+ax10.xaxis.set_ticks(np.arange(0, FT_UL, incr))
+ax10.axvline(np.nanmedian(LRT_default), color= 'black', linestyle = '--')
+
+
+plt.subplots_adjust(hspace=0.05)
+plt.subplots_adjust(wspace=0.05)
+
+plt.savefig('histograms -clustered GEOS-Chem and measurements - 6h FT - JW.png',bbox_inches='tight')
+
+plt.show()
+
+########
+
+#hitos for test-runs and SP2
+###histos by air mass for all SP2 and default GC
+
+fig = plt.figure(figsize=(12,6))
+
+bin_number = 20
+FT_UL = 280
+bin_range = (0,FT_UL)
+incr = 100
+
+#SP2 vs GC	
+fig, axes = plt.subplots(5,5, figsize=(12, 16), facecolor='w', edgecolor='k')
+fig.subplots_adjust(hspace = 0., wspace=0.08)
+axs = axes.ravel()	
+i=0
+for dataset in box_plot_data:	
+
+	histo = axs[i].hist(dataset, bins = bin_number, range = bin_range)	
+	axs[i].axvline(np.nanmedian(dataset), color= 'black', linestyle = '--')
+
+	if i == 1:
+		axs[i].text(0.25, 0.9,'N. Pacific', transform=axs[i].transAxes)
+
+	#	axs[i].yaxis.set_label_position("right")
+	#if i in [3,4]:
+	#	axs[i].set_xticks([1,2,3,4,5,6])
+	#	axs[i].set_xticklabels( ['SP2','default','no Vancouver emissions','increased wet scavenging','no BB','All changes together'],rotation=60)
+	axs[i].yaxis.grid(True, linestyle='-', which='major', color='grey', alpha=1)
+	axs[i].set_ylabel(cluster_names[i])
+	i+=1
+	
+#plt.savefig('boxplots -clustered GEOS-Chem tests and measurements - 6h FT - JW.png',bbox_inches='tight')
+
+plt.show()  
+
+
+sys.exit()
+
+
+#SP2
+ax1.hist(SP2_6h_NPac_m,bins = bin_number, range = bin_range)
+ax1.xaxis.set_visible(True)
+ax1.yaxis.set_visible(True)
+ax1.set_ylabel('frequency - Measurements')
+ax1.text(0.25, 0.9,'N. Pacific', transform=ax1.transAxes)
+#ax1.set_ylim(0,40)
+ax1.xaxis.tick_top()
+ax1.xaxis.set_label_position('top') 
+ax1.xaxis.set_ticks(np.arange(0, FT_UL, incr))
+ax1.axvline(np.nanmedian(SP2_6h_NPac_m), color= 'black', linestyle = '--')
+
+
+ax2.hist(SP2_6h_SPac_m,bins = bin_number, range = bin_range)
+ax2.xaxis.set_visible(True)
+ax2.yaxis.set_visible(False)
+ax2.text(0.25, 0.9,'S. Pacific', transform=ax2.transAxes)
+ax2.xaxis.tick_top()
+ax2.xaxis.set_label_position('top') 
+ax2.xaxis.set_ticks(np.arange(0, FT_UL, incr))
+ax2.axvline(np.nanmedian(SP2_6h_SPac_m), color= 'black', linestyle = '--')
+
+
+ax3.hist(SP2_6h_GBPS_m,bins = bin_number, range = bin_range)
+ax3.xaxis.set_visible(True)
+ax3.yaxis.set_visible(False)
+ax3.text(0.2, 0.82,'Georgia Basin/\nPuget Sound', transform=ax3.transAxes)
+ax3.xaxis.tick_top()
+ax3.xaxis.set_label_position('top') 
+ax3.xaxis.set_ticks(np.arange(0, FT_UL, incr))
+ax3.axvline(np.nanmedian(SP2_6h_GBPS_m), color= 'black', linestyle = '--')
+
+ax4.hist(SP2_6h_LRT_m,bins = bin_number, range = bin_range)
+ax4.xaxis.set_visible(True)
+ax4.yaxis.set_visible(False)
+ax4.text(0.2, 0.9,'W. Pacific/Asia', transform=ax4.transAxes)
+ax4.xaxis.tick_top()
+ax4.xaxis.set_label_position('top') 
+ax4.xaxis.set_ticks(np.arange(0, FT_UL, incr))
+ax4.axvline(np.nanmedian(SP2_6h_LRT_m), color= 'black', linestyle = '--')
+
+
+ax5.hist(SP2_6h_Cont_m,bins = bin_number, range = bin_range)
+ax5.xaxis.set_visible(True)
+ax5.yaxis.set_visible(False)
+ax5.text(0.25, 0.9,'N. Canada', transform=ax5.transAxes)
+ax5.xaxis.tick_top()
+ax5.xaxis.set_label_position('top')
+ax5.xaxis.set_ticks(np.arange(0, FT_UL, incr))
+ax5.axvline(np.nanmedian(SP2_6h_Cont_m), color= 'black', linestyle = '--')
+
 #GC  - note  list 0 in box_plot_data is now the SP2 data
 NPac_default = box_plot_data[0][1]
 SPac_default = box_plot_data[1][1]
@@ -600,30 +759,11 @@ plt.show()
 
 #######    box-plots   ###########
 
-cluster_names = ['N. Pacific','S. Pacific','N. Canada','Georgia Basin/Puget Sound','W Pacific/Asia']
-cluster_names_with_full_campaign_data = cluster_names
-cluster_names_with_full_campaign_data.append('All measurements')
-cluster_names_with_full_campaign_data.append('All GEOS-Chem values')
-#SP2
-
-fig = plt.figure(figsize=(12,6))
-ax1 = fig.add_subplot(111)
-bpsp2 = ax1.boxplot(SP2_data_to_plot, whis=[10,90], sym='', widths = 0.6,patch_artist=True)
-for patch, color in zip(bpsp2['boxes'], ['r','r','r','r','r','r','#0033CC']):
-	patch.set_facecolor(color)
-	patch.set_alpha(0.5)
-plt.xticks([1,2,3,4,5,6,7], cluster_names_with_full_campaign_data,rotation=60)
-
-plt.savefig('boxplots - GEOS-Chem tests and measurements - all non-BB FT - 6h - JW_data.png',bbox_inches='tight')
-
-
-plt.show()
-
 
 #SP2 vs GC	
 fig, axes = plt.subplots(3,2, figsize=(12, 16), facecolor='w', edgecolor='k')
 fig.subplots_adjust(hspace = 0., wspace=0.08)
-axes[-1, -1].axis('off')
+#axes[-1, -1].axis('off')
 colors = ['r', '#0033CC', '#0033CC', '#0033CC', '#0033CC','#0033CC']
 axs = axes.ravel()	
 i=0

@@ -34,6 +34,8 @@ for number in [1,2,3,4,5,6,7]:
 
 GBPS_count = []	
 CLUSLIST_file = 'C:/hysplit4/working/WHI/2hrly_HYSPLIT_files/all_with_sep_GBPS/CLUSLIST_6-mod-precip'
+CLUSLIST_file = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/HYSPLIT/clustering/CLUSLIST_10'
+
 new_cluslist_data = []
 
 with open(CLUSLIST_file,'r') as f:

@@ -7,9 +7,16 @@ from datetime import datetime
 from datetime import timedelta
 import pickle
 import copy
+import calendar
+import mysql.connector
+
 
 timezone = -8
 calib_stability_uncertainty = 0.1
+
+#database connection
+cnx = mysql.connector.connect(user='root', password='Suresh15', host='localhost', database='black_carbon')
+cursor = cnx.cursor()
 
 #fire times
 fire_time1 = [datetime.strptime('2009/07/27 00:00', '%Y/%m/%d %H:%M'), datetime.strptime('2009/08/08 00:00', '%Y/%m/%d %H:%M')] #row_datetimes follwing Takahama et al (2011) doi:10.5194/acp-11-6367-2011 #PST
@@ -356,6 +363,15 @@ GC_6h_GBPS = []
 GC_6h_BB = []	
 GC_6h_all_non_BB = []			
 
+
+#query to add 6h GC mass ocnc data
+add_6h_data = ('INSERT INTO whi_gc_v9_6h_mass_concs'
+              '(UNIX_UTC_6h_midtime,6h_midtime_string,cluster,GC_v9_default_mass_conc,GC_v9_default_rel_err)'
+              'VALUES (%(UNIX_ts)s,%(string_ts)s,%(cluster)s,%(GC_mass_conc)s,%(GC_rel_err)s)'
+			  )
+
+
+
 for file in os.listdir('.'):
 	if file.endswith('N.txt'):  #these are the night files (2-4 and 5-7 PST)
 
@@ -438,24 +454,45 @@ for file in os.listdir('.'):
 					if cluslist_current_cluster_no == 9:
 						GC_6h_GBPS.append([BC_conc_ngm3,mean_rel_err])
 						GC_6h_all_non_BB.append([BC_conc_ngm3,mean_rel_err])
+						GC_cluster = 'GBPS'
 							
 					if cluslist_current_cluster_no == 4:
 						GC_6h_Cont.append([BC_conc_ngm3,mean_rel_err])
 						GC_6h_all_non_BB.append([BC_conc_ngm3,mean_rel_err])
+						GC_cluster = 'Cont'
 						
 					if cluslist_current_cluster_no in [6,8]:
 						GC_6h_SPac.append([BC_conc_ngm3,mean_rel_err])
 						GC_6h_all_non_BB.append([BC_conc_ngm3,mean_rel_err])
+						GC_cluster = 'SPac'
 						
 					if cluslist_current_cluster_no in [2,7]:
 						GC_6h_LRT.append([BC_conc_ngm3,mean_rel_err])
 						GC_6h_all_non_BB.append([BC_conc_ngm3,mean_rel_err])
+						GC_cluster = 'LRT'
 						
 					if cluslist_current_cluster_no in [1,3,5,10]:
 						GC_6h_NPac.append([BC_conc_ngm3,mean_rel_err])
 						GC_6h_all_non_BB.append([BC_conc_ngm3,mean_rel_err])
+						GC_cluster = 'NPac'
 					
-
+					period_midtime = datetime(date.year, date.month, date.day, 13, 0, 0)
+					
+					
+					BC_6h_data = {
+					'UNIX_ts':float(calendar.timegm(period_midtime.utctimetuple())),
+					'string_ts':datetime.strftime(period_midtime,'%Y%m%d %H:%M:%S'),
+					'cluster':GC_cluster,
+					'GC_mass_conc':BC_conc_ngm3,
+					'GC_rel_err': mean_rel_err,
+					}
+					
+					cursor.execute('DELETE FROM whi_gc_v9_6h_mass_concs WHERE UNIX_UTC_6h_midtime = %s and 6h_midtime_string = %s',(BC_6h_data['UNIX_ts'],BC_6h_data['string_ts']))
+					cnx.commit()
+					cursor.execute(add_6h_data, BC_6h_data)
+						
+						
+				
 			
 #print out percentile data and uncertainties
 stats_SP2 = {
@@ -539,35 +576,31 @@ GC_6h_all_non_BB_m = [row[0] for row in GC_6h_all_non_BB]
 GC_24h_FR_m = [row[0] for row in GC_24h_FR]
 GC_24h_BB_m = [row[0] for row in GC_24h_BB]
 
-fig = plt.figure(figsize=(12,6))
+fig = plt.figure(figsize=(14, 6))
 
-bin_number = 20
-bin_number_BB = 20
-FT_UL = 300
-FT_UL_BB = 625
+bin_number = 22
+FT_UL = 280
 bin_range = (0,FT_UL)
-bin_range_BB = (0,FT_UL_BB)
 incr = 100
 
-ax1 =  plt.subplot2grid((2,5), (0,0), colspan=1)
-ax2 =  plt.subplot2grid((2,5), (0,1), colspan=1, sharey=ax1)
-ax3 =  plt.subplot2grid((2,5), (0,2), colspan=1, sharey=ax1)
-ax4 =  plt.subplot2grid((2,5), (0,3), colspan=1, sharey=ax1)
-ax5 =  plt.subplot2grid((2,5), (0,4), colspan=1, sharey=ax1)
-#ax11 = plt.subplot2grid((2,6), (0,5), colspan=1, sharey=ax1)
-						
-ax6 =  plt.subplot2grid((2,5), (1,0), colspan=1)
-ax7 =  plt.subplot2grid((2,5), (1,1), colspan=1, sharey=ax6)
-ax8 =  plt.subplot2grid((2,5), (1,2), colspan=1, sharey=ax6)
-ax9 =  plt.subplot2grid((2,5), (1,3), colspan=1, sharey=ax6)
-ax10 = plt.subplot2grid((2,5), (1,4), colspan=1, sharey=ax6)
-#ax12 = plt.subplot2grid((2,6), (1,5), colspan=1, sharey=ax6)
+ax11 = plt.subplot2grid((2,6), (0,0), colspan=1,)
+ax1 =  plt.subplot2grid((2,6), (0,1), colspan=1, sharey=ax11)
+ax2 =  plt.subplot2grid((2,6), (0,2), colspan=1, sharey=ax11)
+ax3 =  plt.subplot2grid((2,6), (0,3), colspan=1, sharey=ax11)
+ax4 =  plt.subplot2grid((2,6), (0,4), colspan=1, sharey=ax11)
+ax5 =  plt.subplot2grid((2,6), (0,5), colspan=1, sharey=ax11)
+                           
+ax12 = plt.subplot2grid((2,6), (1,0), colspan=1, )
+ax6 =  plt.subplot2grid((2,6), (1,1), colspan=1, sharey=ax12)
+ax7 =  plt.subplot2grid((2,6), (1,2), colspan=1, sharey=ax12)
+ax8 =  plt.subplot2grid((2,6), (1,3), colspan=1, sharey=ax12)
+ax9 =  plt.subplot2grid((2,6), (1,4), colspan=1, sharey=ax12)
+ax10 = plt.subplot2grid((2,6), (1,5), colspan=1, sharey=ax12)
 
 #SP2
 ax1.hist(SP2_6h_NPac_m,bins = bin_number, range = bin_range)
 ax1.xaxis.set_visible(True)
-ax1.yaxis.set_visible(True)
-ax1.set_ylabel('frequency - Measurements')
+ax1.yaxis.set_visible(False)
 ax1.text(0.25, 0.9,'N. Pacific', transform=ax1.transAxes)
 #ax1.set_ylim(0,40)
 ax1.xaxis.tick_top()
@@ -614,20 +647,20 @@ ax5.xaxis.set_label_position('top')
 ax5.xaxis.set_ticks(np.arange(0, FT_UL, incr))
 ax5.axvline(stats_SP2['SP2_6h_Cont'][1], color= 'black', linestyle = '--')
 
-#ax11.hist(SP2_6h_BB_m,bins = bin_number_BB, range = bin_range_BB)
-#ax11.xaxis.set_visible(True)
-#ax11.yaxis.set_visible(False)
-#ax11.text(0.4, 0.9,'BB', transform=ax11.transAxes)
-#ax11.xaxis.tick_top()
-#ax11.xaxis.set_label_position('top')
-#ax11.xaxis.set_ticks(np.arange(0, FT_UL_BB, 200))
-#ax11.axvline(stats_SP2['SP2_6h_Cont'][1], color= 'black', linestyle = '--')
+ax11.hist(SP2_6h_all_non_BB_m,bins = bin_number, range = bin_range)
+ax11.xaxis.set_visible(True)
+ax11.yaxis.set_visible(True)
+ax11.set_ylabel('frequency - Measurements')
+ax11.text(0.4, 0.9,'All Data', transform=ax11.transAxes)
+ax11.xaxis.tick_top()
+ax11.xaxis.set_label_position('top')
+ax11.xaxis.set_ticks(np.arange(0, FT_UL, incr))
+ax11.axvline(stats_SP2['SP2_6h_Cont'][1], color= 'black', linestyle = '--')
 
 #GC
 ax6.hist(GC_6h_NPac_m,bins = bin_number, range = bin_range, color = 'green')
 ax6.xaxis.set_visible(True)
-ax6.yaxis.set_visible(True)
-ax6.set_ylabel('frequency - GEOS-Chem')
+ax6.yaxis.set_visible(False)
 ax6.xaxis.set_ticks(np.arange(0, FT_UL, incr))
 ax6.axvline(stats_GC['GC_6h_NPac'][1], color= 'black', linestyle = '--')
 
@@ -656,20 +689,21 @@ ax10.yaxis.set_visible(False)
 ax10.xaxis.set_ticks(np.arange(0, FT_UL, incr))
 ax10.axvline(stats_GC['GC_6h_Cont'][1], color= 'black', linestyle = '--')
 
-#ax12.hist(GC_6h_BB_m,bins = bin_number_BB, range = bin_range_BB, color = 'green')
-#ax12.xaxis.set_visible(True)
-#ax12.yaxis.set_visible(False)
-#ax12.xaxis.set_ticks(np.arange(0, FT_UL_BB, 200))
-#ax12.axvline(stats_GC['GC_6h_BB'][1], color= 'black', linestyle = '--')
+ax12.hist(GC_6h_all_non_BB_m,bins = bin_number, range = bin_range, color = 'green')
+ax12.xaxis.set_visible(True)
+ax12.yaxis.set_visible(True)
+ax12.set_ylabel('frequency - GEOS-Chem')
+ax12.xaxis.set_ticks(np.arange(0, FT_UL, incr))
+ax12.axvline(stats_GC['GC_6h_BB'][1], color= 'black', linestyle = '--')
 
-plt.subplots_adjust(hspace=0.05)
-plt.subplots_adjust(wspace=0.05)
+plt.subplots_adjust(hspace=0.0)
+plt.subplots_adjust(wspace=0.0)
 
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/')
 plt.savefig('histograms -clustered GEOS-Chem and measurements - 6h FT.png',bbox_inches='tight')
 
 plt.show()
-	
+sys.exit()
 	
 ###################plotting 2
 fig = plt.figure(figsize=(10,8))
@@ -783,4 +817,4 @@ plt.savefig('histograms - GEOS-Chem and measurements - all non-BB FT - 6h.png',b
 plt.show()
 
 
-SP2_6h_all_non_BB
+cnx.close()

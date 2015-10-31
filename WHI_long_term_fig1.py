@@ -147,9 +147,9 @@ for directory in directory_list:
 				
 				if record_date.year >= 2012 and record_date.month >= 06:
 					break
-				#just for the record:
-				UNIX_GMT_ts = calendar.timegm(prev_ts.utctimetuple()) + 8*3600
-				row.append(UNIX_GMT_ts)
+				########just for the record:  f'd up!!S
+				#######UNIX_GMT_ts = calendar.timegm(prev_ts.utctimetuple()) + 8*3600
+				#######row.append(UNIX_GMT_ts)
 				
 				#get STP correction factor - pressure term
 				number_pressures = len(WHI_pressures)

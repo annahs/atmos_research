@@ -27,14 +27,14 @@ cursor = cnx.cursor()
 data= []
 red_list = []
 blue_list = []
-clusters = ['all','NPac','SPac','Cont','GBPS','LRT']
+clusters = ['all','NPac','SPac','Cont','LRT']
 GC_row_no = 2
 for cluster in clusters:
-	cursor.execute(('SELECT 10th_percentile_mass_conc, 50th_percentile_mass_conc, 90th_percentile_mass_conc, mean_mass_conc, rel_err, data_source from whi_gc_and_sp2_stats_on_6h_clustered_ft_data where RH_threshold = %s and cluster = %s and test_scenario = %s'),(RH_of_interest,cluster,case))
+	cursor.execute(('SELECT 10th_percentile_mass_conc, 50th_percentile_mass_conc, 90th_percentile_mass_conc, mean_mass_conc, rel_err, data_source from whi_gc_and_sp2_stats_on_2h_clustered_ft_data where RH_threshold = %s and cluster = %s and test_scenario = %s'),(RH_of_interest,cluster,case))
 	data_raw = cursor.fetchall()
 
 	if case != 'default':
-		cursor.execute(('SELECT 10th_percentile_mass_conc, 50th_percentile_mass_conc, 90th_percentile_mass_conc, mean_mass_conc, rel_err, data_source from whi_gc_and_sp2_stats_on_6h_clustered_ft_data where RH_threshold = %s and cluster = %s and test_scenario = %s and data_source = %s'),(RH_of_interest,cluster,'default','SP2'))
+		cursor.execute(('SELECT 10th_percentile_mass_conc, 50th_percentile_mass_conc, 90th_percentile_mass_conc, mean_mass_conc, rel_err, data_source from whi_gc_and_sp2_stats_on_2h_clustered_ft_data where RH_threshold = %s and cluster = %s and test_scenario = %s and data_source = %s'),(RH_of_interest,cluster,'default','SP2'))
 		sp2_data = cursor.fetchall()
 		data_raw.append(sp2_data[0])
 	
@@ -48,8 +48,6 @@ for cluster in clusters:
 		cluster = 'N. Canada'
 	if cluster == 'LRT':
 		cluster = 'W. Pacific/Asia'
-	if cluster == 'GBPS':
-		cluster = 'Georgia Basin\n/Puget Sound'
 		
 	for row in data_raw:
 		data_source = row[5]
@@ -135,7 +133,7 @@ for cell in blue_list:
 	
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/')
   
-plt.savefig('GC default v10 vs SP2 by cluster for WHI - ' + case + ' - ' + str(RH_of_interest) + '% RH threshold.png',bbox_inches='tight')
+plt.savefig('GC default v10 vs SP2 by cluster 2hr intervals -oddhrs for WHI - ' + case + ' - ' + str(RH_of_interest) + '% RH threshold.png',bbox_inches='tight')
 plt.show()	
 cnx.close()		
 
@@ -156,7 +154,6 @@ cursor = cnx.cursor()
 data= []
 red_list = []
 blue_list = []
-clusters = ['all','NPac','SPac','Cont','GBPS','LRT']
 GC_row_offset = 0
 for cluster in clusters:
 	col = 2
@@ -172,8 +169,6 @@ for cluster in clusters:
 		cluster_name = 'N. Canada'
 	if cluster == 'LRT':
 		cluster_name = 'W. Pacific/Asia'
-	if cluster == 'GBPS':
-		cluster_name = 'Georgia Basin\n/Puget Sound'
 	
 	p10_row = [cluster_name,'10th',]
 	p50_row = ['','50th',]
@@ -184,11 +179,11 @@ for cluster in clusters:
 
 	for case in cases:
 		
-		cursor.execute(('SELECT 10th_percentile_mass_conc, 50th_percentile_mass_conc, 90th_percentile_mass_conc, mean_mass_conc, rel_err, data_source from whi_gc_and_sp2_stats_on_6h_clustered_ft_data where RH_threshold = %s and cluster = %s and test_scenario = %s'),(RH_of_interest,cluster,case))
+		cursor.execute(('SELECT 10th_percentile_mass_conc, 50th_percentile_mass_conc, 90th_percentile_mass_conc, mean_mass_conc, rel_err, data_source from whi_gc_and_sp2_stats_on_2h_clustered_ft_data where RH_threshold = %s and cluster = %s and test_scenario = %s'),(RH_of_interest,cluster,case))
 		data_raw = cursor.fetchall()
 
 		if case != 'default':
-			cursor.execute(('SELECT 10th_percentile_mass_conc, 50th_percentile_mass_conc, 90th_percentile_mass_conc, mean_mass_conc, rel_err, data_source from whi_gc_and_sp2_stats_on_6h_clustered_ft_data where RH_threshold = %s and cluster = %s and test_scenario = %s and data_source = %s'),(RH_of_interest,cluster,'default','SP2'))
+			cursor.execute(('SELECT 10th_percentile_mass_conc, 50th_percentile_mass_conc, 90th_percentile_mass_conc, mean_mass_conc, rel_err, data_source from whi_gc_and_sp2_stats_on_2h_clustered_ft_data where RH_threshold = %s and cluster = %s and test_scenario = %s and data_source = %s'),(RH_of_interest,cluster,'default','SP2'))
 			sp2_data = cursor.fetchall()
 			data_raw.append(sp2_data[0])
 		
@@ -281,6 +276,6 @@ for cell in blue_list:
 	
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/')
   
-plt.savefig('GC all tests v10 vs SP2 by cluster for WHI - ' + str(RH_of_interest) + '% RH threshold.png',bbox_inches='tight')
+plt.savefig('GC all tests v10 vs SP2 by cluster 2hr intervals -oddhrs for WHI - ' + str(RH_of_interest) + '% RH threshold.png',bbox_inches='tight')
 plt.show()	
 cnx.close()			

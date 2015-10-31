@@ -115,7 +115,7 @@ def draw_screen_poly( lats, lons, m):
 
 #GEOS-Chem grid box
 lats = [51,51,49,49,51]
-lons = [-125,-120,-120,-125,-125]
+lons = [-123.75,-121.250,-121.250,-123.75,-123.75]
 draw_screen_poly( lats, lons, m)
 
 #label Vancouer and Seattle
@@ -141,7 +141,7 @@ m.plot(Sea_x,Sea_y, color='blue',linestyle = 'None', marker='^',markersize = 10)
 
 
 #draw map scale
-scale_lat = 46
+scale_lat = 47
 scale_lon = -132
 m.drawmapscale(scale_lon, scale_lat, -122, 50, 200, barstyle='simple', units='km', fontsize=9, yoffset=None, labelstyle='simple', fontcolor='k', fillcolor1='w', fillcolor2='k', ax=None, format='%d', zorder=None)
 

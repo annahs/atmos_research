@@ -20,6 +20,7 @@ with open(sampling_times_file,'r') as f:
 		sampling_date = newline[0]
 		sampling_time = newline[1]
 		sampling_datetime = datetime(int(sampling_date[0:4]),int(sampling_date[5:7]),int(sampling_date[8:10]),int(sampling_time[0:2]))
+		sampling_datetime = datetime(int(sampling_date[0:4]),int(sampling_date[5:7]),int(sampling_date[8:10])) #without hour - date only
 		sampling_times.append(sampling_datetime)
 		
 	
@@ -42,8 +43,8 @@ GEOS_Chem_factor = 10**-9
 i=0
 pressure = []
 
-start_hour = 4
-end_hour = 16
+start_hour = 3
+end_hour = 15
 
 
 os.chdir(data_dir)
@@ -76,9 +77,9 @@ for file in os.listdir(data_dir):
 			if (start_hour+6) <= file_hour < end_hour:	
 				period_midtime = datetime(file_year,file_month,file_day,05) #this is the late night period of 0200-0800 PST 
 		   
+			##switch for 24-hr averaging
+			period_midtime = datetime(file_year,file_month,file_day) #this is the late night period of 0200-0800 PST 
 			
-			#period_midtime = datetime(file_year,file_month,file_day) #this is the late night period of 0200-0800 PST 
-		   
 		   
 			hydrophilic_BC = hdf_file.select('IJ-AVG-$::BCPI') #3d conc data in ppbv (molBC/molAIR)
 			hydrophobic_BC = hdf_file.select('IJ-AVG-$::BCPO')
@@ -88,9 +89,7 @@ for file in os.listdir(data_dir):
 			#hydrophilic_BC.__del__()
 			#hydrophobic_BC.__del__()
 			
-			#print total_BC_ppbv
-			#if i>2:
-			#	sys.exit()
+
 			Factor =  (1000 * 1e2 * 1e6 * 1e-9) / (8.31 * 273)
 
 			BC_conc_ngm3 = total_BC_ppbv*(molar_mass_BC*ng_per_g*GEOS_Chem_factor*(101325/(R*273)))  #101325/(R*273) corrects to STP 	
@@ -99,9 +98,9 @@ for file in os.listdir(data_dir):
 			
 			if period_midtime in sampling_times:  #this excludes BB times already
 				if period_midtime in GC_data:
-					GC_data[period_midtime].append(BC_conc_ngm3)
+					GC_data[period_midtime].append(temp_BC)
 				else:
-					GC_data[period_midtime] = [BC_conc_ngm3]
+					GC_data[period_midtime] = [temp_BC]
 			
 			
 			hdf_file.end()	
@@ -130,95 +129,63 @@ for file in os.listdir(data_dir):
 #print np.mean(pressure)
 
 GC_6h_all_non_BB = []			
+errs = []
+list_of_all_hourly_concs = []
 
 for period_midtime in GC_data:
 	
-	mean_BC_conc = np.nanmean(GC_data[period_midtime])
+	GC_concs = GC_data[period_midtime]
+	mean_BC_conc = np.nanmean(GC_concs)
 	GC_6h_all_non_BB.append(mean_BC_conc)
+	
+	for value in GC_concs:
+		list_of_all_hourly_concs.append(value)
+	
+	level_std_err  = np.std(GC_data[period_midtime])   #standard error of the mean
+	rel_err = level_std_err/mean_BC_conc
+	
+	errs.append(rel_err)
+	
+	
+	
+print np.percentile(GC_6h_all_non_BB, 10),np.percentile(GC_6h_all_non_BB, 50), np.percentile(GC_6h_all_non_BB, 90), np.mean(GC_6h_all_non_BB)
+print np.percentile(list_of_all_hourly_concs, 10),np.percentile(list_of_all_hourly_concs, 50), np.percentile(list_of_all_hourly_concs, 90), np.mean(list_of_all_hourly_concs)
+#print sum(errs)/len(errs)
 
-print np.percentile(GC_6h_all_non_BB, 10),np.percentile(GC_6h_all_non_BB, 50), np.percentile(GC_6h_all_non_BB, 90), np.mean(GC_6h_all_non_BB) 
+
+####plots
+
+fig = plt.figure()
+bin_number_all_FT = 40
+UL_all_FT = 300
+bin_range_all_FT = (0,UL_all_FT)
+
+ax1 = plt.subplot2grid((2,1), (0,0), colspan=1)				
+ax2 = plt.subplot2grid((2,1), (1,0), colspan=1)
+
+#SP2
+ax1.hist(GC_6h_all_non_BB,bins = bin_number_all_FT, range = bin_range_all_FT)
+ax1.xaxis.set_visible(True)
+ax1.yaxis.set_visible(True)
+ax1.set_ylabel('frequency')
+ax1.xaxis.tick_top()
+ax1.xaxis.set_label_position('top') 
+ax1.xaxis.set_ticks(np.arange(0, UL_all_FT, 50))
+ax1.axvline(np.percentile(GC_6h_all_non_BB,10), color= 'black', linestyle = '--')
+ax2.set_xlabel('6h rBC mass concentration (ng/m3 - STP)')
 
 
-
-
-## full grid calcs
-
-#for file in os.listdir(data_dir):
-#	if file.endswith('.hdf'): 
-#		#print file
-#		file_year = int(file[2:6])
-#		file_month = int(file[6:8])
-#		file_day = int(file[8:10])
-#		file_hour = int(file[11:13])
-#		
-#		if 3 <= file_hour < 15:  #ignore any times not in the 2000-0800 PST window (0400-1600 UTC)
-#			hdf_file = SD(file, SDC.READ)
-#			#pprint(hdf_file.datasets())
-#			
-#			#pressures = hdf_file.select('PEDGE-$::PSURF')
-#			#pressure.append(pressures[level,lat,lon])
-#			#lats = hdf_file.select('LAT')
-#			#lons = hdf_file.select('LON')
-#			#print lats[lat], lons[lon]
-#			
-#			if file_hour < 9:
-#				period_midtime = datetime(file_year,file_month,file_day,23) - timedelta(days=1) #this is the early night period of 2000-0200 PST (mid time is 2300 of the previous day when converting from UTC to PST)
-#				
-#			if 9 <= file_hour < 15:	
-#				period_midtime = datetime(file_year,file_month,file_day,05) #this is the late night period of 0200-0800 PST 
-#			
-#			#skip BB times
-#			if (fire_time1[0] <= period_midtime <= fire_time1[1]) or (fire_time2[0] <= period_midtime <= fire_time2[1]):
-#				hdf_file.end()	
-#				continue
-#			
-#		
-#
-#			hydrophilic_BC = hdf_file.select('IJ-AVG-$::BCPI') #3d conc data in ppbv (molBC/molAIR)
-#			hydrophobic_BC = hdf_file.select('IJ-AVG-$::BCPO')
-#		
-#			#total_BC_ppbv = np.matrix(hydrophilic_BC[level,lat,lon]) + np.matrix(hydrophobic_BC[level,lat,lon])
-#			total_BC_ppbv = map(add, hydrophilic_BC[level,:,:], hydrophobic_BC[level,:,:])
-#			
-#			#hydrophilic_BC.__del__()
-#			#hydrophobic_BC.__del__()
-#			
-#			#print total_BC_ppbv
-#			#if i>2:
-#			#	sys.exit()
-#			
-#			Factor =  (1000 * 1e2 * 1e6 * 1e-9) / (8.31 * 273)
-#			BC_conc_ngm3 = total_BC_ppbv#*(molar_mass_BC*ng_per_g*GEOS_Chem_factor*(101325/(R*273)))  #101325/(R*273) corrects to STP 	
-#			#temp_BC = total_BC_ppbv * Factor * 12 *1000
-#				
-#			#if period_midtime not in GC_data:
-#			#	GC_data[period_midtime] = []
-#			#	
-#			##if period_midtime in sampling_times:
-#			#GC_data[period_midtime].append(BC_conc_ngm3)
-#            
-#
-#			if period_midtime in sampling_times:
-#				if period_midtime in GC_data:
-#					GC_data[period_midtime].append(BC_conc_ngm3)
-#				else:
-#					GC_data[period_midtime] = [BC_conc_ngm3]
-#				
-#			
-#			hdf_file.end()	
-#			i+=1
-##print np.mean(pressure)
-#
-#GC_6h_all_non_BB = []			
-#
-#for period_midtime in GC_data:
-#	
-#	mean_BC_conc = np.mean(GC_data[period_midtime], axis=0)
-#	test_val = mean_BC_conc[lat,lon]*(molar_mass_BC*ng_per_g*GEOS_Chem_factor*(101325/(R*273)))  #101325/(R*273)
-#	GC_6h_all_non_BB.append(test_val)
-#
-#print np.percentile(GC_6h_all_non_BB, 10),np.percentile(GC_6h_all_non_BB, 50), np.percentile(GC_6h_all_non_BB, 90), np.mean(GC_6h_all_non_BB) 
+#GC
+ax2.hist(list_of_all_hourly_concs,bins = bin_number_all_FT, range = bin_range_all_FT, color = 'green')
+ax2.xaxis.set_visible(True)
+ax2.yaxis.set_visible(True)
+ax2.set_ylabel('frequency')
+ax2.xaxis.set_ticks(np.arange(0, UL_all_FT, 50))
+ax2.axvline(np.percentile(list_of_all_hourly_concs,10), color= 'black', linestyle = '--')
+ax2.set_xlabel('1h rBC mass concentration (ng/m3 - STP)')
 
 
 
+#plt.savefig('histograms - GEOS-Chem and measurements - all non-BB FT - 6h - JW_data.png',bbox_inches='tight')
 
+plt.show()
