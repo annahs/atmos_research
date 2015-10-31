@@ -88,7 +88,9 @@ fire_time2 = [datetime.strptime('2010/07/26 09:00', '%Y/%m/%d %H:%M'), datetime.
 
 ##########open cluslist and read into a python list
 cluslist = []
-CLUSLIST_file = 'C:/hysplit4/working/WHI/CLUSLIST_10'
+#CLUSLIST_file = 'C:/hysplit4/working/WHI/CLUSLIST_10'
+CLUSLIST_file = 'C:/HYSPLIT_argh/WHI_1h_10-day_working/even_hours/CLUSLIST_4'
+'
 with open(CLUSLIST_file,'r') as f:
 	for line in f:
 		newline = line.split()

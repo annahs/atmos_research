@@ -110,10 +110,10 @@ for row in SP2_data:
 			mass_distr_correction_error = 0.015  #this is the uncertainty in the firt of the mass distribution for this period. from WHI_long_term_v2_size_distr_fitting_and_plotting.py
 			corrected_mass_conc = BC_mass_conc*correction_factor_for_massdistr
 			row_data = [corrected_mass_conc, abs_err+(corrected_mass_conc*(mass_distr_correction_error+calib_stability_uncertainty)) ]
-			if cluster_midtime in rBC_FT_data_cluster_GBPS:
-				rBC_FT_data_cluster_GBPS[cluster_midtime].append(row_data)
+			if cluster_midtime in rBC_FT_data_cluster_SPac:
+				rBC_FT_data_cluster_SPac[cluster_midtime].append(row_data)
 			else:
-				rBC_FT_data_cluster_GBPS[cluster_midtime] = [row_data] 
+				rBC_FT_data_cluster_SPac[cluster_midtime] = [row_data] 
 			
 		if cluster_number == 4:
 			correction_factor_for_massdistr = 1./0.4028
@@ -171,7 +171,6 @@ SP2_6h_NPac = []
 SP2_6h_SPac = [] 
 SP2_6h_Cont = [] 
 SP2_6h_LRT  = [] 
-SP2_6h_GBPS = [] 
 SP2_6h_BB = [] 
 SP2_6h_all_non_BB = []
 
@@ -234,19 +233,7 @@ for date, mass_data in rBC_FT_data_cluster_LRT.iteritems():
 	else:
 		all_dict[date] = [date_mean,date_mean_err]
 
-for date, mass_data in rBC_FT_data_cluster_GBPS.iteritems():
-	mass_concs = [row[0] for row in mass_data]
-	mass_concs_abs_err = [row[1] for row in mass_data]
-	
-	date_mean = np.mean(mass_concs)
-	date_mean_err = np.mean(mass_concs_abs_err)/date_mean	
-	SP2_6h_GBPS.append([date_mean,date_mean_err])	
-	SP2_6h_all_non_BB.append([date_mean,date_mean_err])
-	
-	if date in all_dict:
-		print 'alert!',date
-	else:
-		all_dict[date] = [date_mean,date_mean_err]
+
 	
 for date, mass_data in rBC_FT_data_cluster_BB.iteritems():
 	mass_concs = [row[0] for row in mass_data]
@@ -262,8 +249,6 @@ SP2_6h_NPac_m = [row[0] for row in SP2_6h_NPac]
 SP2_6h_SPac_m = [row[0] for row in SP2_6h_SPac] 
 SP2_6h_Cont_m = [row[0] for row in SP2_6h_Cont] 
 SP2_6h_LRT_m =  [row[0] for row in SP2_6h_LRT]  
-SP2_6h_GBPS_m = [row[0] for row in SP2_6h_GBPS] 
-#SP2_6h_BB_m = [row[0] for row in SP2_6h_BB]
 SP2_6h_all_non_BB_m = [row[0] for row in SP2_6h_all_non_BB]
 	
 	
@@ -274,7 +259,6 @@ stats_SP2 = collections.OrderedDict([
 ('NPac',[SP2_6h_NPac]),
 ('SPac',[SP2_6h_SPac]),
 ('Cont',[SP2_6h_Cont]),
-('GBPS',[SP2_6h_GBPS]),
 ('LRT',[SP2_6h_LRT]),
 ])
 
@@ -419,11 +403,8 @@ for period_midtime in GC_data:
 
 	if cluster_no == 4:
 		cluster = 'Cont'	
-
-	if cluster_no == 9:
-		cluster = 'GBPS'
 		
-	if cluster_no in [6,8]:
+	if cluster_no in [6,8,9]:
 		cluster = 'SPac'
 
 	if cluster_no in [2,7]:
@@ -442,7 +423,6 @@ all_data =  {'default':[],'Van':[],'wet_scav':[],'no_bb':[],'all_together':[]}
 NPac_data = {'default':[],'Van':[],'wet_scav':[],'no_bb':[],'all_together':[]}
 SPac_data = {'default':[],'Van':[],'wet_scav':[],'no_bb':[],'all_together':[]}
 Cont_data = {'default':[],'Van':[],'wet_scav':[],'no_bb':[],'all_together':[]}
-GBPS_data = {'default':[],'Van':[],'wet_scav':[],'no_bb':[],'all_together':[]}
 LRT_data =  {'default':[],'Van':[],'wet_scav':[],'no_bb':[],'all_together':[]}
 
 #query to add 6h mass ocnc data
@@ -500,7 +480,7 @@ for period_midtime in GC_data:
 			
 			
 	
-	for cluster, data_set in  {'NPac':NPac_data,'SPac':SPac_data,'Cont':Cont_data,'GBPS':GBPS_data,'LRT':LRT_data}.iteritems():
+	for cluster, data_set in  {'NPac':NPac_data,'SPac':SPac_data,'Cont':Cont_data,'LRT':LRT_data}.iteritems():
 		if GC_cluster == cluster:
 			for key, data in {'default':default_data,'Van':Vancouver_data,'wet_scav':wet_scav_data,'no_bb':no_biomass_data,'all_together':all_together_data}.iteritems():
 				mean = np.nanmean(data) 
@@ -557,15 +537,15 @@ plt.show()
 
 
 ###histos by air mass for all SP2 and default GC
-data_to_plot = [SP2_6h_all_non_BB_m,SP2_6h_NPac_m,SP2_6h_SPac_m,SP2_6h_Cont_m,SP2_6h_GBPS_m,SP2_6h_LRT_m]
+data_to_plot = [SP2_6h_all_non_BB_m,SP2_6h_NPac_m,SP2_6h_SPac_m,SP2_6h_Cont_m,SP2_6h_LRT_m]
 
-for dataset in [all_data,NPac_data,SPac_data,Cont_data,GBPS_data,LRT_data]:
+for dataset in [all_data,NPac_data,SPac_data,Cont_data,LRT_data]:
 	default_case = dataset['default']
 	default_concs = [row[0] for row in default_case]
 	print len(default_concs), '**'
 	data_to_plot.append(default_concs)
 	
-for dataset in [all_data,NPac_data,SPac_data,Cont_data,GBPS_data,LRT_data]:
+for dataset in [all_data,NPac_data,SPac_data,Cont_data,LRT_data]:
 	case_data = dataset['wet_scav']
 	concs = [row[0] for row in case_data]
 	errs = [row[1] for row in case_data]
@@ -578,14 +558,14 @@ bin_range = (0,FT_UL)
 y_lim = 60
 
 #SP2 vs GC	
-fig, axes = plt.subplots(3,6, figsize=(14, 9), facecolor='w', edgecolor='k')
+fig, axes = plt.subplots(3,5, figsize=(14, 9), facecolor='w', edgecolor='k')
 fig.subplots_adjust(hspace = 0., wspace=0.0)
 axs = axes.ravel()	
 i=0
 
 for dataset in data_to_plot:	
 
-	if i in [0,1,2,3,4,5]:
+	if i in [0,1,2,3,4]:
 		histo = axs[i].hist(dataset, bins = bin_number, range = bin_range, color = 'b')	
 		axs[i].xaxis.set_visible(False)
 		axs[i].set_ylim(0,y_lim)
@@ -609,26 +589,23 @@ for dataset in data_to_plot:
 		axs[i].text(0.25, 0.9,'N. Canada', transform=axs[i].transAxes)
 		
 	if i == 4:
-		axs[i].text(0.2, 0.9,'Georgia Basin/Puget Sound', transform=axs[i].transAxes)
-	
-	if i == 5:
 		axs[i].text(0.25, 0.9,'W. Pacific/Asia', transform=axs[i].transAxes)
 		
-	if i ==6:
+	if i ==5:
 		axs[i].set_ylabel('GEOS-Chem data\ndefault scenario')	
-	if i ==12:
+	if i ==10:
 		axs[i].set_ylabel('GEOS-Chem data\nimproved wet scavenging')
-	if i ==14:
+	if i ==12:
 		axs[i].set_xlabel('6h rBC mass concentration (ng/m3 - STP)')
-	if i in [1,2,3,4,7,8,9,10,13,14,15,16]:
+	if i in [1,2,3,6,7,8,11,12,13]:
 		axs[i].yaxis.set_visible(False)
-	if i in [5,11,17]:
+	if i in [4,9,14]:
 		axs[i].yaxis.set_label_position('right')
 		axs[i].yaxis.tick_right()
 	
 	i+=1
 	
-plt.savefig('histograms -clustered GEOS-Chem and measurements - 6h FT - v10 - RH ' + str(high_RH_limit) +'%limit.png',bbox_inches='tight')
+plt.savefig('histograms -clustered GEOS-Chem and measurements - 6h FT - v10 - RH ' + str(high_RH_limit) +'%limit-GBPSintoSPac.png',bbox_inches='tight')
 
 plt.show()
 
@@ -637,12 +614,12 @@ plt.show()
 #hitos for test-runs and SP2
 
 
-data_to_plot = [SP2_6h_all_non_BB_m,SP2_6h_NPac_m,SP2_6h_SPac_m,SP2_6h_Cont_m,SP2_6h_GBPS_m,SP2_6h_LRT_m]
+data_to_plot = [SP2_6h_all_non_BB_m,SP2_6h_NPac_m,SP2_6h_SPac_m,SP2_6h_Cont_m,SP2_6h_LRT_m]
 
 
-labels = ['all', 'NPac','SPac','Cont','GBPS','LRT']
+labels = ['all', 'NPac','SPac','Cont','LRT']
 i=0
-for dataset in [all_data,NPac_data,SPac_data,Cont_data,GBPS_data,LRT_data]:
+for dataset in [all_data,NPac_data,SPac_data,Cont_data,LRT_data]:
 	case_data = dataset['default']
 	concs = [row[0] for row in case_data]
 	errs = [row[1] for row in case_data]
@@ -671,7 +648,7 @@ for dataset in [all_data,NPac_data,SPac_data,Cont_data,GBPS_data,LRT_data]:
 	
 
 i=0
-for dataset in [all_data,NPac_data,SPac_data,Cont_data,GBPS_data,LRT_data]:
+for dataset in [all_data,NPac_data,SPac_data,Cont_data,LRT_data]:
 	case_data = dataset['wet_scav']
 	concs = [row[0] for row in case_data]
 	errs = [row[1] for row in case_data]
@@ -699,7 +676,7 @@ for dataset in [all_data,NPac_data,SPac_data,Cont_data,GBPS_data,LRT_data]:
 	i+=1
 	
 i=0
-for dataset in [all_data,NPac_data,SPac_data,Cont_data,GBPS_data,LRT_data]:
+for dataset in [all_data,NPac_data,SPac_data,Cont_data,LRT_data]:
 	case_data = dataset['Van']
 	concs = [row[0] for row in case_data]
 	errs = [row[1] for row in case_data]
@@ -727,7 +704,7 @@ for dataset in [all_data,NPac_data,SPac_data,Cont_data,GBPS_data,LRT_data]:
 
 	
 i=0
-for dataset in [all_data,NPac_data,SPac_data,Cont_data,GBPS_data,LRT_data]:
+for dataset in [all_data,NPac_data,SPac_data,Cont_data,LRT_data]:
 	case_data = dataset['no_bb']
 	concs = [row[0] for row in case_data]
 	errs = [row[1] for row in case_data]
@@ -755,7 +732,7 @@ for dataset in [all_data,NPac_data,SPac_data,Cont_data,GBPS_data,LRT_data]:
 	i+=1
 	
 i=0	
-for dataset in [all_data,NPac_data,SPac_data,Cont_data,GBPS_data,LRT_data]:
+for dataset in [all_data,NPac_data,SPac_data,Cont_data,LRT_data]:
 	case_data = dataset['all_together']
 	concs = [row[0] for row in case_data]
 	errs = [row[1] for row in case_data]
@@ -784,14 +761,14 @@ for dataset in [all_data,NPac_data,SPac_data,Cont_data,GBPS_data,LRT_data]:
 
 
 	
-fig, axes = plt.subplots(6,6, figsize=(14, 14), facecolor='w', edgecolor='k')
+fig, axes = plt.subplots(6,5, figsize=(14, 14), facecolor='w', edgecolor='k')
 fig.subplots_adjust(hspace = 0., wspace=0.0)
 axs = axes.ravel()	
 i=0
 
 for dataset in data_to_plot:	
 
-	if i in [0,1,2,3,4,5]:
+	if i in [0,1,2,3,4]:
 		histo = axs[i].hist(dataset, bins = bin_number, range = bin_range, color = 'b')	
 		axs[i].xaxis.set_visible(False)
 		axs[i].set_ylim(0,y_lim)
@@ -812,32 +789,30 @@ for dataset in data_to_plot:
 	if i == 3:
 		axs[i].text(0.25, 0.9,'N. Canada', transform=axs[i].transAxes)
 	if i == 4:
-		axs[i].text(0.2, 0.8,'Georgia Basin/\nPuget Sound', transform=axs[i].transAxes)
-	if i == 5:
 		axs[i].text(0.25, 0.9,'W. Pacific/Asia', transform=axs[i].transAxes)
 	
-	if i == 6:
+	if i == 5:
 		axs[i].set_ylabel('default GC')
-	if i == 12:
+	if i == 10:
 		axs[i].set_ylabel('enhanced\n wet scavenging')
-	if i == 18:
+	if i == 15:
 		axs[i].set_ylabel('No Vancouver\n emissions')
-	if i == 24:
+	if i == 20:
 		axs[i].set_ylabel('no biomass\n burning')
-	if i == 30:
+	if i == 25:
 		axs[i].set_ylabel('all changes\n together')
-		
-	if i in [1,2,3,4, 7,8,9,10, 13,14,15,16, 19,20,21,22, 25,26,27,28, 31,32,33,34]:
+
+	if i in [1,2,3, 6,7,8, 11,12,13, 16,17,18 ,21,22,23, 26,27,28, ]:
 		axs[i].yaxis.set_visible(False)
-	if i in [5,11,17,23,29,35]:
+	if i in [4,9,14,19,14,24,29]:
 		axs[i].yaxis.set_label_position('right')
 		axs[i].yaxis.tick_right()
-	if i == 32:
+	if i == 27:
 		axs[i].set_xlabel('6h rBC mass concentration (ng/m3 - STP)')
 	
 	i+=1
 	
-plt.savefig('histograms -clustered GEOS-Chem and measurements - 6h FT - v10-tests - RH ' + str(high_RH_limit) +'%limit.png',bbox_inches='tight')
+plt.savefig('histograms -clustered GEOS-Chem and measurements - 6h FT - v10-tests - RH ' + str(high_RH_limit) +'%limit-GBPSintoSPac.png',bbox_inches='tight')
 
 plt.show()
 

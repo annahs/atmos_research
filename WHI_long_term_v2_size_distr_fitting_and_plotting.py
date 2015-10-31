@@ -53,6 +53,9 @@ distributions = {
 
 }
 
+
+
+
 fit_bins = []
 for x in range (30,800,5):
 	fit_bins.append(x+2)
@@ -68,6 +71,32 @@ for distribution, distribution_data in distributions.iteritems():
 	with open(file_name, 'r') as f:
 		size_distribution_file = pickle.load(f)
 		bins = np.array([row[0] for row in size_distribution_file])
+		
+		if file_name =='AD_corr - size distr - FT - GBPS.sdbinpickl':
+			file_c6 = open(file_name, 'r')
+			c6_data = pickle.load(file_c6)
+			file_c6.close()
+
+		
+		
+		#combine clusters 4 and 6 (S PAc)
+		if file_name ==  'AD_corr - size distr - FT - SPac.sdbinpickl':
+			i=0
+			lognorm_masses_l = []
+			for row in size_distribution_file:
+				lognorm_mass_c4 = row[1]
+				lognorm_mass_c6 = c6_data[i][1]
+				mean_mass = (lognorm_mass_c4+lognorm_mass_c6)/2
+				lognorm_masses_l.append(mean_mass)
+				lognorm_masses = np.array(lognorm_masses_l)
+				i+=1
+
+		#other clusters	
+		else:
+			lognorm_masses = np.array([row[1] for row in size_distribution_file])
+	
+					
+		
 		lognorm_masses = np.array([row[1] for row in size_distribution_file])
 		
 		temp = []
@@ -136,8 +165,7 @@ ax1.plot	(distributions['LRT'][1]	,distributions['LRT'][data],	'sb-', linewidth=
 ax1.plot	(distributions['LRT'][5]	,distributions['LRT'][fit],	 	color = colors[5],   linewidth = 1.5)
 ax1.plot	(distributions['SPac'][1]	,distributions['SPac'][data],	'og-', linewidth=0,label = 'S. Pacific')
 ax1.plot	(distributions['SPac'][5]	,distributions['SPac'][fit],	color = colors[4], linewidth =  1.5)
-ax1.plot	(distributions['GBPS'][1]	,distributions['GBPS'][data],	'^r-', linewidth=0,label = 'Georgia Basin/Puget Sound')
-ax1.plot	(distributions['GBPS'][5]	,distributions['GBPS'][fit],	color = colors[6],  linewidth =  1.5)
+
 ax1.plot	(distributions['NPac'][1]	,distributions['NPac'][data],	'*c-', linewidth=0,label = 'N. Pacific')
 ax1.plot	(distributions['NPac'][5]	,distributions['NPac'][fit],	color = colors[3],  linewidth =  1.5)
 ax1.plot	(distributions['Cont'][1]	,distributions['Cont'][data],	'>m-', linewidth=0,label = 'N. Canada')
