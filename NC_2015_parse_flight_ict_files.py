@@ -12,7 +12,29 @@ import math
 from matplotlib import dates
 import sqlite3
 
+flight = 'science 8'
 
+
+flight_times = {
+'science 1'  : [datetime(2015,4,5,9,0),datetime(2015,4,5,14,0),15.6500, 78.2200]	,	
+'ferry 1'    : [datetime(2015,4,6,9,0),datetime(2015,4,6,11,0),15.6500, 78.2200]     ,
+'ferry 2'    : [datetime(2015,4,6,15,0),datetime(2015,4,6,18,0),-16.6667, 81.6000]   ,
+'science 2'  : [datetime(2015,4,7,16,0),datetime(2015,4,7,21,0),-62.338, 82.5014]    ,
+'science 3'  : [datetime(2015,4,8,13,0),datetime(2015,4,8,17,0),-62.338, 82.5014]    ,
+'science 4'  : [datetime(2015,4,8,17,30),datetime(2015,4,8,22,0),-70.338, 82.5014]   ,
+'science 5'  : [datetime(2015,4,9,13,30),datetime(2015,4,9,18,0),-62.338, 82.0]   ,
+'ferry 3'    : [datetime(2015,4,10,14,0),datetime(2015,4,10,17,0),-75.338, 81]  ,
+'science 6'  : [datetime(2015,4,11,15,0),datetime(2015,4,11,22,0),-90.9408, 80.5] ,
+'science 7'  : [datetime(2015,4,13,15,0),datetime(2015,4,13,21,0),-95, 80.1] ,
+'science 8'  : [datetime(2015,4,20,15,0),datetime(2015,4,20,20,0),-133.7306, 67.1],
+'science 9'  : [datetime(2015,4,20,21,0),datetime(2015,4,21,2,0),-133.7306, 69.3617] ,
+'science 10' : [datetime(2015,4,21,16,0),datetime(2015,4,21,22,0),-131, 69.55],
+}
+
+
+
+start_coating_data = flight_times[flight][0]
+end_coating_data = flight_times[flight][1]
 
 
 #set parameters
@@ -20,8 +42,6 @@ instrument_locn = 'POLAR6'
 type_particle = 'incand'
 min_BC_VED = 155.
 max_BC_VED = 180.
-start_coating_data = datetime(2015,4,17)
-end_coating_data = datetime(2015,4,18) 
 binning_half_interval = timedelta(minutes=0.25)
 
 min_rBC_mass = ((min_BC_VED/(10.**7))**3)*(math.pi/6.)*1.8*(10.**15)
@@ -78,7 +98,7 @@ ORDER BY unix_ts_utc''',
 			temp.append(dp_dc)
 		
 		if event_time > (bin_center+binning_half_interval):
-			mean=np.median(temp)
+			mean=np.mean(temp)
 			temp=[]
 			coating_data.append([bin_center,mean])
 			bin_center = event_time + binning_half_interval
@@ -164,16 +184,16 @@ display_minute_interval = 60
 
 ax1 = fig.add_subplot(111)
 
-ax1.plot(coating_time,coating, color='g',marker='o',linewidth=1)
+ax1.scatter(coating_time,coating, c=coating, cmap=plt.get_cmap('jet'),marker='o')#,linewidth=1)
 ax1.set_ylabel('coat (dp/dc)')
 ax1.set_xlabel('time')
 ax1.xaxis.set_major_formatter(hfmt)
 ax1.xaxis.set_major_locator(dates.MinuteLocator(interval = display_minute_interval))
-ax1.set_ylim(0.9,1.8)
+ax1.set_ylim(0.85,2.5)
 
 ax2 = ax1.twinx()
 ax2.set_ylabel('alt')
-ax2.plot(time,alt, color='k',linewidth=1)
+ax2.scatter(time,alt, color='k',)
 ax2.set_ylim(0,6000)
 
 #ax3 = ax1.twinx()

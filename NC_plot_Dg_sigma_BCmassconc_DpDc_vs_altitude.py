@@ -14,7 +14,8 @@ import calendar
 from scipy.optimize import curve_fit
 
 
-flight = 'ferry 3'
+flight = 'science 10'
+calib_to_use = 'Alert' #Jan or Alert
 show_alt_plot = False
 show_distr_plots = False
 alt_incr = 820
@@ -49,6 +50,12 @@ end_time = flight_times[flight][1]
 UNIX_start_time = calendar.timegm(start_time.utctimetuple())
 UNIX_end_time = calendar.timegm(end_time.utctimetuple())
 
+
+bin_value_min = 80  
+bin_value_max = 220  
+bin_number_lim = (bin_value_max-bin_value_min)/10
+
+	
 #database connection
 cnx = mysql.connector.connect(user='root', password='Suresh15', host='localhost', database='black_carbon')
 cursor = cnx.cursor()
@@ -63,7 +70,7 @@ for x in range (30,800,1):
 flight_track = []
 plot_data={}
 interval_plot_list = []
-
+fractions_sampled = []
 upper_alt = lower_alt + alt_incr
 while upper_alt <= max_alt:
 	#get timestamps for intervals within an altitude range
@@ -112,29 +119,20 @@ while upper_alt <= max_alt:
 	lower_alt += alt_incr
 	upper_alt += alt_incr
 	
-	#make data binning dict for the interval
-	binned_data = {
-	#70 :[],
-	80 :[],
-	90 :[],
-	100:[],
-	110:[],
-	120:[],
-	130:[],
-	140:[],
-	150:[],
-	160:[],
-	170:[],
-	180:[],
-	190:[],
-	#200:[],
-	#210:[],
-	}
-	volume_sampled = 0
-	total_mass = 0
+	#make data binning dicts for the interval
+	mass_binned_data = {}
+	number_binned_data = {}
+	
+	i = bin_value_min  
+	while i < bin_value_max:
+		mass_binned_data[i] = []
+		number_binned_data[i] = []
+		i+=10
+
 	
 	#get data for each interval of height
 	total_mass_concs = []
+	total_number_concs = []
 	Dp_Dc_list = []
 	for interval in interval_list:
 		alt_interval_start_time = interval[0]
@@ -155,15 +153,18 @@ while upper_alt <= max_alt:
 				continue
 			
 		#get mass data
-		cursor.execute(('SELECT 70t80,80t90,90t100,100t110,110t120,120t130,130t140,140t150,150t160,160t170,170t180,180t190,190t200,200t210,210t220,sampled_vol,total_mass,UNIX_UTC_ts from polar6_binned_mass_and_sampled_volume where UNIX_UTC_ts >= %s and UNIX_UTC_ts < %s'),(alt_interval_start_time,alt_interval_end_time))
+		if calib_to_use == 'Jan':
+			cursor.execute(('SELECT 70t80,80t90,90t100,100t110,110t120,120t130,130t140,140t150,150t160,160t170,170t180,180t190,190t200,200t210,210t220,sampled_vol,total_mass,UNIX_UTC_ts from polar6_binned_mass_and_sampled_volume_jancalib where UNIX_UTC_ts >= %s and UNIX_UTC_ts < %s'),(alt_interval_start_time,alt_interval_end_time))
+		if calib_to_use == 'Alert':
+			cursor.execute(('SELECT 70t80,80t90,90t100,100t110,110t120,120t130,130t140,140t150,150t160,160t170,170t180,180t190,190t200,200t210,210t220,sampled_vol,total_mass,UNIX_UTC_ts from polar6_binned_mass_and_sampled_volume_alertcalib where UNIX_UTC_ts >= %s and UNIX_UTC_ts < %s'),(alt_interval_start_time,alt_interval_end_time))
+		
 		mass_data = cursor.fetchall()
 		
 		for row in mass_data:
 			timestamp = row[17]
 			volume_sampled = row[15]
 			total_mass = row[16]
-			
-			
+						
 			#get T and P for correction to STP
 			cursor.execute(('SELECT temperature_C,BP_Pa from polar6_flight_track_details where UNIX_UTC_ts >= %s and UNIX_UTC_ts < %s'),(timestamp-0.5,timestamp+0.5))
 			TandP_data = cursor.fetchall()
@@ -174,28 +175,69 @@ while upper_alt <= max_alt:
 			total_mass_conc_value = total_mass*correction_factor_for_STP/volume_sampled
 			total_mass_concs.append(total_mass_conc_value)
 			
-			#append STP corrected mass cnc to dict of binned data
+			#append STP corrected mass conc to dict of binned data
 			i=1
-			j=80
-			while i <= 12:
-				binned_data[j].append(row[i]*correction_factor_for_STP/volume_sampled)
+			j=bin_value_min
+			while i <= bin_number_lim:
+				mass_binned_data[j].append(row[i]*correction_factor_for_STP/volume_sampled)
 				i+=1
 				j+=10			
-			total_mass += row[16]
 
-	###
+
+		#get number data
+		if calib_to_use == 'Jan':
+			cursor.execute(('SELECT 70t80,80t90,90t100,100t110,110t120,120t130,130t140,140t150,150t160,160t170,170t180,180t190,190t200,200t210,210t220,sampled_vol,total_number,UNIX_UTC_ts from polar6_binned_number_and_sampled_volume_jancalib where UNIX_UTC_ts >= %s and UNIX_UTC_ts < %s'),(alt_interval_start_time,alt_interval_end_time))
+		if calib_to_use == 'Alert':
+			cursor.execute(('SELECT 70t80,80t90,90t100,100t110,110t120,120t130,130t140,140t150,150t160,160t170,170t180,180t190,190t200,200t210,210t220,sampled_vol,total_number,UNIX_UTC_ts from polar6_binned_number_and_sampled_volume_alertcalib where UNIX_UTC_ts >= %s and UNIX_UTC_ts < %s'),(alt_interval_start_time,alt_interval_end_time))
+		number_data = cursor.fetchall()
+		
+		for row in number_data:
+			timestamp = row[17]
+			volume_sampled = row[15]
+			total_number = row[16]
+						
+			#get T and P for correction to STP
+			cursor.execute(('SELECT temperature_C,BP_Pa from polar6_flight_track_details where UNIX_UTC_ts >= %s and UNIX_UTC_ts < %s'),(timestamp-0.5,timestamp+0.5))
+			TandP_data = cursor.fetchall()
+			temperature = TandP_data[0][0] + 273.15 #convert to Kelvin
+			pressure = TandP_data[0][1]
+			correction_factor_for_STP = (101325/pressure)*(temperature/273)
+			
+			total_number_conc_value = total_number*correction_factor_for_STP/volume_sampled
+			total_number_concs.append(total_number_conc_value)
+				
+			#append STP corrected mass conc to dict of binned data
+			i=1
+			j=bin_value_min
+			while i <= bin_number_lim:
+				number_binned_data[j].append(row[i]*correction_factor_for_STP/volume_sampled)
+				i+=1
+				j+=10		
+		
+		
+	###indented here = data per interval with individual intervals
 		#make lists from binned data and sort	
 		binned_list = []
-		for key in binned_data:	
-			binned_list.append([key, np.mean(binned_data[key])])
+		for key in mass_binned_data:	
+			binned_list.append([key, np.mean(mass_binned_data[key])])
 		binned_list.sort()
+		
+		number_binned_list = []
+		for key in number_binned_data:	
+			number_binned_list.append([key, np.mean(number_binned_data[key])])
+		number_binned_list.sort()
 
 		##normalize
 		for row in binned_list:
-			row[1] = row[1]/(math.log(row[0]+10)-math.log(row[0]))
-
+			row[1] = row[1]/(math.log((row[0]+10))-math.log(row[0]))
 		mass_conc_bins = np.array([row[0] for row in binned_list])
 		mass_concs = np.array([row[1] for row in binned_list])
+
+		
+		for row in number_binned_list:
+			row[1] = row[1]/(math.log(row[0]+10)-math.log(row[0]))
+		number_conc_bins = np.array([row[0] for row in number_binned_list])
+		number_concs = np.array([row[1] for row in number_binned_list])
 
 		#fit with lognormal
 		popt = np.nan
@@ -219,19 +261,20 @@ while upper_alt <= max_alt:
 		sigma = math.exp(popt[1])
 		Dg = fit_bins[np.argmax(fit_y_vals)]
 
-		fraction_sampled = sum(fit_y_vals[70:170])/sum(fit_y_vals)
-		
+		fraction_sampled = sum(fit_y_vals[65:220])/sum(fit_y_vals[65:480])
+		fractions_sampled.append(fraction_sampled)
 		#add data to dict
 		if mean_alt in plot_data:
-			plot_data[mean_alt].append([Dg,sigma,total_mass_concs,Dp_Dc_list,fraction_sampled])
+			plot_data[mean_alt].append([Dg,sigma,total_mass_concs,Dp_Dc_list,fraction_sampled,total_number_concs])
 		else:
-			plot_data[mean_alt] = [[Dg,sigma,total_mass_concs,Dp_Dc_list,fraction_sampled]]
+			plot_data[mean_alt] = [[Dg,sigma,total_mass_concs,Dp_Dc_list,fraction_sampled,total_number_concs]]
 
 		
 		####plotting	
 		if show_distr_plots == True:
 			fig = plt.figure()
 			ax1 = fig.add_subplot(111)
+			ax1.semilogx(number_conc_bins,number_concs, color = 'g',marker='o')
 			ax1.semilogx(mass_conc_bins,mass_concs, color = 'b',marker='o')
 			ax1.semilogx(fit_bins,fit_y_vals, color = 'r',marker=None)
 			plt.ylabel('dM/dlog(VED)')
@@ -240,6 +283,7 @@ while upper_alt <= max_alt:
 
 cnx.close()
 
+print 'mass fraction sampled', np.mean(fractions_sampled)
 
 #plottting
 if show_alt_plot == True:
@@ -287,7 +331,13 @@ for mean_alt in plot_data:
 	Dp_Dc_p25_err = median_Dp_Dc-np.percentile([row[3] for row in plot_data[mean_alt]],25)
 	Dp_Dc_p75_err = np.percentile([row[3] for row in plot_data[mean_alt]],75)-median_Dp_Dc
 	
-	plot_list.append([mean_alt,mean_dg,min_dg,max_dg,mean_sigma,min_sigma,max_sigma,median_mass,p25_err,p75_err,median_Dp_Dc,Dp_Dc_p25_err,Dp_Dc_p75_err])
+	median_number_conc = np.median([row[4] for row in plot_data[mean_alt]])
+	number_p25_err = median_number_conc-np.percentile([row[4] for row in plot_data[mean_alt]],25)
+	number_p75_err = np.percentile([row[4] for row in plot_data[mean_alt]],75)-median_number_conc
+	
+	plot_list.append([mean_alt,mean_dg,min_dg,max_dg,mean_sigma,min_sigma,max_sigma,median_mass,p25_err,p75_err,median_Dp_Dc,Dp_Dc_p25_err,Dp_Dc_p75_err,median_number_conc,number_p25_err,number_p75_err])
+	
+	plot_list.sort()
 	
 altitudes = [row[0] for row in plot_list]
 
@@ -307,45 +357,58 @@ Dp_Dc_med = [row[10] for row in plot_list]
 Dp_Dc_25 = [row[11] for row in plot_list]
 Dp_Dc_75 = [row[12] for row in plot_list]
 
+number_med = [row[13] for row in plot_list]
+number_25 = [row[14] for row in plot_list]
+number_75 = [row[15] for row in plot_list]
 
-fig = plt.figure(figsize=(14,10))
 
-ax1  = plt.subplot2grid((2,2), (0,0), colspan=1)
-ax2  = plt.subplot2grid((2,2), (1,0), colspan=1)					
-ax3  = plt.subplot2grid((2,2), (0,1), colspan=1)
-ax4  = plt.subplot2grid((2,2), (1,1), colspan=1)
+fig = plt.figure(figsize=(12,12))
 
-ax1.errorbar(Dgs_mean,altitudes,xerr = [Dgs_min_err,Dgs_max_err],fmt='o')
+ax1  = plt.subplot2grid((3,2), (0,0), colspan=1)
+ax2  = plt.subplot2grid((3,2), (1,0), colspan=1)					
+ax3  = plt.subplot2grid((3,2), (0,1), colspan=1)
+ax4  = plt.subplot2grid((3,2), (2,0), colspan=1)
+ax5  = plt.subplot2grid((3,2), (1,1), colspan=1)
+
+ax1.errorbar(Dgs_mean,altitudes,xerr = [Dgs_min_err,Dgs_max_err],fmt='o',linestyle='-')
 ax1.set_ylabel('altitude (m)')
 ax1.set_xlabel('Dg (from dM/dlog(D) ng/m3-STP)')
 ax1.set_xlim(100,200)
 ax1.set_ylim(0,6000)
 
-ax2.errorbar(sigmas_mean,altitudes,xerr = [sigmas_min_err,sigmas_max_err],fmt='o', color = 'grey')
+ax2.errorbar(sigmas_mean,altitudes,xerr = [sigmas_min_err,sigmas_max_err],fmt='o',linestyle='-', color = 'grey')
 ax2.set_xlabel('sigma (from dM/dlog(D) ng/m3-STP)')
 ax2.set_ylabel('altitude (m)')
 ax2.set_xlim(1,2)
 ax2.set_ylim(0,6000)
 
-ax3.errorbar(mass_med,altitudes,xerr = [mass_25,mass_75],fmt='o', color = 'green')
+ax3.errorbar(mass_med,altitudes,xerr = [mass_25,mass_75],fmt='o',linestyle='-', color = 'green')
 ax3.set_xlabel('total mass conc (ng/m3 - STP)')
 ax3.set_ylabel('altitude (m)')
-ax3.set_xlim(0,220)
+ax3.set_xlim(0,180)
 ax3.set_ylim(0,6000)
 
-ax4.errorbar(Dp_Dc_med,altitudes,xerr=[Dp_Dc_25,Dp_Dc_75],fmt='o', color = 'red')
-ax4.set_xlabel('Dp/Dc (for rBC cores from 155-180nm)')
+ax4.errorbar(Dp_Dc_med,altitudes,xerr=[Dp_Dc_25,Dp_Dc_75],fmt='o',linestyle='-', color = 'red')
 ax4.set_xlabel('Dp/Dc (rBC cores from 155-180nm)')
 ax4.set_ylabel('altitude (m)')
 ax4.set_xlim(0.8,2.4)
 ax4.set_ylim(0,6000)
 
+ax5.errorbar(number_med,altitudes,xerr=[number_25,number_75],fmt='o',linestyle='-', color = 'm')
+ax5.set_xlabel('total number conc (#/cm3 - STP)')
+ax5.set_ylabel('altitude (m)')
+ax5.set_xlim(0.2,1)
+ax5.set_ylim(0,6000)
+#ax5.set_xscale('log')
+
 fig.suptitle(flight, fontsize=20)
 
 dir = 'C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/'
 os.chdir(dir)
-plt.savefig('NC - Polar6 - '+flight+' - Dg,Sigma,mass_conc,DpDc vs alt at ' + str(alt_incr) + 'm intervals.png', bbox_inches='tight') 
-
+if calib_to_use == 'Jan':
+	plt.savefig('NC - Polar6 - '+flight+' - Dg,Sigma,mass_conc,DpDc vs alt at ' + str(alt_incr) + 'm intervals - Jan calib.png', bbox_inches='tight') 
+if calib_to_use == 'Alert':
+	plt.savefig('NC - Polar6 - '+flight+' - Dg,Sigma,mass_conc,DpDc vs alt at ' + str(alt_incr) + 'm intervals - Alert calib.png', bbox_inches='tight') 
 
 plt.show()
 

@@ -20,7 +20,8 @@ add_interval = ('INSERT INTO polar6_hk_data_2015'
 
 
 ######get data
-data_dir = 'D:/2015/NETCARE_UBC_SP2/flight data/20150421/'
+#data_dir = 'D:/2015/NETCARE_UBC_SP2/flight data/20150421/'
+data_dir = 'D:/2015/NETCARE_UBC_SP2/calibration data/20150128/'
 os.chdir(data_dir)
 
 for file in os.listdir(data_dir):
