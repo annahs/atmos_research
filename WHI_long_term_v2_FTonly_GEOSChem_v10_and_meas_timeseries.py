@@ -264,7 +264,7 @@ GEOS_Chem_factor = 10**-9
 start_hour = 4
 end_hour = 16
 
-data_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/Junwei_runs/no_biomass/'
+data_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/Junwei_runs/default/'
 os.chdir(data_dir)
 
 for file in os.listdir(data_dir):
@@ -297,7 +297,7 @@ for file in os.listdir(data_dir):
 
 			
 			total_BC_ppbv = hydrophilic_BC[level,lat,lon] + hydrophobic_BC[level,lat,lon]
-			BC_conc_ngm3 = total_BC_ppbv*molar_mass_BC*ng_per_g*GEOS_Chem_factor*(101325/(R*273))  #101325/(R*273) corrects to STP 	
+			BC_conc_ngm3_lvl = total_BC_ppbv*molar_mass_BC*ng_per_g*GEOS_Chem_factor*(101325/(R*273))  #101325/(R*273) corrects to STP 	
 			
 			total_BC_ppbv_dn = hydrophilic_BC[level-1,lat,lon] + hydrophobic_BC[level-1,lat,lon]
 			BC_conc_ngm3_dn = total_BC_ppbv_dn*molar_mass_BC*ng_per_g*GEOS_Chem_factor*(101325/(R*273))  #101325/(R*273) corrects to STP 	
@@ -305,7 +305,8 @@ for file in os.listdir(data_dir):
 			total_BC_ppbv_up = hydrophilic_BC[level+1,lat,lon] + hydrophobic_BC[level+1,lat,lon]
 			BC_conc_ngm3_up = total_BC_ppbv_up*molar_mass_BC*ng_per_g*GEOS_Chem_factor*(101325/(R*273))  #101325/(R*273) corrects to STP 	
 			
-	
+			BC_conc_ngm3 = np.mean([BC_conc_ngm3_lvl,BC_conc_ngm3_dn,BC_conc_ngm3_up])
+			#print BC_conc_ngm3_lvl,BC_conc_ngm3, BC_conc_ngm3_lvl-BC_conc_ngm3,np.abs(BC_conc_ngm3_lvl-BC_conc_ngm3)*100/BC_conc_ngm3
 			
 			#if period_midtime in sampling_times:  #this excludes BB times already
 			if period_midtime >= datetime.strptime('20090628', '%Y%m%d') and period_midtime <= datetime.strptime('20090816', '%Y%m%d'):					

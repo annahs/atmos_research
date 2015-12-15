@@ -378,14 +378,24 @@ for GC_run in GC_runs: #the runs are 'default','Vancouver_emission','wet_scaveng
 				hydrophobic_BC = hdf_file.select('IJ-AVG-$::BCPO')
 
 				total_BC_ppbv = hydrophilic_BC[level,lat,lon] + hydrophobic_BC[level,lat,lon]
-				BC_conc_ngm3 = total_BC_ppbv*molar_mass_BC*ng_per_g*GEOS_Chem_factor*(101325/(R*273))  #101325/(R*273) corrects to STP 	
+				BC_conc_ngm3_lvl = total_BC_ppbv*molar_mass_BC*ng_per_g*GEOS_Chem_factor*(101325/(R*273))  #101325/(R*273) corrects to STP 	
+							
+				total_BC_ppbv_dn = hydrophilic_BC[level-1,lat,lon] + hydrophobic_BC[level-1,lat,lon]
+				BC_conc_ngm3_dn = total_BC_ppbv_dn*molar_mass_BC*ng_per_g*GEOS_Chem_factor*(101325/(R*273))  #101325/(R*273) corrects to STP 	
+				
+				total_BC_ppbv_up = hydrophilic_BC[level+1,lat,lon] + hydrophobic_BC[level+1,lat,lon]
+				BC_conc_ngm3_up = total_BC_ppbv_up*molar_mass_BC*ng_per_g*GEOS_Chem_factor*(101325/(R*273))  #101325/(R*273) corrects to STP 	
+			
+				vals = [BC_conc_ngm3_lvl,BC_conc_ngm3_dn,BC_conc_ngm3_up]
+				BC_conc_ngm3 = np.mean(vals)
+				half_range = ((np.max(vals) - np.min(vals))/2)/BC_conc_ngm3
 				
 				if period_midtime in all_dict:  #this excludes BB times already
 					if period_midtime in GC_data:
-						GC_data[period_midtime][i].append(BC_conc_ngm3)
+						GC_data[period_midtime][i].append([BC_conc_ngm3,half_range])
 					else:
 						GC_data[period_midtime] = [[],[],[],[],[],'']
-						GC_data[period_midtime][i].append(BC_conc_ngm3)
+						GC_data[period_midtime][i].append([BC_conc_ngm3,half_range])
 					
 					
 
@@ -435,7 +445,7 @@ add_6h_data = ('INSERT INTO whi_gc_and_sp2_6h_mass_concs'
 #get the means for each 6-h period
 for period_midtime in GC_data:
 	
-	default_data = GC_data[period_midtime][0]
+	default_data = GC_data[period_midtime][0] #list
 	Vancouver_data = GC_data[period_midtime][1]
 	wet_scav_data = GC_data[period_midtime][2]
 	no_biomass_data = GC_data[period_midtime][3]
@@ -445,8 +455,8 @@ for period_midtime in GC_data:
 	data_6hrly = {}
 	#get the default GC data for all air masses combined
 	for key, data in {'default':default_data,'Van':Vancouver_data,'wet_scav':wet_scav_data,'no_bb':no_biomass_data,'all_together':all_together_data}.iteritems():
-		mean = np.nanmean(data) 
-		rel_err = np.std(data)/mean  
+		mean = np.nanmean([row [0] for row in data]) 
+		rel_err = np.nanmean([row [1] for row in data])
 		all_data[key].append([mean,rel_err])
 		data_6hrly[key] = [float(mean),float(rel_err)]
 		
@@ -483,8 +493,8 @@ for period_midtime in GC_data:
 	for cluster, data_set in  {'NPac':NPac_data,'SPac':SPac_data,'Cont':Cont_data,'LRT':LRT_data}.iteritems():
 		if GC_cluster == cluster:
 			for key, data in {'default':default_data,'Van':Vancouver_data,'wet_scav':wet_scav_data,'no_bb':no_biomass_data,'all_together':all_together_data}.iteritems():
-				mean = np.nanmean(data) 
-				rel_err = np.std(data)/mean  
+				mean = np.nanmean([row [0] for row in data]) 
+				rel_err = np.nanmean([row [1] for row in data])
 				data_set[key].append([mean,rel_err])
 
 

@@ -68,8 +68,9 @@ GEOS_Chem_factor = 10**-9
 start_hour = 3
 end_hour = 15
 
-#GC_runs = ['default','wet_scavenging']
-GC_runs = ['default','all_together']
+GC_runs = ['default','wet_scavenging']
+GC_runs = ['default','Vancouver_emission']
+#GC_runs = ['default','all_together']
 
 
 
@@ -181,11 +182,15 @@ for scenario in scenarios:
 			for period_midtime in FT_intervals:	
 				mean_conc = np.mean([row[1] for row in FT_intervals[period_midtime]])
 				mean_pressure = np.mean([row[0] for row in FT_intervals[period_midtime]])
-				temp.append([mean_pressure,mean_conc])
+				std_conc = 2*np.std([row[1] for row in FT_intervals[period_midtime]])
+				std_pressure = 2*np.std([row[0] for row in FT_intervals[period_midtime]])
+				temp.append([mean_pressure,mean_conc,std_pressure])
 				
 			average_p = np.median([row[0] for row in temp])
+			average_p_err = np.mean([row[2] for row in temp])
 			average_conc = np.median([row[1] for row in temp])
-			mean_dict[cluster].append([average_p,average_conc])
+			average_conc_err = np.median([row[1] for row in temp])
+			mean_dict[cluster].append([average_p,average_conc,average_p_err,average_conc_err])
 
 			
 
@@ -210,24 +215,27 @@ i=0
 for cluster in cluster_list:	
 	print cluster
 	default_concs = [row[1] for row in default_sc_means[cluster]]
+	default_concs_err = [row[3] for row in default_sc_means[cluster]]
 	default_pressures = [row[0] for row in default_sc_means[cluster]]
-	
+	default_pressures_err = [row[2] for row in default_sc_means[cluster]]
+
 	wet_scav_concs = [row[1] for row in wet_scav_sc_means[cluster]]
 	wet_scav_pressures = [row[0] for row in wet_scav_sc_means[cluster]]
+	wet_scav_pressures_err = [row[2] for row in wet_scav_sc_means[cluster]]
 	
 	meas_conc = SP2_medians[cluster][0]
 	meas_uncertainty = SP2_medians[cluster][1]
 	
-	vert_plot_default = axs[i].plot(default_concs, default_pressures, color = colors[i],linewidth=2.0,marker = 'o')	
+	vert_plot_default = axs[i].plot(default_concs, default_pressures,color = colors[i],linewidth=2.0,marker = '*')	
 	vert_plot_wet_scav = axs[i].plot(wet_scav_concs, wet_scav_pressures, color = colors[i], linestyle='--',linewidth=2.0)	
 	vert_plot_meas = axs[i].errorbar(meas_conc, 781.5, xerr=meas_uncertainty, fmt='o',color = colors[i],linewidth=2.0)
 
 	axs[i].invert_yaxis()  
 
-	#axs[i].axhspan(770,793, facecolor='grey', alpha=0.25) #95% CI for pressure at WHI
+	axs[i].axhspan(770,793, facecolor='grey', alpha=0.25) #95% CI for pressure at WHI
 	
-	axs[i].set_ylim(910,0)
-	axs[i].set_xlim(0,210)
+	axs[i].set_ylim(910,510)
+	axs[i].set_xlim(0,190)
 	
 	if i == 0:
 		axs[i].text(0.25, 0.9,'All Data', transform=axs[i].transAxes)
@@ -254,7 +262,7 @@ for cluster in cluster_list:
 
 data_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/'
 os.chdir(data_dir)
-plt.savefig('GCv10 vertical profile - medians - with SP2 90% RH filter - all_together.png',bbox_inches='tight')
+plt.savefig('GCv10 vertical profile - medians - with SP2 90% RH filter - Van.png',bbox_inches='tight')
 
 
 plt.show()

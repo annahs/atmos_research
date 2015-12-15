@@ -11,8 +11,8 @@ import math
 import calendar
 from math import log10, floor
 
-GC_error = False
-test_case =  'no_bb'#'default' #default, Van, wet_scav, no_bb, all_together
+GC_error = True
+test_case =  'Van'#'default' #default, Van, wet_scav, no_bb, all_together
 RH_of_interest = 90 #101 = no threshold	
 sig_figs_SP2 = 3
 sig_figs_gc = 4
