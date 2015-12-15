@@ -14,7 +14,7 @@ import calendar
 from scipy.optimize import curve_fit
 
 
-flight = 'science 10'
+flight = 'science 5'
 
 flight_times = {
 'science 1'  : [datetime(2015,4,5,9,0),  datetime(2015,4,5,14,0) ,''],	
@@ -94,7 +94,16 @@ for bin in bin_dict:
 	else:
 		UHSAS_number_mean_norm = UHSAS_number_mean/(math.log((bin_UL))-math.log(bin_LL))
 	
-	if bin_LL >= 130 and bin_UL < 500:
+			
+	cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'SP2_core_#'))
+	SP2_core_number = cursor.fetchall()
+	SP2_core_number_mean = SP2_core_number[0][0] 
+	if SP2_core_number_mean == None:
+		SP2_core_number_mean_norm = np.nan
+	else:
+		SP2_core_number_mean_norm = SP2_core_number_mean/(math.log((bin_UL))-math.log(bin_LL))
+
+	if bin_LL >= 130:
 		cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'SP2_coated_#'))
 		SP2_coated_number = cursor.fetchall()
 		SP2_coated_number_mean = SP2_coated_number[0][0] 
@@ -105,15 +114,7 @@ for bin in bin_dict:
 	else:
 		SP2_coated_number_mean = np.nan
 		SP2_coated_number_mean_norm = np.nan
-			
-	cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'SP2_core_#'))
-	SP2_core_number = cursor.fetchall()
-	SP2_core_number_mean = SP2_core_number[0][0] 
-	if SP2_core_number_mean == None:
-		SP2_core_number_mean_norm = np.nan
-	else:
-		SP2_core_number_mean_norm = SP2_core_number_mean/(math.log((bin_UL))-math.log(bin_LL))
-
+	
 	cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'mean_core_dia'))
 	core_dia = cursor.fetchall()
 	core_dia_mean = core_dia[0][0] 
@@ -122,17 +123,21 @@ for bin in bin_dict:
 	else:
 		core_dia_mean_norm = core_dia_mean/(math.log((bin_UL))-math.log(bin_LL))
     
-	
-	cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'mean_coating_th'))
-	coat_th = cursor.fetchall()
-	coat_th_mean = coat_th[0][0]
-	if coat_th_mean == None:
-		coat_th_mean_norm = np.nan
+	if bin_LL >= 130:
+		cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'mean_coating_th'))
+		coat_th = cursor.fetchall()
+		coat_th_mean = coat_th[0][0]
+		if coat_th_mean == None:
+			coat_th_mean_norm = np.nan
+		else:
+			coat_th_mean_norm = coat_th_mean/(math.log((bin_UL))-math.log(bin_LL))
 	else:
-		coat_th_mean_norm = coat_th_mean/(math.log((bin_UL))-math.log(bin_LL))
-
-	plot_data.append([bin_MP,UHSAS_number_mean,SP2_coated_number_mean,SP2_core_number_mean,core_dia_mean,coat_th_mean])
-	#plot_data.append([bin_MP,UHSAS_number_mean,UHSAS_number_mean_norm,SP2_number_mean,SP2_number_mean_norm,core_dia_mean,core_dia_mean_norm,coat_th_mean,coat_th_mean_norm])
+		coat_th_mean = np.nan
+		coat_th_mean_norm = np.nan
+	
+	
+	
+	plot_data.append([bin_MP,UHSAS_number_mean,UHSAS_number_mean_norm,SP2_coated_number_mean,SP2_coated_number_mean_norm,SP2_core_number_mean,SP2_core_number_mean_norm,core_dia_mean,core_dia_mean_norm,coat_th_mean,coat_th_mean_norm])
 	
 cnx.close()
 	
@@ -141,41 +146,43 @@ cnx.close()
 
 ##plotting
 
-bin_midpoint   = [row[0] for row in plot_data]
-UHSAS_num      = [row[1] for row in plot_data]
-SP2_coated_num = [row[2] for row in plot_data]
-SP2_core_num   = [row[3] for row in plot_data]
-#SP2_num_norm   = [row[4] for row in plot_data]
-core_dia       = [row[4] for row in plot_data]
-#core_dia_norm  = [row[6] for row in plot_data]
-coat_th        = [row[5] for row in plot_data]
-#coat_th_norm   = [row[8] for row in plot_data]
+bin_midpoint   	    = [row[0] for row in plot_data]
+UHSAS_num      		= [row[1] for row in plot_data]
+UHSAS_num_norm 		= [row[2] for row in plot_data]
+SP2_coated_num 		= [row[3] for row in plot_data]
+SP2_coated_num_norm = [row[4] for row in plot_data]
+SP2_core_num  		= [row[5] for row in plot_data]
+SP2_core_num_norm   = [row[6] for row in plot_data]
+core_dia  		    = [row[7] for row in plot_data]
+core_dia_norm		= [row[8] for row in plot_data]
+coat_th      	    = [row[9] for row in plot_data]
+coat_th_norm  	    = [row[10] for row in plot_data]
 
 
-fig = plt.figure()
+fig = plt.figure(figsize=(10,12))
 
-ax1  = plt.subplot2grid((2,1), (0,0), colspan=1)
-ax2  = plt.subplot2grid((2,1), (1,0), colspan=1)
 
-ax1.plot(bin_midpoint,UHSAS_num, label = 'UHSAS_num')
-ax1.plot(bin_midpoint,SP2_coated_num, label = 'SP2_coated_num')
-ax1.plot(bin_midpoint,SP2_core_num, label = 'SP2_core_num')
-ax1.set_ylabel('#')
+ax1 = plt.subplot(2, 1, 1)
+ax1.plot(bin_midpoint,UHSAS_num_norm, label = 'UHSAS')
+ax1.plot(bin_midpoint,SP2_coated_num_norm, label = 'rBC core + coating')
+ax1.plot(bin_midpoint,SP2_core_num_norm, label = 'rBC core only')
+ax1.set_ylabel('dN/dlogD #/sccm')
 ax1.set_xlabel('VED (nm)')
-#ax1.set_yscale('log')
+ax1.set_yscale('log')
 ax1.set_xscale('log')
-ax1.set_xlim(70,1000)
-ax1.set_ylim(0.1,6)
+ax1.set_xlim(80,900)
+ax1.set_ylim(0.5,500)
+plt.xticks(np.arange(80, 900, 10))
 plt.legend()
 
-
-#ax2.plot(bin_midpoint,core_dia, label = 'core_dia')
+ax2 = plt.subplot(2, 1, 2)
 ax2.plot(bin_midpoint,coat_th, label = 'coat_th')
-ax2.set_ylabel('nm')
-ax2.set_xlabel('VED (nm)')
-#ax1.set_xlim(100,200)
+ax2.set_ylabel('coating thickness (nm)')
+ax2.set_xlabel('rBC core VED (nm)')
+ax2.set_xlim(80,900)
+ax2.set_xscale('log')
 #ax1.set_ylim(0,6000)
-plt.legend()
+
 
 
 

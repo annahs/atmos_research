@@ -94,23 +94,18 @@ while (interval_start_time + 1) <= UNIX_end_time:
 		interval_start_time += 1
 		continue
 	
-	#get the timestamp from the last particle in the interval so we can calculate the volume samlped
-	cursor.execute(('SELECT UNIX_UTC_ts FROM polar6_coating_2015 WHERE UNIX_UTC_ts < %s AND instrument = %s order by UNIX_UTC_ts desc limit 1'),(time_max, 'UBCSP2'))
-	last_particle_data = cursor.fetchall()
-	
-	#get timestamp from last particle before this interval so we can caluculate the volume sampled (type of particle doesn't matter)
-	cursor.execute(('SELECT UNIX_UTC_ts FROM polar6_coating_2015 WHERE UNIX_UTC_ts < %s AND instrument = %s order by UNIX_UTC_ts desc limit 1'),(time_min, 'UBCSP2'))
+	#get timestamp from last valid particle before this interval so we can caluculate the volume sampled since we started waiting for another particle of interest
+	cursor.execute(('SELECT UNIX_UTC_ts FROM polar6_coating_2015 WHERE UNIX_UTC_ts < %s AND particle_type = %s and instrument = %s and  incand_amp >=%s and incand_amp <=%s order by UNIX_UTC_ts desc limit 1'),(interval_start_time, 'incand', 'UBCSP2',incand_min,incand_max))
 	prev_particle_data = cursor.fetchall()
 	
 	#take care of the edge-case where we're looking at the first particle of the run, in this case we'll ignore the first particle in the interval since we don't know when we started waiting for it to be detected
 	if prev_particle_data == []:
 		no_prev_particle = True
-		cursor.execute(('SELECT UNIX_UTC_ts FROM polar6_coating_2015 WHERE UNIX_UTC_ts > %s AND instrument = %s order by UNIX_UTC_ts asc limit 1'),(time_min, 'UBCSP2'))
-		prev_particle_ts = cursor.fetchall()[0][0]
+		prev_particle_ts = particle_data[0][0]
 	else:
 		prev_particle_ts = prev_particle_data[0][0]
 		
-	last_particle_ts = last_particle_data[-1][0]
+	last_particle_ts = particle_data[-1][0]
 
 	
 	#calc total interval sampling time and mid time
