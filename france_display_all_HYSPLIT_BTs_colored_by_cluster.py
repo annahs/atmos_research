@@ -18,7 +18,7 @@ endpointsPARIS = []
 
 clusters = []
 cluster_endpoints={}
-for number in [1,2,3,4]:
+for number in [1,2,3]:
 	cluster_endpoints[number]=[]
 	clusters.append(number)
 	
@@ -26,7 +26,7 @@ for number in [1,2,3,4]:
 #CLUSLIST_file = 'C:/Users/Sarah Hanna/Documents/Data/French_campaign/Backtrajectories_biodetect-working/CLUSLIST_11'
 
 #48 hour files
-CLUSLIST_file = 'C:/Users/Sarah Hanna/Documents/Data/French_campaign/Biodetect_48hours-working/CLUSLIST_4'
+CLUSLIST_file = 'C:/Users/Sarah Hanna/Documents/Data/French_campaign/Biodetect_48hours-working/CLUSLIST_3mod'
 mn_height = []
 with open(CLUSLIST_file,'r') as f:
 	
@@ -62,8 +62,6 @@ with open(CLUSLIST_file,'r') as f:
 		
 		cluster_endpoints[cluster].append(endpoints)
 		
-print np.mean(mn_height)
-
 		
 #plottting
 ###set up the basemap instance  
@@ -85,7 +83,7 @@ m = Basemap(width=2600000,height=2600000,
 
 
 			
-fig, axes = plt.subplots(2,3, figsize=(12, 10), facecolor='w', edgecolor='k')
+fig, axes = plt.subplots(2,3,figsize=(12, 4), facecolor='w', edgecolor='k')
 fig.subplots_adjust(hspace = 0.1, wspace=0.25)
 
 axs = axes.ravel()
@@ -102,7 +100,7 @@ for cluster_no in clusters:
 	print cluster_no,colors[cluster_no]
 	list = cluster_endpoints[cluster_no]
 	#subplot_num = 4,3,cluster_no
-	axs[cluster_no] = fig.add_subplot(2,3,cluster_no)
+	axs[cluster_no] = fig.add_subplot(1,3,cluster_no)
 	#m.drawmapboundary(fill_color='white') 
 	m.bluemarble()
 	m.drawcoastlines()
@@ -120,17 +118,17 @@ for cluster_no in clusters:
 		lons = np_endpoints[:,1]
 		heights = np_endpoints[:,2]
 		x,y = m(lons,lats)
-		#bt = m.plot(x,y,color=colors[cluster_no])
-		bt = m.scatter(x,y, c=heights, cmap=plt.get_cmap('jet'),edgecolors='none', marker = 'o')
+		bt = m.plot(x,y,color=colors[cluster_no])
+		#bt = m.scatter(x,y, c=heights, cmap=plt.get_cmap('jet'),edgecolors='none', marker = 'o')
 		#lim = bt.get_clim()
 		#print lim
-		plt.clim(0,1000)
-	cb = plt.colorbar()
-	cb.set_label('height (m)', rotation=270)
+		#plt.clim(0,1000)
+	#cb = plt.colorbar()
+	#cb.set_label('height (m)', rotation=270)
 
 dir = 'C:/Users/Sarah Hanna/Documents/Data/French_campaign/'
 os.chdir(dir)
 
-plt.savefig('PARIS_all_trajectories_colored_by_cluster_48_hour_backtrajectories -4clusters.png', bbox_inches='tight') 
+plt.savefig('PARIS_all_trajectories_colored_by_cluster_48_hour_backtrajectories -3modclusters.png', bbox_inches='tight') 
 
 plt.show()

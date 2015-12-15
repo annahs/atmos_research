@@ -19,14 +19,14 @@ timezone = timedelta(hours = 1)
 
 endpointsPARIS =  {}
 
-dir = 'C:/Users/Sarah Hanna/Documents/Data/French_campaign/Backtrajectories_biodetect-working/'
+#dir = 'C:/Users/Sarah Hanna/Documents/Data/French_campaign/Backtrajectories_biodetect-working/'
 dir = 'C:/Users/Sarah Hanna/Documents/Data/French_campaign/Biodetect_48hours-working/'
 os.chdir(dir)
 
 clusters = []
 cluster_no = 1	
 for file in os.listdir('.'):
-	if file.endswith('4mean.tdump'):
+	if file.endswith('3mean.tdump'):
 		
 		tdump_file = open(file, 'r')
 		print file
@@ -110,7 +110,7 @@ m.drawmeridians(meridians,labels=[False,False,False,True])
 
 
 
-linewidth = 2
+linewidth = 2.5
 pre_linewidth = 2
 alphaval = 1
 
@@ -130,18 +130,18 @@ for cluster_no in clusters:
 	heights = np_endpoints[:,2]
 	x,y = m(lons,lats)
 	#bt = m.scatter(x,y, c=pressure, cmap=plt.get_cmap('jet'),edgecolors='none')
-	#bt = m.plot(x,y,linewidth = linewidth, color =colors[cluster_no])#, label = labels[cluster_no])
-	bt = m.scatter(x,y, c=heights, cmap=plt.get_cmap('jet'),edgecolors='none', marker = 'o')
+	bt = m.plot(x,y,linewidth = linewidth, color =colors[cluster_no])#, label = labels[cluster_no])
+	#bt = m.scatter(x,y, c=heights, cmap=plt.get_cmap('jet'),edgecolors='none', marker = 'o')
 	i+=1
 	
-cb = plt.colorbar()
-cb.set_label('height (m)', rotation=270)
+#cb = plt.colorbar()
+#cb.set_label('height (m)', rotation=270)
 
 plt.legend(loc = 3)
 dir = 'C:/Users/Sarah Hanna/Documents/Data/French_campaign/'
 os.chdir(dir)
 
-plt.savefig('PARIS_cluster_means_from_HYSPLIT_48hr_backtrajectories-4clusters.png', bbox_inches='tight') 
+plt.savefig('PARIS_cluster_means_from_HYSPLIT_48hr_backtrajectories-3clusters.png', bbox_inches='tight') 
 plt.show()
 
 
