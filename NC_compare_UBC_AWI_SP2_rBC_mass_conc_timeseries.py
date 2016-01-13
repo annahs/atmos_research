@@ -18,14 +18,14 @@ import copy
 from create_icartt_format_file import CreateIcarttFile
 from math import log10, floor
 
-flight = 'science 10'
+flight = 'science 6'
 upper_conc_limit = 300
 dropout_limit = 0.0
 plot_corr_data = True
 plot_numb_data = False
 time_incr =	 30#in secs
 calib_to_use = 'Alert'
-write_icartt_file = False
+write_icartt_file = True
 save_plot = False
 
 #last number is fraction of mass distr sampled rel to AWI

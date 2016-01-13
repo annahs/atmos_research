@@ -29,7 +29,7 @@ flight_times = {
 #'science 7'  : [datetime(2015,4,13,15,0),datetime(2015,4,13,21,0),'UHSAS_Polar6_20150413_R0_V1.ict'],
 #'science 8'  : [datetime(2015,4,20,15,0),datetime(2015,4,20,20,0),'UHSAS_Polar6_20150420_R0_V1.ict'],
 #'science 9'  : [datetime(2015,4,20,21,0),datetime(2015,4,21,2,0) ,'UHSAS_Polar6_20150420_R0_V2.ict'],
-'science 10' : [datetime(2015,4,21,16,8),datetime(2015,4,21,16,18),'UHSAS_Polar6_20150421_R0_V1.ict'],  ###
+'science 10' : [datetime(2015,4,21,17,8),datetime(2015,4,21,18,18),'UHSAS_Polar6_20150421_R0_V1.ict'],  ###
 }
 
 start_time = flight_times[flight][0]
@@ -84,6 +84,8 @@ for bin in bin_dict:
 	bin_UL =  bin_dict[bin][1]
 	print bin_LL, bin_UL
 	
+	if bin_UL < 130:
+		continue
 	bin_MP = bin_LL + (bin_UL-bin_LL)/2
 		
 	cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <=%s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'UHSAS_#'))
@@ -139,9 +141,20 @@ for bin in bin_dict:
 		core_dia_mean_norm = core_dia_mean/(math.log((bin_UL))-math.log(bin_LL))
     
 	if bin_LL >= 70:
-		cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'mean_coating_th'))
-		coat_th = cursor.fetchall()
-		coat_th_mean = coat_th[0][0]
+		cursor.execute(('SELECT value FROM polar6_uhsas_rbc_binned_data WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'mean_coating_th'))
+		coat_ths = cursor.fetchall()
+		data = []
+		for coat in coat_ths:
+			th = coat[0]
+			data.append(th)
+		coat_th_mean = np.mean(data)
+		print 'mean', coat_th_mean
+		print 'median', np.median(data)
+		fig = plt.figure()
+		ax1 = plt.subplot(1, 1, 1)
+		n, bins, patches = ax1.hist(data, 50, normed=1, facecolor='green', alpha=0.75)
+		plt.show()
+
 		if coat_th_mean == None:
 			coat_th_mean_norm = np.nan
 		else:
