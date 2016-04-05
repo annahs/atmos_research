@@ -14,22 +14,22 @@ import calendar
 from scipy.optimize import curve_fit
 
 
-flight = 'science 10'
+flight = 'science 7'
 
 flight_times = {
-#'science 1'  : [datetime(2015,4,5,9,0),  datetime(2015,4,5,14,0) ,''],	
-#'ferry 1'    : [datetime(2015,4,6,9,0),  datetime(2015,4,6,11,0) ,'UHSAS_Polar6_20150406_R0_V1.ict'],  
-#'ferry 2'    : [datetime(2015,4,6,15,0), datetime(2015,4,6,18,0) ,'UHSAS_Polar6_20150406_R0_V2.ict'],
-#'science 2'  : [datetime(2015,4,7,16,0), datetime(2015,4,7,21,0) ,'UHSAS_Polar6_20150407_R0_V1.ict'],
-#'science 3'  : [datetime(2015,4,8,13,0), datetime(2015,4,8,17,0) ,'UHSAS_Polar6_20150408_R0_V1.ict'],  
-#'science 4'  : [datetime(2015,4,8,17,30),datetime(2015,4,8,22,0) ,'UHSAS_Polar6_20150408_R0_V2.ict'],
-#'science 5'  : [datetime(2015,4,9,13,30),datetime(2015,4,9,18,0) ,'UHSAS_Polar6_20150409_R0_V1.ict'],
-#'ferry 3'    : [datetime(2015,4,10,14,0),datetime(2015,4,10,17,0),'UHSAS_Polar6_20150410_R0_V1.ict'],
-#'science 6'  : [datetime(2015,4,11,15,0),datetime(2015,4,11,22,0),'UHSAS_Polar6_20150411_R0_V1.ict'],
-#'science 7'  : [datetime(2015,4,13,15,0),datetime(2015,4,13,21,0),'UHSAS_Polar6_20150413_R0_V1.ict'],
-#'science 8'  : [datetime(2015,4,20,15,0),datetime(2015,4,20,20,0),'UHSAS_Polar6_20150420_R0_V1.ict'],
-#'science 9'  : [datetime(2015,4,20,21,0),datetime(2015,4,21,2,0) ,'UHSAS_Polar6_20150420_R0_V2.ict'],
-'science 10' : [datetime(2015,4,21,16,8),datetime(2015,4,21,16,18),'UHSAS_Polar6_20150421_R0_V1.ict'],  ###
+'science 1'  : [datetime(2015,4,5,9,0),  datetime(2015,4,5,14,0) ,''],	
+'ferry 1'    : [datetime(2015,4,6,9,0),  datetime(2015,4,6,11,0) ,'UHSAS_Polar6_20150406_R1_V1.ict'],  
+'ferry 2'    : [datetime(2015,4,6,15,0), datetime(2015,4,6,18,0) ,'UHSAS_Polar6_20150406_R1_V2.ict'],
+'science 2'  : [datetime(2015,4,7,16,0), datetime(2015,4,7,21,0) ,'UHSAS_Polar6_20150407_R1_V1.ict'],
+'science 3'  : [datetime(2015,4,8,13,0), datetime(2015,4,8,17,0) ,'UHSAS_Polar6_20150408_R1_V1.ict'],  
+'science 4'  : [datetime(2015,4,8,17,30),datetime(2015,4,8,22,0) ,'UHSAS_Polar6_20150408_R1_V2.ict'],
+'science 5'  : [datetime(2015,4,9,13,30),datetime(2015,4,9,18,0) ,'UHSAS_Polar6_20150409_R1_V1.ict'],
+'ferry 3'    : [datetime(2015,4,10,14,0),datetime(2015,4,10,17,0),'UHSAS_Polar6_20150410_R1_V1.ict'],
+'science 6'  : [datetime(2015,4,11,15,0),datetime(2015,4,11,22,0),'UHSAS_Polar6_20150411_R1_V1.ict'],
+'science 7'  : [datetime(2015,4,13,15,0),datetime(2015,4,13,21,0),'UHSAS_Polar6_20150413_R1_V1.ict'],
+'science 8'  : [datetime(2015,4,20,15,0),datetime(2015,4,20,20,0),'UHSAS_Polar6_20150420_R1_V1.ict'],
+'science 9'  : [datetime(2015,4,20,21,0),datetime(2015,4,21,2,0) ,'UHSAS_Polar6_20150420_R1_V2.ict'],
+'science 10': [datetime(2015,4,21,16,8),datetime(2015,4,21,16,18),'UHSAS_Polar6_20150421_R1_V1.ict'],  ###
 }
 
 start_time = flight_times[flight][0]
@@ -44,7 +44,7 @@ print end_time, UNIX_end_time
 cnx = mysql.connector.connect(user='root', password='Suresh15', host='localhost', database='black_carbon')
 cursor = cnx.cursor()
 
-os.chdir('C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/UHSAS/1Hz-ict-R0/')
+os.chdir('C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/UHSAS/UHSAS-R1/')
 UHSAS_file = flight_times[flight][2]
 
 no_prev_particle = False
@@ -85,8 +85,23 @@ for bin in bin_dict:
 	print bin_LL, bin_UL
 	
 	bin_MP = bin_LL + (bin_UL-bin_LL)/2
-		
-	cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <=%s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'UHSAS_#'))
+	
+	##nonincand data 
+	if bin_LL >= 200 and bin_UL <= 350:
+		cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data_altcalib WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <=%s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'nonincand_#'))
+		nonincand_number = cursor.fetchall()
+		nonincand_number_mean = nonincand_number[0][0] 
+		if nonincand_number_mean == None:
+			print nonincand_number_mean
+			nonincand_number_mean_norm = np.nan
+		else:
+			nonincand_number_mean_norm = nonincand_number_mean/(math.log((bin_UL))-math.log(bin_LL))
+	else:
+		nonincand_number_mean = np.nan
+		nonincand_number_mean_norm = np.nan
+	###
+	
+	cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data_altcalib WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <=%s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'UHSAS_#'))
 	UHSAS_number = cursor.fetchall()
 	UHSAS_number_mean = UHSAS_number[0][0] 
 	if UHSAS_number_mean == None:
@@ -96,7 +111,7 @@ for bin in bin_dict:
 		UHSAS_number_mean_norm = UHSAS_number_mean/(math.log((bin_UL))-math.log(bin_LL))
 	
 			
-	cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'SP2_core_#'))
+	cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data_altcalib WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'SP2_core_#'))
 	SP2_core_number = cursor.fetchall()
 	SP2_core_number_mean = SP2_core_number[0][0] 
 	if SP2_core_number_mean == None:
@@ -105,8 +120,9 @@ for bin in bin_dict:
 	else:
 		SP2_core_number_mean_norm = SP2_core_number_mean/(math.log((bin_UL))-math.log(bin_LL))
 
-	if bin_LL >= 70:
-		cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'SP2_coated_#'))
+	
+	if bin_LL >= 130:
+		cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data_altcalib WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'SP2_coated_#'))
 		SP2_coated_number = cursor.fetchall()
 		SP2_coated_number_mean = SP2_coated_number[0][0] 
 		if SP2_coated_number_mean == None:
@@ -117,20 +133,7 @@ for bin in bin_dict:
 		SP2_coated_number_mean = np.nan
 		SP2_coated_number_mean_norm = np.nan
 	
-	
-	if bin_LL >= 130:
-		cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'SP2_coated_#'))
-		SP2_coated_number_130 = cursor.fetchall()
-		SP2_coated_number_mean_130 = SP2_coated_number_130[0][0] 
-		if SP2_coated_number_mean_130 == None:
-			SP2_coated_number_mean_norm_130 = np.nan
-		else:
-			SP2_coated_number_mean_norm_130 = SP2_coated_number_mean_130/(math.log((bin_UL))-math.log(bin_LL))
-	else:
-		SP2_coated_number_mean_130 = np.nan
-		SP2_coated_number_mean_norm_130 = np.nan
-	
-	cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'mean_core_dia'))
+	cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data_altcalib WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'mean_core_dia'))
 	core_dia = cursor.fetchall()
 	core_dia_mean = core_dia[0][0] 
 	if core_dia_mean == None:
@@ -138,8 +141,8 @@ for bin in bin_dict:
 	else:
 		core_dia_mean_norm = core_dia_mean/(math.log((bin_UL))-math.log(bin_LL))
     
-	if bin_LL >= 70:
-		cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'mean_coating_th'))
+	if bin_LL >= 130:
+		cursor.execute(('SELECT avg(value) FROM polar6_uhsas_rbc_binned_data_altcalib WHERE UNIX_UTC_ts >= %s AND UNIX_UTC_ts < %s AND bin_LL >= %s and bin_UL <= %s and binned_property = %s'),(UNIX_start_time, UNIX_end_time,bin_LL,bin_UL,'mean_coating_th'))
 		coat_th = cursor.fetchall()
 		coat_th_mean = coat_th[0][0]
 		if coat_th_mean == None:
@@ -152,17 +155,17 @@ for bin in bin_dict:
 	
 	
 	
-	plot_data.append([bin_MP,UHSAS_number_mean,UHSAS_number_mean_norm,SP2_coated_number_mean,SP2_coated_number_mean_norm,SP2_core_number_mean,SP2_core_number_mean_norm,core_dia_mean,core_dia_mean_norm,coat_th_mean,coat_th_mean_norm,SP2_coated_number_mean_norm_130])
+	plot_data.append([bin_MP,UHSAS_number_mean,UHSAS_number_mean_norm,SP2_coated_number_mean,SP2_coated_number_mean_norm,SP2_core_number_mean,SP2_core_number_mean_norm,core_dia_mean,core_dia_mean_norm,coat_th_mean,coat_th_mean_norm,nonincand_number_mean_norm,(nonincand_number_mean_norm+SP2_coated_number_mean_norm)])
 	
 cnx.close()
 	
-os.chdir('C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/UHSAS/')
-file = open(flight + ' UHSAS and SP2 data comparison - 70nm and up cores.txt', 'w')
-file.write('particle_event_start_time(UNIXtime UTC)'+ '\t' + 'particle_event_end_time(UNIXtime UTC)'+ '\t' + 'incand_flag'+ '\t' + 'incand_sat_flag'+ '\t' + 'BC_mass(fg)' + '\t' + 'incand_height(au)' + '\t' +'NB_incand_height(au)' + '\n')
-for row in plot_data:
-	line = '\t'.join(str(x) for x in row)
-	file.write(line + '\n')
-file.close()
+#os.chdir('C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/UHSAS/')
+#file = open(flight + ' UHSAS and SP2 data comparison - 70nm and up cores.txt', 'w')
+#file.write('particle_event_start_time(UNIXtime UTC)'+ '\t' + 'particle_event_end_time(UNIXtime UTC)'+ '\t' + 'incand_flag'+ '\t' + 'incand_sat_flag'+ '\t' + 'BC_mass(fg)' + '\t' + 'incand_height(au)' + '\t' +'NB_incand_height(au)' + '\n')
+#for row in plot_data:
+#	line = '\t'.join(str(x) for x in row)
+#	file.write(line + '\n')
+#file.close()
 			
 	
 
@@ -179,39 +182,39 @@ core_dia  		    = [row[7] for row in plot_data]
 core_dia_norm		= [row[8] for row in plot_data]
 coat_th      	    = [row[9] for row in plot_data]
 coat_th_norm  	    = [row[10] for row in plot_data]
-SP2_coated_130 	    = [row[11] for row in plot_data]
+nonincand_norm      = [row[11] for row in plot_data]
+test      = [row[12] for row in plot_data]
 
 
-fig = plt.figure(figsize=(10,12))
+fig = plt.figure(figsize=(12,12))
 
 
 ax1 = plt.subplot(2, 1, 1)
-ax1.plot(bin_midpoint,UHSAS_num_norm, label = 'UHSAS')
-ax1.plot(bin_midpoint,SP2_coated_num_norm, label = 'rBC core + coating')
-ax1.plot(bin_midpoint,SP2_core_num_norm, label = 'rBC core only')
-ax1.plot(bin_midpoint,SP2_coated_130, label = 'rBC core only')
+ax1.scatter(bin_midpoint,UHSAS_num_norm, color = 'r',label = 'UHSAS')
+ax1.scatter(bin_midpoint,SP2_coated_num_norm, color = 'g',label = 'SP2 rBC core with coating')
+ax1.scatter(bin_midpoint,SP2_core_num_norm, color = 'k',label = 'SP2 rBC core only')
+ax1.scatter(bin_midpoint,nonincand_norm, color = 'c',label = 'SP2 nonincandescent')
+ax1.scatter(bin_midpoint,test, color = 'b',label = 'SP2 nonincandescent+coated')
 ax1.set_ylabel('dN/dlogD #/sccm')
 ax1.set_xlabel('VED (nm)')
 ax1.set_yscale('log')
 ax1.set_xscale('log')
 ax1.set_xlim(80,900)
 ax1.set_ylim(0.5,500)
-plt.xticks(np.arange(80, 900, 10))
+ax1.set_xticks([80,90,100,120,140,160,200,300,400,500,900])
+ax1.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
 plt.legend()
 
 ax2 = plt.subplot(2, 1, 2)
-ax2.plot(bin_midpoint,coat_th, label = 'coat_th')
+ax2.scatter(bin_midpoint,coat_th, label = 'coat_th')
 ax2.set_ylabel('coating thickness (nm)')
 ax2.set_xlabel('rBC core VED (nm)')
 ax2.set_xlim(80,900)
 ax2.set_xscale('log')
-#ax1.set_ylim(0,6000)
+ax2.set_ylim(0,60)
+ax2.set_xticks([80,90,100,120,140,160,200,300,400,500,900])
+ax2.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+os.chdir('C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/UHSAS/number distrs including nonincands/')
+plt.savefig(flight + ' number distrs.png')
 
-
-
-
-plt.show()
-
-
-	
-	
+plt.show()	
