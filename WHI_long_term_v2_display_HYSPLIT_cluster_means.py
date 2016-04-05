@@ -131,7 +131,7 @@ i=0
 color_maps = ['Blues','Greens','Reds','Greys','Purples','Oranges']
 colors = ['m','b','c','g','m','k','y','#DF7401','#585858']
 #labels = ['1','2','3','4','5','6','7','>24hrs in GBPS']
-labels = ['N. Canada (5%)','W. Pacific/Asia (15%)','N. Pacific (48%)','S. Pacific (23%)',]
+labels = ['N. Canada (8.4%)','W. Pacific/Asia (12.3%)','N. Pacific (57.4%)','S. Pacific (21.9%)',]
 #labels = ['Bering (18%)','Northern Coastal/Continental (9%)','Northern Pacific (24%)','Southern Pacific (14%)','Western Pacific/Asia (17%)']
 for cluster_no, endpoints in endpointsWHI.items():
 	print cluster_no

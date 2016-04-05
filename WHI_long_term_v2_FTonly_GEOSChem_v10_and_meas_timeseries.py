@@ -91,18 +91,18 @@ with open('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/WHI_rBC_reco
 		#add data to list in cluster dictionaries (1 list per cluster time early night/late night)
 		if ((cluslist_current_datetime-timedelta(hours=3)) <= row_datetime <= (cluslist_current_datetime+timedelta(hours=3))):
 		
-			##if in a BB time,
-			#if (fire_time1[0] <= row_datetime <= fire_time1[1]) or (fire_time2[0] <= row_datetime <= fire_time2[1]):
-			#	correction_factor_for_massdistr = 1./0.415
-			#	mass_distr_correction_error = 0.018  #this is the uncertainty in the firt of the mass distribution for this period. from WHI_long_term_v2_size_distr_fitting_and_plotting.py
-			#	corrected_mass_conc = row_rBC_mass_conc*correction_factor_for_massdistr
-			#	row_data = [corrected_mass_conc, row_abs_err+(corrected_mass_conc*(mass_distr_correction_error+calib_stability_uncertainty)) ]
-			#	if cluslist_current_datetime in rBC_FT_data_cluster_BB:
-			#		rBC_FT_data_cluster_BB[cluslist_current_datetime].append(row_data)
-			#	else:
-			#		rBC_FT_data_cluster_BB[cluslist_current_datetime] = [row_data] 
-			#	
-			#	continue #do not go on to put this data into a cluster dictionary, since it's BB data
+			#if in a BB time,
+			if (fire_time1[0] <= row_datetime <= fire_time1[1]) or (fire_time2[0] <= row_datetime <= fire_time2[1]):
+				correction_factor_for_massdistr = 1./0.415
+				mass_distr_correction_error = 0.018  #this is the uncertainty in the firt of the mass distribution for this period. from WHI_long_term_v2_size_distr_fitting_and_plotting.py
+				corrected_mass_conc = row_rBC_mass_conc*correction_factor_for_massdistr
+				row_data = [corrected_mass_conc, row_abs_err+(corrected_mass_conc*(mass_distr_correction_error+calib_stability_uncertainty)) ]
+				if cluslist_current_datetime in rBC_FT_data_cluster_BB:
+					rBC_FT_data_cluster_BB[cluslist_current_datetime].append(row_data)
+				else:
+					rBC_FT_data_cluster_BB[cluslist_current_datetime] = [row_data] 
+				
+				continue #do not go on to put this data into a cluster dictionary, since it's BB data
 				
 
 			if cluslist_current_cluster_no == 9:
@@ -155,7 +155,8 @@ with open('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/WHI_rBC_reco
 				else:
 					rBC_FT_data_cluster_NPac[cluslist_current_datetime] = [row_data]
 	
-
+print len(rBC_FT_data_cluster_BB), len(rBC_FT_data_cluster_GBPS)+len(rBC_FT_data_cluster_SPac), len(rBC_FT_data_cluster_LRT), len(rBC_FT_data_cluster_NPac), len(rBC_FT_data_cluster_Cont)
+sys.exit()
 
 #6h rBC-meas avgs (FT data)
 SP2_6h_NPac = [] 
@@ -522,7 +523,10 @@ fire_span1_10f=datetime.strptime('2010/07/28 09:30', '%Y/%m/%d %H:%M')
 fire_alpha = 0.25
 fire_color = '#990000'			
 
-			
+	
+print len(SP2_6h_NPac_mass_conc),len(SP2_6h_SPac_mass_conc),len(SP2_6h_Cont_mass_conc),len(SP2_6h_LRT_mass_conc)
+sys.exit()
+	
 ###################plotting#####################
 
 

@@ -208,11 +208,13 @@ for date, mass_data in rBC_FT_data_cluster_SPac.iteritems():
 for date, mass_data in rBC_FT_data_cluster_Cont.iteritems():
 	mass_concs = [row[0] for row in mass_data]
 	mass_concs_abs_err = [row[1] for row in mass_data]
-	
+	if datetime(2009,7,11) <= date < datetime(2009,7,16):
+		continue
 	date_mean = np.mean(mass_concs)
 	date_mean_err = np.mean(mass_concs_abs_err)/date_mean	
 	SP2_6h_Cont.append([date_mean,date_mean_err])
 	SP2_6h_all_non_BB.append([date_mean,date_mean_err])
+
 
 	if date in all_dict:
 		print 'alert!',date
@@ -287,14 +289,14 @@ for key, value in stats_SP2.iteritems():
 	'rel_err':float(np.mean(mass_concs_rel_errs))
 	}
 	
-	cursor.execute('DELETE FROM whi_gc_and_sp2_stats_on_6h_clustered_ft_data WHERE data_source = %s and cluster = %s and RH_threshold = %s',(stats['source'],stats['cluster_name'],stats['RH_thresh']))
-	cnx.commit()
-	cursor.execute(add_stats, stats)
-	cnx.commit()
+	#cursor.execute('DELETE FROM whi_gc_and_sp2_stats_on_6h_clustered_ft_data WHERE data_source = %s and cluster = %s and RH_threshold = %s',(stats['source'],stats['cluster_name'],stats['RH_thresh']))
+	#cnx.commit()
+	#cursor.execute(add_stats, stats)
+	#cnx.commit()
 			  
 	
 
-
+sys.exit()
 
 	
 ###################GEOS-Chem
@@ -576,11 +578,11 @@ i=0
 for dataset in data_to_plot:	
 
 	if i in [0,1,2,3,4]:
-		histo = axs[i].hist(dataset, bins = bin_number, range = bin_range, color = 'b')	
+		n, bins, patches = axs[i].hist(dataset, bins = bin_number, range = bin_range, color = 'b')	
 		axs[i].xaxis.set_visible(False)
 		axs[i].set_ylim(0,y_lim)
 	else:
-		histo = axs[i].hist(dataset, bins = bin_number, range = bin_range, color = 'g')	
+		n, bins, patches = axs[i].hist(dataset, bins = bin_number, range = bin_range, color = 'g')	
 		axs[i].set_ylim(0,y_lim)
 	
 	axs[i].axvline(np.nanmedian(dataset), color= 'black', linestyle = '--')
@@ -615,10 +617,10 @@ for dataset in data_to_plot:
 	
 	i+=1
 	
-plt.savefig('histograms -clustered GEOS-Chem and measurements - 6h FT - v10 - RH ' + str(high_RH_limit) +'%limit-GBPSintoSPac.png',bbox_inches='tight')
+#plt.savefig('histograms -clustered GEOS-Chem and measurements - 6h FT - v10 - RH ' + str(high_RH_limit) +'%limit-GBPSintoSPac.png',bbox_inches='tight')
 
 plt.show()
-
+sys.exit()
 ########
 
 #hitos for test-runs and SP2

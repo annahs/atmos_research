@@ -128,7 +128,7 @@ for GC_run in GC_runs:
 				
 			
 				hdf_file = SD(file, SDC.READ)
-				
+				GC_CO = hdf_file.select('IJ-AVG-$::CO') #3d CO data in ppbv (molBC/molAIR)
 				pressures = hdf_file.select('PEDGE-$::PSURF')
 				hydrophilic_BC = hdf_file.select('IJ-AVG-$::BCPI') #3d conc data in ppbv (molBC/molAIR)
 				hydrophobic_BC = hdf_file.select('IJ-AVG-$::BCPO')
@@ -139,7 +139,8 @@ for GC_run in GC_runs:
 					pressure = pressures[level,lat,lon]
 					total_BC_ppbv = hydrophilic_BC[level,lat,lon] + hydrophobic_BC[level,lat,lon]
 					BC_conc_ngm3 = total_BC_ppbv*molar_mass_BC*ng_per_g*GEOS_Chem_factor*(101325/(R*273))  #101325/(R*273) corrects to STP 	
-					
+					CO_ppbv = GC_CO[level,lat,lon]
+							
 					scenario[cluster][level].append([pressure,BC_conc_ngm3,GC_datetime])
 					scenario['all'][level].append([pressure,BC_conc_ngm3,GC_datetime])
 		
