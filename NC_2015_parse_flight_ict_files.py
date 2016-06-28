@@ -12,7 +12,7 @@ import math
 from matplotlib import dates
 import sqlite3
 
-flight = 'science 8'
+flight = 'science 1'
 
 
 flight_times = {
@@ -194,6 +194,12 @@ ax1.set_ylim(0.85,2.5)
 ax2 = ax1.twinx()
 ax2.set_ylabel('alt')
 ax2.scatter(time,alt, color='k',)
+ax2.axhline(y=1000)
+ax2.axhline(y=2000)
+ax2.axhline(y=3000)
+ax2.axhline(y=4000)
+ax2.axhline(y=5000)
+ax2.axhline(y=6000)
 ax2.set_ylim(0,6000)
 
 #ax3 = ax1.twinx()

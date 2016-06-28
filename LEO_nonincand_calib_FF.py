@@ -20,20 +20,20 @@ import mysql.connector
 from datetime import datetime
 
 #setup
-data_dir = 'F:/Alert/2013/SP2B_files/'
-start_analysis_at = datetime(2013,9,27)
-end_analysis_at = 	datetime(2014,1,1)
-show_full_fit = False
-SP2_number = 58
-zeroX_evap_threshold = 2000
-record_size_bytes = 1658 #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458, Alert SP2 #4 and #58 = 832? )
+data_dir = 'F:/Alert/2012/SP2B_files/'
+start_analysis_at = datetime(2012,4,5)
+end_analysis_at = 	datetime(2012,4,6)
+show_full_fit = True
+SP2_number = 44
+zeroX_evap_threshold = 40
+record_size_bytes = 1658 #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458, Alert SP2 #44 and #58 = 1658 #17 =1498)
 hk_dict = {
 'yag_min':4,
-'yag_max':6,
+'yag_max':7,
 'sample_flow_min':118.5,
 'sample_flow_max':121.5,
-'sheath_flow_min':992,
-'sheath_flow_max':1006,
+'sheath_flow_min':990,
+'sheath_flow_max':1010,
 }
 
 
@@ -55,9 +55,9 @@ def make_plot(record):
 	fig = plt.figure()
 	ax1 = fig.add_subplot(111)
 	ax1.plot(x_vals,y_vals,'o', markerfacecolor='None')   
-	ax1.plot(x_vals,fit_result, 'red')
+	ax1.plot(x_vals,fit_result, 'b')
 	ax1.plot(record.LF_x_vals_to_use,record.LF_y_vals_to_use, color = 'black',linewidth=3)
-	ax1.plot(record.getAcqPoints(), record.getSplitDetectorSignal(), 'o', color ='green')
+	#ax1.plot(record.getAcqPoints(), record.getSplitDetectorSignal(), 'o', color ='green')
 	plt.axvline(x=record.zeroCrossingPos, ymin=0, ymax=1)
 	plt.axvline(x=record.beam_center_pos, ymin=0, ymax=1, color='red')
 	plt.show()
@@ -69,26 +69,27 @@ def find_nearest(array,value):   #get index of value in array closest to value
 	
 def gaussFullFit(file,parameters_dict,particle_record_size,show_fit,file_interval,number_of_records,evap_threshold,hk_dictionary,instr_number):
 		#pararmeters used to reject invalid particle records based on scattering peak attributes
-		min_peakheight = 1000
-		max_peakheight = 60000
+		min_peakheight = 10
+		max_peakheight = 3600
 		min_peakpos = 20
-		max_peakpos = 80
-		max_incand = 35
+		max_peakpos = 160
+		max_incand = 10
 		type_particle = 'nonincand'
 		
 		
 		f = open(file, 'rb')
 		record_index = 0      
+		multiple_records = []
+		i=1
 		while record_index < number_of_records:
-			
 			record = f.read(particle_record_size)
 			
 			if record_index == 0 or record_index%file_interval == 0:
 				try:
 					particle_record = ParticleRecord(record, parameters_dict['acq_rate'])
 				except:
-					print 'corrupt particle record'
-					input("Press Enter to continue...")
+					print 'corrupt particle record',record_index
+					raw_input("Press Enter to continue...")
 					record_index+=1
 					continue
 				event_time = particle_record.timestamp  #UTC
@@ -124,7 +125,10 @@ def gaussFullFit(file,parameters_dict,particle_record_size,show_fit,file_interva
 							
 							#check zero crossing posn
 							#note: zero-crossing calc will depend on the slope of the zero-crossing from the split detector
-							zero_crossing_pt = particle_record.zeroCrossingNegSlope(evap_threshold)
+							try:
+								zero_crossing_pt = particle_record.zeroCrossingNegSlope(evap_threshold)
+							except:
+								continue
 							if zero_crossing_pt > 0: 
 							
 								#check for a double peak
@@ -142,33 +146,41 @@ def gaussFullFit(file,parameters_dict,particle_record_size,show_fit,file_interva
 									fit_width = particle_record.FF_width
 									fit_scattering_amp = particle_record.FF_scattering_amp
 									zero_cross_to_peak = (zero_crossing_pt - fit_peak_pos)
-									
+									####
 									add_data = ('INSERT INTO alert_leo_params_from_nonincands'							  
 									  '(UNIX_UTC_ts, sp2b_file, file_index, instrument_ID, particle_type, actual_scat_amp,FF_scat_amp,FF_peak_posn,FF_gauss_width,actual_zero_x_posn)'
 									  'VALUES (%(UNIX_UTC_ts)s,%(sp2b_file)s,%(file_index)s,%(instrument_ID)s,%(particle_type)s,%(actual_scat_amp)s,%(FF_scat_amp)s,%(FF_peak_posn)s,%(FF_gauss_width)s,%(actual_zero_x_posn)s)')
 									
-									data ={
-									'UNIX_UTC_ts' :event_time,
-									'sp2b_file' : file,
-									'file_index' : record_index,
-									'instrument_ID' :instr_number,
-									'particle_type' :type_particle, 
-									'actual_scat_amp' : float(actual_max_value), 
-									'FF_scat_amp' : float(fit_scattering_amp),
-									'FF_peak_posn' :    float(fit_peak_pos),
-									'FF_gauss_width':   float(fit_width),
-									'actual_zero_x_posn': float(zero_crossing_pt),
-									}
+									if np.isnan(np.sum([actual_max_value,fit_scattering_amp,fit_peak_pos,fit_width,zero_crossing_pt])) == False:  #chekc for nans
+										single_record ={
+										'UNIX_UTC_ts' :event_time,
+										'sp2b_file' : file,
+										'file_index' : record_index,
+										'instrument_ID' :instr_number,
+										'particle_type' :type_particle, 
+										'actual_scat_amp' : float(actual_max_value), 
+										'FF_scat_amp' : float(fit_scattering_amp),
+										'FF_peak_posn' :    float(fit_peak_pos),
+										'FF_gauss_width':   float(fit_width),
+										'actual_zero_x_posn': float(zero_crossing_pt),
+										}
+										
+											
+										multiple_records.append((single_record))
 									
-									if np.isnan(np.sum([actual_max_value,fit_scattering_amp,fit_peak_pos,fit_width,zero_crossing_pt])) == False: #check for any nans
-										cursor.execute('DELETE FROM alert_leo_params_from_nonincands WHERE UNIX_UTC_ts = %s AND id >= %s',(data['UNIX_UTC_ts'],0))
-										cursor.execute(add_data, data)
-										cnx.commit()
+									#bulk insert to db table
+									if i%4000 == 0:
+										#cursor.executemany(add_data, multiple_records)
+										#cnx.commit()
+										multiple_records = []
+									##increment count of detectible incandescent particles
+									i+= 1
+
 									
 									#plot particle fit if desired
 									if show_full_fit == True:
 										print record_index, fit_width, zero_cross_to_peak			
-										print data['actual_scat_amp'],fit_scattering_amp, fit_peak_pos
+										#print data['actual_scat_amp'],fit_scattering_amp, fit_peak_pos
 										print '\n'
 										make_plot(particle_record)
 					#			else:
@@ -185,7 +197,11 @@ def gaussFullFit(file,parameters_dict,particle_record_size,show_fit,file_interva
 					#		#make_plot(particle_record)
 							
 			record_index+=1   
-				
+			
+		#bulk insert of remaining records to db
+		#if multiple_records != []:
+		#	cursor.executemany(add_data, multiple_records)
+		#	cnx.commit()
 		f.close()
 
 
@@ -200,9 +216,8 @@ for directory in os.listdir(data_dir):
 		if folder_date >= start_analysis_at and folder_date < end_analysis_at:
 			parameters['directory']=os.path.abspath(directory)
 			os.chdir(parameters['directory'])
-			
 			number_of_sp2b_files = len([name for name in os.listdir('.') if (name.endswith('.sp2b') and name.endswith('gnd.sp2b') == False)])
-			file_interval = number_of_sp2b_files*2
+			file_interval = number_of_sp2b_files*1
 			print file_interval
 			for file in os.listdir('.'):
 				if file.endswith('.sp2b') and (file.endswith('gnd.sp2b')==False):

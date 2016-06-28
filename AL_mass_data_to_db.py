@@ -22,14 +22,14 @@ import calendar
 
 
 #setup
-data_dir = 'F:/Alert/2015/SP2B_files/'
-start_analysis_at = datetime(2015,4,2)
-end_analysis_at = 	datetime(2015,6,6)
-SP2_number = 58
+data_dir = 'F:/Alert/2013/SP2B_files/'
+start_analysis_at = datetime(2013,8,1)
+end_analysis_at = 	datetime(2013,9,22)
+SP2_number = 44
 min_incand_BBHG = 50
 max_incand_BBHG = 60000
 
-record_size_bytes = 1658 #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458, Alert SP2 #4 and #58 = 832? )
+record_size_bytes = 1658 #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458, Alert SP2 #4 and #58 = 1658)
 
 #database connection
 cnx = mysql.connector.connect(user='root', password='Suresh15', host='localhost', database='black_carbon')
@@ -86,14 +86,35 @@ def getParticleData(parameters_dict,instr_number,bbhg_incand_min,prev_particle_t
 			particle_record.narrowIncandPeakInfoLG()
 			nblg_incand_pk_amp = float(particle_record.narrowIncandMax_LG)
 				
-			#calculate masses
-			bbhg_mass = 0.41527 + 2.13238E-4*bbhg_incand_pk_amp + 7.17406E-10*bbhg_incand_pk_amp*bbhg_incand_pk_amp
-			bbhg_mass_uncertainty = 0.07629 + 9.60334E-6*bbhg_incand_pk_amp + 1.96833E-10*bbhg_incand_pk_amp*bbhg_incand_pk_amp
+			####calculate masses
 			
-			bblg_mass = 0.70095 + 0.00182*bblg_incand_pk_amp + 1.22794E-7*bblg_incand_pk_amp*bblg_incand_pk_amp
-			bblg_mass_uncertainty = 0.30863 + 1.38156E-4*bblg_incand_pk_amp + 1.17569E-8*bblg_incand_pk_amp*bblg_incand_pk_amp
-
-			add_data = ('INSERT INTO alert_mass_number_data_2015'							  
+			#HG
+			#bbhg_mass_uncorr = 0.29069 + 1.49267E-4*bbhg_incand_pk_amp + 5.02184E-10*bbhg_incand_pk_amp*bbhg_incand_pk_amp  #SP2 58
+			#bbhg_mass_uncertainty_uncorr = 0.06083 + 7.67522E-6*bbhg_incand_pk_amp + 1.60111E-10*bbhg_incand_pk_amp*bbhg_incand_pk_amp #SP2 58
+			
+			bbhg_mass_uncorr = 0.18821 + 1.36864E-4*bbhg_incand_pk_amp + 5.82331E-10*bbhg_incand_pk_amp*bbhg_incand_pk_amp  #SP244
+			bbhg_mass_uncertainty_uncorr = 0.05827 + 7.26841E-6*bbhg_incand_pk_amp + 1.43898E-10*bbhg_incand_pk_amp*bbhg_incand_pk_amp #SP244
+			
+			bbhg_mass_corr = bbhg_mass_uncorr/0.7 #AD correction factor is 0.7 +- 0.05
+			bbhg_mass_only_rel_err = bbhg_mass_uncertainty_uncorr/bbhg_mass_uncorr
+			bbhg_ADcorr_rel_err = (0.05/0.7)
+			bbhg_mass_abs_uncertainty_corr = (bbhg_ADcorr_rel_err + bbhg_mass_only_rel_err) * bbhg_mass_corr
+			
+			#LG
+			#bblg_mass_uncorr = -0.15884 + 0.00176*bblg_incand_pk_amp + 3.19118E-8*bblg_incand_pk_amp*bblg_incand_pk_amp #SP2 58
+			#bblg_mass_uncertainty_uncorr = 0.47976 + 1.93451E-4*bblg_incand_pk_amp + 1.53274E-8*bblg_incand_pk_amp*bblg_incand_pk_amp #SP2 58
+			
+			bblg_mass_uncorr = 0.39244 + 0.00122*bblg_incand_pk_amp + 7.00651E-8*bblg_incand_pk_amp*bblg_incand_pk_amp #SP2 44
+			bblg_mass_uncertainty_uncorr = 0.03502 + 3.42743E-5*bblg_incand_pk_amp + 6.02708E-9*bblg_incand_pk_amp*bblg_incand_pk_amp #SP2 44
+			
+			bblg_mass_corr = bblg_mass_uncorr/0.7 #AD correction factor is 0.7 +- 0.05
+			bblg_mass_only_rel_err = bblg_mass_uncertainty_uncorr/bblg_mass_uncorr
+			bblg_ADcorr_rel_err = (0.05/0.7)
+			bblg_mass_abs_uncertainty_corr = (bblg_ADcorr_rel_err + bblg_mass_only_rel_err) * bblg_mass_corr
+		
+			
+			
+			add_data = ('INSERT INTO alert_mass_number_data_2013'							  
 			  '(sp2b_file, file_index, instrument_ID, UNIX_UTC_ts_int_start,UNIX_UTC_ts_int_end,BB_incand_HG,BB_incand_LG,NB_incand_HG,NB_incand_LG,rBC_mass_fg_BBHG,rBC_mass_fg_BBHG_err,rBC_mass_fg_BBLG,rBC_mass_fg_BBLG_err,HK_id)'
 			  'VALUES (%(sp2b_file)s,%(file_index)s,%(instrument_ID)s,%(UNIX_UTC_ts_int_start)s,%(UNIX_UTC_ts_int_end)s,%(BB_incand_HG)s,%(BB_incand_LG)s,%(NB_incand_HG)s,%(NB_incand_LG)s,%(rBC_mass_fg_BBHG)s,%(rBC_mass_fg_BBHG_err)s,%(rBC_mass_fg_BBLG)s,%(rBC_mass_fg_BBLG_err)s,%(HK_id)s)')
 			
@@ -108,10 +129,10 @@ def getParticleData(parameters_dict,instr_number,bbhg_incand_min,prev_particle_t
 			'BB_incand_LG': bblg_incand_pk_amp,
 			'NB_incand_HG' : nbhg_incand_pk_amp, 
 			'NB_incand_LG' : nblg_incand_pk_amp,
-			'rBC_mass_fg_BBHG': bbhg_mass,
-			'rBC_mass_fg_BBHG_err': bbhg_mass_uncertainty,
-			'rBC_mass_fg_BBLG': bblg_mass,
-			'rBC_mass_fg_BBLG_err': bblg_mass_uncertainty,
+			'rBC_mass_fg_BBHG': bbhg_mass_corr,
+			'rBC_mass_fg_BBHG_err': bbhg_mass_abs_uncertainty_corr,
+			'rBC_mass_fg_BBLG': bblg_mass_corr,
+			'rBC_mass_fg_BBLG_err': bblg_mass_abs_uncertainty_corr,
 			'HK_id': housekeeping_id,		
 			}
 			
@@ -132,16 +153,18 @@ def getParticleData(parameters_dict,instr_number,bbhg_incand_min,prev_particle_t
 		record_index+=1   
 		
 	#bulk insert of remaining records to db
-	cursor.executemany(add_data, multiple_records)
-	cnx.commit()
-	
+	if multiple_records != []:
+		cursor.executemany(add_data, multiple_records)
+		cnx.commit()
+		multiple_records = []
+		
 	#close file
 	f.close()
 	return prev_particle_ts
 
 
 
-
+prev_event_ts = 0
 os.chdir(data_dir)
 for directory in os.listdir(data_dir):
 	if os.path.isdir(directory) == True and directory.startswith('20'):
@@ -152,7 +175,7 @@ for directory in os.listdir(data_dir):
 			os.chdir(parameters['directory'])
 			
 			#start the fitting
-			prev_event_ts = 0
+
 			for file in os.listdir('.'):
 				if file.endswith('.sp2b') and (file.endswith('gnd.sp2b')==False):
 					print file

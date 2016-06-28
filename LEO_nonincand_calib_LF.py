@@ -24,14 +24,13 @@ import calendar
 
 #setup
 data_dir = 'F:/Alert/2013/SP2B_files/'
-start_analysis_at = datetime(2013,9,27)
-end_analysis_at = 	datetime(2014,1,1)
-show_leo_fit = False
+start_analysis_at = datetime(2013,11,1)
+end_analysis_at = 	datetime(2013,11,2)
+show_leo_fit = True
 leo_fit_factor = 15
-fit_bump = 4
-zeroX_evap_threshold = 2000
-record_size_bytes = 1658 #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458, Alert SP2 #4 and #58 = 832? )
-
+fit_bump = 0
+zeroX_evap_threshold = 100
+record_size_bytes = 1658 #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458, Alert SP2 #44 and #58 = 1658 #17 =1498 )
 #database connection
 cnx = mysql.connector.connect(user='root', password='Suresh15', host='localhost', database='black_carbon')
 cursor = cnx.cursor()
@@ -75,15 +74,19 @@ def make_plot(record,ratio_pk):
 	fig = plt.figure()
 	ax1 = fig.add_subplot(111)
 	ax1.plot(x_vals_all,y_vals_all,'o', markerfacecolor='None')  
-	ax1.plot(center,ratio_pk_adjusted,'o')  
-	try:
-		ax1.plot(x_vals_all,fit_result, 'blue')
-	except:
-		print 'no fit result'
-	ax1.plot(record.LF_x_vals_to_use,record.LF_y_vals_to_use, color = 'black',linewidth=3)
-	ax1.plot(x_vals_all, y_vals_split, 'o', color ='green')
-	plt.axvline(x=record.zeroCrossingPos, ymin=0, ymax=1)
-	plt.axvline(x=record.beam_center_pos, ymin=0, ymax=1, color='red')
+	#ax1.plot(center,ratio_pk_adjusted,'o')  
+	ax1.plot(x_vals_all,y_vals_all,'o', markerfacecolor='None', label = 'scattering signal')  
+	#ax1.plot(x_vals_all, y_vals_incand, color ='red',marker = 'o', linestyle = 'None', label = 'incandescent signal')
+	ax1.plot(record.LF_x_vals_to_use,record.LF_y_vals_to_use, color = 'black',linewidth=5, label = 'scatter signal used for fit')
+	ax1.set_xlabel('data point #')
+	ax1.set_ylabel('amplitude (a.u.)')
+	#ax1.plot(center,ratio_pk_adjusted,'o')  
+	if fit_result != []:
+		ax1.plot(x_vals_all,fit_result, color='blue',marker='None', alpha = 1, label = 'LEO fit')
+	#ax1.plot(x_vals_all, y_vals_split, 'o', color ='green')
+	#plt.axvline(x=record.zeroCrossingPos, ymin=0, ymax=1)
+	#plt.axvline(x=record.beam_center_pos, ymin=0, ymax=1, color='red')
+	plt.legend()
 	plt.show()
 	
 	
@@ -108,8 +111,8 @@ def gaussLeoFit(file,parameters_dict,particle_record_size,show_fit,number_of_rec
 				try:
 					particle_record = ParticleRecord(record, parameters_dict['acq_rate'])
 				except:
-					print 'corrupt particle record'
-					input("Press Enter to continue...")
+					print 'corrupt particle record', record_index
+					#input("Press Enter to continue...")
 					record_index+=1
 					continue
 				
@@ -117,7 +120,7 @@ def gaussLeoFit(file,parameters_dict,particle_record_size,show_fit,number_of_rec
 				#check the timestamps
 				if particle_timestamp != event_time:
 					print record_index, 'timestamp mismatch! ', 'DB: ', particle_timestamp, ' record: ',event_time
-					input("Press Enter to continue...")
+					raw_input("Press Enter to continue...")
 					record_index+=1
 					continue
 				
@@ -138,9 +141,9 @@ def gaussLeoFit(file,parameters_dict,particle_record_size,show_fit,number_of_rec
 				except:
 					ratio_method_pk = None
 				
-				cursor.execute('UPDATE alert_leo_params_from_nonincands SET LF_scat_amp=%s WHERE id = %s',(float(LF_scattering_amp),particle_id))
-				cursor.execute('UPDATE alert_leo_params_from_nonincands SET LF_ratio_scat_amp=%s WHERE id = %s',(ratio_method_pk,particle_id))
-				cnx.commit()
+				#cursor.execute('UPDATE alert_leo_params_from_nonincands SET LF_scat_amp=%s WHERE id = %s',(float(LF_scattering_amp),particle_id))
+				#cursor.execute('UPDATE alert_leo_params_from_nonincands SET LF_ratio_scat_amp=%s WHERE id = %s',(ratio_method_pk,particle_id))
+				#cnx.commit()
 				
 				
 				#plot particle fit if desired

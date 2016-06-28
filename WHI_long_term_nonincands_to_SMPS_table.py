@@ -17,8 +17,8 @@ from scipy.optimize import curve_fit
 bin_min = 245
 bin_max = 265
 
-start_time = datetime(2012,7,27,8,0)
-end_time = datetime(2012,7,28,8,0)
+start_time = datetime(2012,7,28,8,0)
+end_time = datetime(2012,7,29,8,0)
 UNIX_start_time = calendar.timegm(start_time.utctimetuple())
 UNIX_end_time = calendar.timegm(end_time.utctimetuple())
 print start_time, UNIX_start_time

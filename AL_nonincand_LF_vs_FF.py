@@ -13,8 +13,8 @@ import matplotlib.cm as cm
 
 
 SP2_ID = 58
-start = datetime(2013,12,30)
-end = datetime(2013,12,31)
+start = datetime(2013,11,1)
+end = datetime(2013,11,2)
 UNIX_start = calendar.timegm(start.utctimetuple())
 UNIX_end = calendar.timegm(end.utctimetuple())
 
@@ -48,5 +48,8 @@ ax1.set_ylim(0,60000)
 ax1.plot(FF,line,color='r')
 ax1.text(0.1, 0.9,'r-square: ' + str(round(r_value**2,3)),transform=ax1.transAxes, color='k')
 ax1.text(0.1, 0.85,'slope: ' + str(round(slope,3)),transform=ax1.transAxes, color='k')
+ax1.set_ylabel('amplitude from leading edge fit')
+ax1.set_xlabel('actual amplitude')
+
 
 plt.show()

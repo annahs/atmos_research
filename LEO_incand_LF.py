@@ -22,23 +22,23 @@ import calendar
 
 
 #setup
-data_dir = 'F:/Alert/2013/SP2B_files/'
-start_analysis_at = datetime(2013,12,27)
-end_analysis_at = 	datetime(2014,1,1)
-SP2_number = 58
+data_dir = 'F:/Alert/2012/SP2B_files/'
+start_analysis_at = datetime(2012,4,1)
+end_analysis_at = 	datetime(2012,6,1)
+SP2_number = 44
 zeroX_evap_threshold = 2000
 min_incand = 50
 hk_dict = {
-'yag_min':4,
-'yag_max':6,
+'yag_min':1.5,
+'yag_max':7,
 'sample_flow_min':118.5,
 'sample_flow_max':121.5,
 'sheath_flow_min':992,
 'sheath_flow_max':1006,
 }
-show_leo_fit = False
+show_leo_fit = True
 fit_factor = 15  #inverse fraction of signal to fit
-fit_factor_ratio_bump = 4
+fit_factor_ratio_bump = 3
  
 record_size_bytes = 1658 #size of a single particle record in bytes(UBC_SP2 = 1498, EC_SP2 in 2009 and 2010 = 2458, Alert SP2 #4 and #58 = 832? )
 
@@ -87,15 +87,20 @@ def make_plot(record,ratio_pk):
 
 	fig = plt.figure()
 	ax1 = fig.add_subplot(111)
-	ax1.plot(x_vals_all,y_vals_all,'o', markerfacecolor='None')  
-	ax1.plot(center,ratio_pk_adjusted,'o')  
+	ax1.plot(x_vals_all,y_vals_all,'o', markerfacecolor='None', label = 'scattering signal')  
+	ax1.plot(x_vals_all, y_vals_incand, color ='red',marker = 'o', linestyle = 'None', label = 'incandescent signal')
+	ax1.plot(record.LF_x_vals_to_use,record.LF_y_vals_to_use, color = 'black',linewidth=5, label = 'scatter signal used for fit')
+	ax1.set_xlabel('data point #')
+	ax1.set_ylabel('amplitude (a.u.)')
+	#ax1.plot(center,ratio_pk_adjusted,'o')  
 	if fit_result != []:
-		ax1.plot(x_vals_all,fit_result, color='blue',marker='o')
-	ax1.plot(record.LF_x_vals_to_use,record.LF_y_vals_to_use, color = 'black',linewidth=3)
-	ax1.plot(x_vals_all, y_vals_split, 'o', color ='green')
-	ax1.plot(x_vals_all, y_vals_incand, color ='red')
-	plt.axvline(x=record.zeroCrossingPos, ymin=0, ymax=1)
-	plt.axvline(x=record.beam_center_pos, ymin=0, ymax=1, color='red')
+		ax1.plot(x_vals_all,fit_result, color='blue',marker='None', alpha = 1, label = 'LEO fit')
+	
+	#ax1.plot(x_vals_all, y_vals_split, 'o', color ='green')
+	
+	#plt.axvline(x=record.zeroCrossingPos, ymin=0, ymax=1)
+	#plt.axvline(x=record.beam_center_pos, ymin=0, ymax=1, color='red')
+	plt.legend()
 	plt.show()
 
 def checkHKDetails(particle_event_time,instr_number,hk_dictionary):
@@ -122,7 +127,8 @@ def gaussLeoFit(parameters_dict,show_fit,calib_list,leo_fit_factor,instr_number,
 	
 	f = open(parameters_dict['file'], 'rb')
 	record_index = 0      
-	
+	multiple_records = []
+	i=1
 	while record_index < parameters['number_of_records']:
 		
 		#read the binary for a particle
@@ -132,7 +138,10 @@ def gaussLeoFit(parameters_dict,show_fit,calib_list,leo_fit_factor,instr_number,
 		
 		#run the wideband incandPeakInfo method to retrieve various incandescence peak attributes	
 		particle_record.incandPeakInfo() 			
-		bb_incand_pk_amp = float(particle_record.incandMax)
+		particle_record.incandPeakInfoLG() 			
+		bb_incand_pk_amp = float(particle_record.incandMax)  #HG
+		bb_incand_pk_amp_LG = float(particle_record.incandMax_LG)  #LG
+		
 		
 		#if this is an incandescent particle that we can detect then continue
 		if bb_incand_pk_amp >= bb_incand_min:
@@ -185,10 +194,10 @@ def gaussLeoFit(parameters_dict,show_fit,calib_list,leo_fit_factor,instr_number,
 				
 			#put data into database
 			add_data = ('INSERT INTO alert_leo_coating_data'							  
-			  '(UNIX_UTC_ts, sp2b_file, file_index, instrument_ID, BB_incand,NB_incand,actual_scat_amp,LF_scat_amp,LF_ratio_scat_amp,actual_zero_x_posn,HK_flag,rBC_mass_fg,coat_thickness_nm)'
-			  'VALUES (%(UNIX_UTC_ts)s,%(sp2b_file)s,%(file_index)s,%(instrument_ID)s,%(BB_incand)s,%(NB_incand)s,%(actual_scat_amp)s,%(LF_scat_amp)s,%(LF_ratio_scat_amp)s,%(actual_zero_x_posn)s,%(HK_flag)s,%(rBC_mass_fg)s,%(coat_thickness_nm)s)')
+			  '(UNIX_UTC_ts, sp2b_file, file_index, instrument_ID, BB_incand,NB_incand,actual_scat_amp,LF_scat_amp,LF_ratio_scat_amp,actual_zero_x_posn,HK_flag)'
+			  'VALUES (%(UNIX_UTC_ts)s,%(sp2b_file)s,%(file_index)s,%(instrument_ID)s,%(BB_incand)s,%(NB_incand)s,%(actual_scat_amp)s,%(LF_scat_amp)s,%(LF_ratio_scat_amp)s,%(actual_zero_x_posn)s,%(HK_flag)s)')
 
-			data ={
+			single_record ={
 			'UNIX_UTC_ts' :event_time,
 			'sp2b_file' : parameters['file'],
 			'file_index' : record_index,
@@ -200,16 +209,25 @@ def gaussLeoFit(parameters_dict,show_fit,calib_list,leo_fit_factor,instr_number,
 			'LF_ratio_scat_amp': ratio_method_pk,
 			'actual_zero_x_posn': zero_crossing_pt,
 			'HK_flag': housekeeping_flag,		
-			'rBC_mass_fg': rBC_mass,
-			'coat_thickness_nm': coat_th,
 			}
 			
-			#cursor.execute('DELETE FROM alert_leo_coating_data WHERE UNIX_UTC_ts = %s AND instrument_ID >= %s',(data['UNIX_UTC_ts'],data['instrument_ID']))
-			cursor.execute(add_data, data)
-			cnx.commit()
+			multiple_records.append((single_record))
+			
+			#bulk insert to db table
+			if i%4000 == 0:
+				cursor.executemany(add_data, multiple_records)
+				cnx.commit()
+				multiple_records = []
+					
+			##increment count of detectible incandescent particles
+			i+= 1
 					
 		record_index+=1   
-			
+		
+	#bulk insert of remaining records to db
+	cursor.executemany(add_data, multiple_records)
+	cnx.commit()
+	
 	f.close()
 
 

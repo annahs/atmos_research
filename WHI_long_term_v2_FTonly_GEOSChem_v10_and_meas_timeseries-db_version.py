@@ -28,6 +28,7 @@ SP2_6h_NPac = []
 SP2_6h_SPac = []
 SP2_6h_Cont = []
 SP2_6h_LRT = []
+SP2_6h_BB = []
 
 GC2009_BC_concs_d = {}
 GC2010_BC_concs_d = {}
@@ -58,7 +59,8 @@ for row in raw_data:
 		SP2_6h_SPac.append([PST_date_time,meas_mass_conc,meas_abs_err,ratio,ratio_abs_err])
 	if cluster == 'LRT':
 		SP2_6h_LRT.append([PST_date_time,meas_mass_conc,meas_abs_err,ratio,ratio_abs_err])
-	
+	if cluster == 'BB':# and cluster_number ==3:
+		SP2_6h_BB.append([PST_date_time,meas_mass_conc,meas_abs_err,ratio,ratio_abs_err])
 		
 	if PST_date_time.year == 2009:
 		GC2009_BC_concs_d[PST_date_time]=[GC_mass_conc,GC_abs_err]
@@ -130,6 +132,10 @@ SP2_6h_LRT_date =  [dates.date2num(row[0]) for row in SP2_6h_LRT]
 SP2_6h_LRT_mass_conc = [row[1] for row in SP2_6h_LRT]
 SP2_6h_LRT_abs_err = [row[2] for row in SP2_6h_LRT]
 
+SP2_6h_BB_date =  [dates.date2num(row[0]) for row in SP2_6h_BB]
+SP2_6h_BB_mass_conc = [row[1] for row in SP2_6h_BB]
+SP2_6h_BB_abs_err = [row[2] for row in SP2_6h_BB]
+
 
 
 ratio_dates_NPac = [dates.date2num(row[0]) for row in SP2_6h_NPac]
@@ -148,6 +154,10 @@ ratio_err_Cont = [row[4] for row in SP2_6h_Cont]
 ratio_dates_LRT = [dates.date2num(row[0]) for row in SP2_6h_LRT]
 ratio_mass_conc_LRT = [row[3] for row in SP2_6h_LRT] 
 ratio_err_LRT = [row[4] for row in SP2_6h_LRT]
+
+ratio_dates_BB = [dates.date2num(row[0]) for row in SP2_6h_BB]
+ratio_mass_conc_BB = [row[3] for row in SP2_6h_BB] 
+ratio_err_BB = [row[4] for row in SP2_6h_BB]
 
 newlist = []
 ratio_dates_all = ratio_dates_NPac+ratio_dates_SPac+ratio_dates_Cont+ratio_dates_LRT
@@ -187,20 +197,20 @@ fire_span1_10s=datetime.strptime('2010/07/26 09:00', '%Y/%m/%d %H:%M') #jason's 
 fire_span1_10f=datetime.strptime('2010/07/28 09:30', '%Y/%m/%d %H:%M')
 
 
-fire_alpha = 0.25
+fire_alpha = 0.15
 fire_color = '#990000'			
 
 			
 ###################plotting#####################
 
 
-fig = plt.figure(figsize=(11.5,7.5))
+fig = plt.figure(figsize=(12,12))
 
 hfmt = dates.DateFormatter('%b')
-hfmt = dates.DateFormatter('%m-%d')
+#hfmt = dates.DateFormatter('%m-%d')
 
 display_month_interval = 1
-max_display_conc = 300
+max_display_conc = 301
 
 startdate_2009 = '2009/06/25'
 enddate_2009 = '2009/08/20'
@@ -212,56 +222,63 @@ startdate_2012 = '2012/03/29'
 enddate_2012 = '2012/06/05'
 
 
-ax7 =  plt.subplot2grid((4,3), (0,0), colspan=1,rowspan = 2)
-ax8 =  plt.subplot2grid((4,3), (0,1), colspan=1,rowspan = 2)
-ax9 =  plt.subplot2grid((4,3), (0,2), colspan=1,rowspan = 2, sharey=ax8)
+ax7 =  plt.subplot2grid((6,3), (0,0), colspan=1,rowspan = 2)
+ax8 =  plt.subplot2grid((6,3), (0,1), colspan=1,rowspan = 2)
+ax9 =  plt.subplot2grid((6,3), (0,2), colspan=1,rowspan = 2)
+
+ax13 =  plt.subplot2grid((6,3), (2,0), colspan=1,rowspan = 2)
+ax14 =  plt.subplot2grid((6,3), (2,1), colspan=1,rowspan = 2)
+ax15 =  plt.subplot2grid((6,3), (2,2), colspan=1,rowspan = 2)
 										
-ax10 = plt.subplot2grid((4,3), (2,0), colspan=1,rowspan = 2)
-ax11 = plt.subplot2grid((4,3), (2,1), colspan=1,rowspan = 2, sharey=ax10)
-ax12 = plt.subplot2grid((4,3), (2,2), colspan=1,rowspan = 2, sharey=ax10)
+ax10 = plt.subplot2grid((6,3), (4,0), colspan=1,rowspan = 2)
+ax11 = plt.subplot2grid((6,3), (4,1), colspan=1,rowspan = 2, sharey=ax10)
+ax12 = plt.subplot2grid((6,3), (4,2), colspan=1,rowspan = 2, sharey=ax10)
 											
 #combo
-
+ax7.plot(GC_6h_2009_date,GC_6h_2009_mass_conc,color = 'darkgrey', alpha = 1, marker = 'o', markeredgecolor='darkgrey')
 ax7.errorbar(SP2_6h_NPac_date,SP2_6h_NPac_mass_conc,yerr = SP2_6h_NPac_abs_err, color='cyan', alpha = 1, fmt = '*')
 ax7.errorbar(SP2_6h_SPac_date,SP2_6h_SPac_mass_conc,yerr = SP2_6h_SPac_abs_err, color='green', alpha = 1, fmt = 'o')
 ax7.errorbar(SP2_6h_Cont_date,SP2_6h_Cont_mass_conc,yerr = SP2_6h_Cont_abs_err, color='magenta', alpha = 1, fmt = '>')
 ax7.errorbar(SP2_6h_LRT_date,SP2_6h_LRT_mass_conc,yerr = SP2_6h_LRT_abs_err, color='blue', alpha = 1, fmt = 's')
-ax7.plot(GC_6h_2009_date,GC_6h_2009_mass_conc,color = 'grey', alpha = 1, marker = 'o',markerfacecolor='None')
+ax7.errorbar(SP2_6h_BB_date,SP2_6h_BB_mass_conc,yerr = SP2_6h_BB_abs_err, color='grey', alpha = 1, fmt = '<')
 ax7.xaxis.set_major_locator(dates.MonthLocator(interval = display_month_interval))
 ax7.xaxis.set_visible(False)
 ax7.yaxis.set_visible(True)
 ax7.set_ylabel('rBC mass concentration (ng/m3 - STP)')
-ax7.set_ylim(0, max_display_conc)
+ax7.set_ylim(0, 700)
 ax7.set_xlim(dates.date2num(datetime.strptime(startdate_2009, '%Y/%m/%d')), dates.date2num(datetime.strptime(enddate_2009, '%Y/%m/%d')))
 ax7.axvspan(dates.date2num(fire_span2_09s),dates.date2num(fire_span2_09f), facecolor=fire_color, alpha=fire_alpha)
 ax7.text(0.1, 0.9,'2009', transform=ax7.transAxes)
 
-
+ax8.plot(GC_6h_2010_date,GC_6h_2010_mass_conc, color = 'darkgrey', alpha = 1, marker = 'o', markeredgecolor='darkgrey')
 ax8.errorbar(SP2_6h_NPac_date,SP2_6h_NPac_mass_conc,yerr = SP2_6h_NPac_abs_err, color='cyan', alpha = 1, fmt = '*', label = 'N. Pacific')
 ax8.errorbar(SP2_6h_SPac_date,SP2_6h_SPac_mass_conc,yerr = SP2_6h_SPac_abs_err, color='green', alpha = 1, fmt = 'o', label = 'S. Pacific')
 ax8.errorbar(SP2_6h_Cont_date,SP2_6h_Cont_mass_conc,yerr = SP2_6h_Cont_abs_err, color='magenta', alpha = 1, fmt = '>', label = 'N. Canada')
 ax8.errorbar(SP2_6h_LRT_date,SP2_6h_LRT_mass_conc,yerr = SP2_6h_LRT_abs_err, color='blue', alpha = 1, fmt = 's', label = 'W. Pacific/Asia')
-ax8.plot(GC_6h_2010_date,GC_6h_2010_mass_conc, color = 'grey', alpha = 1, marker = 'o',markerfacecolor='None')
+ax8.errorbar(SP2_6h_BB_date,SP2_6h_BB_mass_conc,yerr = SP2_6h_BB_abs_err, color='grey', alpha = 1, fmt = '<', label = 'local BB')
 ax8.xaxis.set_major_formatter(hfmt)
 ax8.xaxis.set_major_locator(dates.MonthLocator(interval = display_month_interval))
 ax8.xaxis.set_visible(False)
-ax8.yaxis.set_visible(False)
+ax8.yaxis.set_visible(True)
+ax8.yaxis.set_ticks(np.arange(0, max_display_conc, 100))
+ax8.set_yticklabels([])
 ax8.set_xlabel('month')
 ax8.set_ylim(0, max_display_conc)
 ax8.set_xlim(dates.date2num(datetime.strptime(startdate_2010, '%Y/%m/%d')), dates.date2num(datetime.strptime(enddate_2010, '%Y/%m/%d')))
 ax8.axvspan(dates.date2num(fire_span1_10s),dates.date2num(fire_span1_10f), facecolor=fire_color, alpha=fire_alpha)
 ax8.text(0.1, 0.9,'2010', transform=ax8.transAxes)
 
-
+ax9.plot(GC_6h_2012_date,GC_6h_2012_mass_conc, color = 'darkgrey', alpha = 1, marker = 'o', markeredgecolor='darkgrey')
 ax9.errorbar(SP2_6h_NPac_date,SP2_6h_NPac_mass_conc,yerr = SP2_6h_NPac_abs_err, color='cyan', alpha = 1, fmt = '*', label = 'NPac')
 ax9.errorbar(SP2_6h_SPac_date,SP2_6h_SPac_mass_conc,yerr = SP2_6h_SPac_abs_err, color='green', alpha = 1, fmt = 'o', label = 'SPac')
 ax9.errorbar(SP2_6h_Cont_date,SP2_6h_Cont_mass_conc,yerr = SP2_6h_Cont_abs_err, color='magenta', alpha = 1, fmt = '>', label = 'Cont')
 ax9.errorbar(SP2_6h_LRT_date,SP2_6h_LRT_mass_conc,yerr = SP2_6h_LRT_abs_err, color='blue', alpha = 1, fmt = 's', label = 'LRT')
-ax9.plot(GC_6h_2012_date,GC_6h_2012_mass_conc, color = 'grey', alpha = 1, marker = 'o',markerfacecolor='None')
+ax9.errorbar(SP2_6h_BB_date,SP2_6h_BB_mass_conc,yerr = SP2_6h_BB_abs_err, color='grey', alpha = 1, fmt = 's', label = 'BB')
 ax9.xaxis.set_major_formatter(hfmt)
 ax9.xaxis.set_major_locator(dates.MonthLocator(interval = display_month_interval))
 ax9.xaxis.set_visible(False)
 ax9.yaxis.set_visible(True)
+ax9.yaxis.set_ticks(np.arange(0, max_display_conc, 100))
 ax9.yaxis.tick_right()
 ax9.set_ylim(0, max_display_conc)
 ax9.set_xlim(dates.date2num(datetime.strptime(startdate_2012, '%Y/%m/%d')), dates.date2num(datetime.strptime(enddate_2012, '%Y/%m/%d')))
@@ -276,6 +293,7 @@ ax10.errorbar(ratio_dates_SPac,ratio_mass_conc_SPac,yerr = ratio_err_SPac, color
 ax10.errorbar(ratio_dates_NPac,ratio_mass_conc_NPac,yerr = ratio_err_NPac, color='cyan', alpha = 1, fmt = '*')
 ax10.errorbar(ratio_dates_Cont,ratio_mass_conc_Cont,yerr = ratio_err_Cont, color='magenta', alpha = 1, fmt = '>')
 ax10.errorbar(ratio_dates_LRT,ratio_mass_conc_LRT,yerr = ratio_err_LRT, color='blue', alpha = 1, fmt = 's')
+ax10.errorbar(ratio_dates_BB,ratio_mass_conc_BB,yerr = ratio_err_BB, color='grey', alpha = 1, fmt = '<')
 #ax10.plot(all_dates,all_masses,color='grey')
 
 ax10.xaxis.set_major_formatter(hfmt)
@@ -295,6 +313,7 @@ ax11.errorbar(ratio_dates_SPac,ratio_mass_conc_SPac,yerr = ratio_err_SPac, color
 ax11.errorbar(ratio_dates_NPac,ratio_mass_conc_NPac,yerr = ratio_err_NPac, color='cyan', alpha = 1, fmt = '*')
 ax11.errorbar(ratio_dates_Cont,ratio_mass_conc_Cont,yerr = ratio_err_Cont, color='magenta', alpha = 1, fmt = '>')
 ax11.errorbar(ratio_dates_LRT,ratio_mass_conc_LRT,yerr = ratio_err_LRT, color='blue', alpha = 1, fmt = 's')
+ax11.errorbar(ratio_dates_BB,ratio_mass_conc_BB,yerr = ratio_err_BB, color='grey', alpha = 1, fmt = '<')
 #ax11.plot(all_dates,all_masses,color='grey')
 
 ax11.xaxis.set_major_formatter(hfmt)
@@ -312,6 +331,7 @@ ax12.errorbar(ratio_dates_SPac,ratio_mass_conc_SPac,yerr = ratio_err_SPac, color
 ax12.errorbar(ratio_dates_NPac,ratio_mass_conc_NPac,yerr = ratio_err_NPac, color='cyan', alpha = 1, fmt = '*')
 ax12.errorbar(ratio_dates_Cont,ratio_mass_conc_Cont,yerr = ratio_err_Cont, color='magenta', alpha = 1, fmt = '>')
 ax12.errorbar(ratio_dates_LRT,ratio_mass_conc_LRT,yerr = ratio_err_LRT, color='blue', alpha = 1, fmt = 's')
+ax12.errorbar(ratio_dates_BB,ratio_mass_conc_BB,yerr = ratio_err_BB, color='grey', alpha = 1, fmt = '<')
 #ax12.plot(all_dates,all_masses,color='grey')
 
 ax12.xaxis.set_major_formatter(hfmt)
@@ -333,7 +353,7 @@ plt.subplots_adjust(wspace=0.05)
 
 
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/')
-plt.savefig('timeseries - FT only GEOS-Chem v10 v measurements - db - default 6h - RH90.png', bbox_extra_artists=(legend,), bbox_inches='tight',dpi=600)
+plt.savefig('timeseries - FT only GEOS-Chem v10 v measurements - db - default 6h - RH90 - three row.png', bbox_extra_artists=(legend,), bbox_inches='tight',dpi=600)
 
 
 

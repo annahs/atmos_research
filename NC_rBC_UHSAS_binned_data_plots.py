@@ -215,6 +215,6 @@ ax2.set_ylim(0,60)
 ax2.set_xticks([80,90,100,120,140,160,200,300,400,500,900])
 ax2.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/UHSAS/number distrs including nonincands/')
-plt.savefig(flight + ' number distrs.png')
+#plt.savefig(flight + ' number distrs.png')
 
 plt.show()	

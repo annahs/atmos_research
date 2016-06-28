@@ -101,36 +101,39 @@ WPacline = WPacslope*varx+WPacintercept
 
 
 
-fig = plt.figure(figsize=(12,10))
+fig = plt.figure(figsize=(14,6))
          
-ax1  = plt.subplot2grid((2,2), (1,1), colspan=1)
-ax2  = plt.subplot2grid((2,2), (0,0), colspan=1)
-ax3  = plt.subplot2grid((2,2), (0,1), colspan=1)
-ax4  = plt.subplot2grid((2,2), (1,0), colspan=1)
+ax1  = plt.subplot2grid((1,4), (0,3), colspan=1)
+ax2  = plt.subplot2grid((1,4), (0,0), colspan=1)
+ax3  = plt.subplot2grid((1,4), (0,1), colspan=1)
+ax4  = plt.subplot2grid((1,4), (0,2), colspan=1)
 
-CO_upper = 200
-CO_lower = 50
+CO_upper = 175
+CO_lower = 75
 BC_upper = 325
-info_x_pos = 0.65
+info_x_pos = 0.05
 info_y_pos = 0.8
 label_x_pos = 0.05
 label_y_pos = 0.92
 
-ax1.scatter(Cont_co,Cont_bc,c=Cont_month, marker = 'o',s=40)
+#ax1.scatter(Cont_co,Cont_bc,c=Cont_month, marker = 'o',s=40)
+ax1.scatter(Cont_co,Cont_bc,c='r', marker = '>',s=40)
 ax1.errorbar(Cont_co,Cont_bc,yerr = Cont_bc_err,fmt = None,zorder=0)
-ax1.plot(Cont_co,Cont_line,color='b')
-ax1.text(info_x_pos, info_y_pos+0.07 ,'r-square: ' + str(round(Cont_r_value**2,3)),transform=ax1.transAxes, color='grey')
+ax1.plot(Cont_co,Cont_line,color='k')
+ax1.text(info_x_pos, info_y_pos+0.05 ,'r-square: ' + str(round(Cont_r_value**2,3)),transform=ax1.transAxes, color='grey')
 ax1.text(info_x_pos, info_y_pos,'slope: ' + str(round(Cont_slope,3)),transform=ax1.transAxes, color='grey')
 ax1.text(label_x_pos, label_y_pos,'Northern Canada',transform=ax1.transAxes, color='k')
-ax1.set_ylabel('rBC ng/kg')
+#ax1.set_ylabel('rBC ng/kg')
 ax1.set_xlabel('CO ppbv')
 ax1.set_xlim(CO_lower,CO_upper)
 ax1.set_ylim(0,BC_upper)
+ax1.yaxis.tick_right()
 
-ax2.scatter(NPacco,NPacbc,c=NPacmonth, marker = 'o',s=40)
+
+ax2.scatter(NPacco,NPacbc,c='b', marker = '<',s=40)
 ax2.errorbar(NPacco,NPacbc,yerr = NPacbc_err,fmt = None,zorder=0)
-ax2.plot(NPacco,NPacline,color='b')
-ax2.text(info_x_pos, (info_y_pos+0.07),'r-square: ' + str(round(NPacr_value**2,3)),transform=ax2.transAxes, color='grey')
+ax2.plot(NPacco,NPacline,color='k')
+ax2.text(info_x_pos, (info_y_pos+0.05),'r-square: ' + str(round(NPacr_value**2,3)),transform=ax2.transAxes, color='grey')
 ax2.text(info_x_pos, info_y_pos,'slope: ' + str(round(NPacslope,3)),transform=ax2.transAxes, color='grey')
 ax2.text(label_x_pos,label_y_pos,'Northern Pacific',transform=ax2.transAxes, color='k')
 ax2.set_ylabel('rBC ng/kg')
@@ -139,28 +142,35 @@ ax2.set_xlim(CO_lower,CO_upper)
 ax2.set_ylim(0,BC_upper)
 
 
-ax3.scatter(SPacco,SPacbc,c=SPacmonth, marker = 'o',s=40)
+
+ax3.scatter(SPacco,SPacbc,c='g', marker = 'o',s=40)
 ax3.errorbar(SPacco,SPacbc,yerr = SPacbc_err,fmt = None,zorder=0)
-ax3.plot(SPacco,SPacline,color='b')
-ax3.text(info_x_pos, info_y_pos+0.07,'r-square: ' + str(round(SPacr_value**2,3)),transform=ax3.transAxes, color='grey')
+ax3.plot(SPacco,SPacline,color='k')
+ax3.text(info_x_pos, info_y_pos+0.05,'r-square: ' + str(round(SPacr_value**2,3)),transform=ax3.transAxes, color='grey')
 ax3.text(info_x_pos, info_y_pos,'slope: ' + str(round(SPacslope,3)),transform=ax3.transAxes, color='grey')
 ax3.text(label_x_pos, label_y_pos,'Southern Pacific',transform=ax3.transAxes, color='k')
-ax3.set_ylabel('rBC ng/kg')
+#ax3.set_ylabel('rBC ng/kg')
 ax3.set_xlabel('CO ppbv')
 ax3.set_xlim(CO_lower,CO_upper)
 ax3.set_ylim(0,BC_upper)
+ax3.set_yticklabels([])
+
 
   
-ax4.scatter(WPacco,WPacbc,c=WPacmonth, marker = 'o',s=40)
+ax4.scatter(WPacco,WPacbc,c='orange', marker = 's',s=40)
 ax4.errorbar(WPacco,WPacbc,yerr = WPacbc_err,fmt = None,zorder=0)
-ax4.plot(WPacco,WPacline,color='b')
-ax4.text(info_x_pos, info_y_pos+0.07,'r-square: ' + str(round(WPacr_value**2,3)),transform=ax4.transAxes, color='grey')
+ax4.plot(WPacco,WPacline,color='k')
+ax4.text(info_x_pos, info_y_pos+0.05,'r-square: ' + str(round(WPacr_value**2,3)),transform=ax4.transAxes, color='grey')
 ax4.text(info_x_pos, info_y_pos,'slope: ' + str(round(WPacslope,3)),transform=ax4.transAxes, color='grey')
 ax4.text(label_x_pos, label_y_pos,'Western Pacific/Asia',transform=ax4.transAxes, color='k')
-ax4.set_ylabel('rBC ng/kg')
+#ax4.set_ylabel('rBC ng/kg')
 ax4.set_xlabel('CO ppbv')
 ax4.set_xlim(CO_lower,CO_upper)
 ax4.set_ylim(0,BC_upper)
+ax4.set_yticklabels([])
+
+plt.subplots_adjust(wspace=0.0)
+
 
 
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/CO data/')

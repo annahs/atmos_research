@@ -21,13 +21,14 @@ add_interval = ('INSERT INTO polar6_flight_track_details'
 
 ######get data
 data_dir = 'C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/icartt/'
+data_dir = 'C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/merged files/'  #sc2 and ferry 1 and 2 are only in merged files, not in AIMMS files, not sure why :P
 os.chdir(data_dir)
 
 for file in os.listdir(data_dir):
 	if file.endswith('.ict'):
 		print file
 		with open(file, 'r') as f:
-			file_date = file[21:29]
+			file_date = file[27:35] #file[21:29]
 			date = datetime.strptime(file_date, '%Y%m%d')
 
 			data_start = False
@@ -35,8 +36,8 @@ for file in os.listdir(data_dir):
 			for line in f:
 				newline = line.split(',')
 				
-				if newline[0] == 'TimeWave' and newline[1] == 'Time_Hr' :
-					data_start = True			
+				if newline[0].strip() == 'TimeWave' and newline[1].strip() == 'Time_Hr' :
+					data_start = True	
 					continue
 					
 				if data_start == True:

@@ -14,15 +14,18 @@ import calendar
 from scipy.optimize import curve_fit
 
 
-flight = 'science 10'
+flight = 'science 1'
 calib_to_use = 'Alert' #Jan or Alert
-show_alt_plot = False
+show_alt_plot = True
 show_distr_plots = False
 alt_incr = 820
 max_alt = 6600
 lower_alt = 0
 min_BC_VED = 155  #for coating
 max_BC_VED = 180  #for coating
+bin_value_min = 80   #for binned mass/number
+bin_value_max = 220  #for binned mass/number
+bin_number_lim = (bin_value_max-bin_value_min)/10
 R = 8.3144621 # in m3*Pa/(K*mol)
 
 flight_times = {
@@ -39,6 +42,7 @@ flight_times = {
 'science 8'  : [datetime(2015,4,20,15,0),datetime(2015,4,20,20,0),-133.7306, 67.1],
 'science 9'  : [datetime(2015,4,20,21,0),datetime(2015,4,21,2,0),-133.7306, 69.3617] ,
 'science 10' : [datetime(2015,4,21,16,0),datetime(2015,4,21,22,0),-131, 69.55],
+'science 1-7':[datetime(2015,4,5,9,0),datetime(2015,4,13,21,0)]
 }
 
 min_rBC_mass = ((min_BC_VED/(10.**7))**3)*(math.pi/6.)*1.8*(10.**15)
@@ -50,12 +54,6 @@ end_time = flight_times[flight][1]
 UNIX_start_time = calendar.timegm(start_time.utctimetuple())
 UNIX_end_time = calendar.timegm(end_time.utctimetuple())
 
-
-bin_value_min = 80  
-bin_value_max = 220  
-bin_number_lim = (bin_value_max-bin_value_min)/10
-
-	
 #database connection
 cnx = mysql.connector.connect(user='root', password='Suresh15', host='localhost', database='black_carbon')
 cursor = cnx.cursor()
@@ -141,17 +139,18 @@ while upper_alt <= max_alt:
 		#get coating data
 		cursor.execute(('SELECT rBC_mass_fg,coat_thickness_nm  from polar6_coating_2015 where UNIX_UTC_ts >= %s and UNIX_UTC_ts < %s and rBC_mass_fg >= %s and rBC_mass_fg < %s and particle_type = %s and instrument = %s'),(alt_interval_start_time,alt_interval_end_time,min_rBC_mass,max_rBC_mass,'incand','UBCSP2'))
 		coating_data = cursor.fetchall()
-
+		temp=[]
 		for row in coating_data:
 			rBC_mass = row[0]
-			coat_th = row[1]
+			coat_th = row[1]	
 			core_VED = (((rBC_mass/(10**15*1.8))*6/3.14159)**(1/3.0))*10**7
 			try:
 				Dp_Dc = ((2*coat_th)+core_VED)/core_VED
 				Dp_Dc_list.append(Dp_Dc)
+				temp.append(coat_th)
 			except:
 				continue
-			
+		print np.mean(temp)
 		#get mass data
 		if calib_to_use == 'Jan':
 			cursor.execute(('SELECT 70t80,80t90,90t100,100t110,110t120,120t130,130t140,140t150,150t160,160t170,170t180,180t190,190t200,200t210,210t220,sampled_vol,total_mass,UNIX_UTC_ts from polar6_binned_mass_and_sampled_volume_jancalib where UNIX_UTC_ts >= %s and UNIX_UTC_ts < %s'),(alt_interval_start_time,alt_interval_end_time))
@@ -297,7 +296,7 @@ if show_alt_plot == True:
 	ax1.set_xlabel('time')
 	ax1.set_ylim(0,6000)
 	i=0
-	colors=['#ADFF2F'	,'#7FFF00'	,'#7CFC00'	,'#00FF00','#32CD32'	,'#98FB98'	,'#90EE90'	,'#00FA9A'	,'#00FF7F'	,'#3CB371'	,'#2E8B57'	,'#228B22'	,'#008000'	,'#006400'	,'#9ACD32'	,'#6B8E23'	,'#808000'	,'#556B2F'	,'#66CDAA'	,'#8FBC8F'	,'#20B2AA'	,'#008B8B'	,'#008080'	,'#00FFFF'	,'#E0FFFF'	,'#AFEEEE'	,'#7FFFD4'	,'#40E0D0'	,'#48D1CC'	,'#00CED1'	,'#5F9EA0'	,'#4682B4'	,'#B0C4DE'	,'#B0E0E6'	,'#ADD8E6'	,'#87CEEB'	,'#87CEFA'	,'#00BFFF'	,'#1E90FF'	,'#6495ED'	,'#7B68EE'	,'#4169E1'	,'#0000FF'	,'#0000CD'	,'#00008B'	,'#000080'	,'#191970'	,]
+	colors=['#ADFF2F'	,'#7FFF00'	,'#7CFC00'	,'#00FF00','#32CD32'	,'#98FB98'	,'#90EE90'	,'#00FA9A'	,'#00FF7F'	,'#3CB371'	,'#2E8B57'	,'#228B22'	,'#008000'	,'#006400'	,'#9ACD32'	,'#6B8E23'	,'#808000'	,'#556B2F'	,'#66CDAA'	,'#8FBC8F'	,'#20B2AA'	,'#008B8B'	,'#008080'	,'#00FFFF'	,'#E0FFFF'	,'#AFEEEE'	,'#7FFFD4'	,'#40E0D0'	,'#48D1CC'	,'#00CED1'	,'#5F9EA0'	,'#4682B4'	,'#B0C4DE'	,'#B0E0E6'	,'#ADD8E6'	,'#87CEEB'	,'#87CEFA'	,'#00BFFF'	,'#1E90FF'	,'#6495ED'	,'#7B68EE'	,'#4169E1'	,'#0000FF'	,'#0000CD'	,'#00008B'	,'#000080'	,'#191970'	,'#ADFF2F'	,'#7FFF00'	,'#7CFC00'	,'#00FF00','#32CD32'	,'#98FB98'	,'#90EE90'	,'#00FA9A'	,'#00FF7F'	,'#3CB371'	,'#2E8B57'	,'#228B22'	,'#008000'	,'#006400'	,'#9ACD32'	,'#6B8E23'	,'#808000'	,'#556B2F'	,'#66CDAA'	,'#8FBC8F'	,'#20B2AA'	,'#008B8B'	,'#008080'	,'#00FFFF'	,'#E0FFFF'	,'#AFEEEE'	,'#7FFFD4'	,'#40E0D0'	,'#48D1CC'	,'#00CED1'	,'#5F9EA0'	,'#4682B4'	,'#B0C4DE'	,'#B0E0E6'	,'#ADD8E6'	,'#87CEEB'	,'#87CEFA'	,'#00BFFF'	,'#1E90FF'	,'#6495ED'	,'#7B68EE'	,'#4169E1'	,'#0000FF'	,'#0000CD'	,'#00008B'	,'#000080'	,'#191970'	,'#ADFF2F'	,'#7FFF00'	,'#7CFC00'	,'#00FF00','#32CD32'	,'#98FB98'	,'#90EE90'	,'#00FA9A'	,'#00FF7F'	,'#3CB371'	,'#2E8B57'	,'#228B22'	,'#008000'	,'#006400'	,'#9ACD32'	,'#6B8E23'	,'#808000'	,'#556B2F'	,'#66CDAA'	,'#8FBC8F'	,'#20B2AA'	,'#008B8B'	,'#008080'	,'#00FFFF'	,'#E0FFFF'	,'#AFEEEE'	,'#7FFFD4'	,'#40E0D0'	,'#48D1CC'	,'#00CED1'	,'#5F9EA0'	,'#4682B4'	,'#B0C4DE'	,'#B0E0E6'	,'#ADD8E6'	,'#87CEEB'	,'#87CEFA'	,'#00BFFF'	,'#1E90FF'	,'#6495ED'	,'#7B68EE'	,'#4169E1'	,'#0000FF'	,'#0000CD'	,'#00008B'	,'#000080'	,'#191970'	,'#ADFF2F'	,'#7FFF00'	,'#7CFC00'	,'#00FF00','#32CD32'	,'#98FB98'	,'#90EE90'	,'#00FA9A'	,'#00FF7F'	,'#3CB371'	,'#2E8B57'	,'#228B22'	,'#008000'	,'#006400'	,'#9ACD32'	,'#6B8E23'	,'#808000'	,'#556B2F'	,'#66CDAA'	,'#8FBC8F'	,'#20B2AA'	,'#008B8B'	,'#008080'	,'#00FFFF'	,'#E0FFFF'	,'#AFEEEE'	,'#7FFFD4'	,'#40E0D0'	,'#48D1CC'	,'#00CED1'	,'#5F9EA0'	,'#4682B4'	,'#B0C4DE'	,'#B0E0E6'	,'#ADD8E6'	,'#87CEEB'	,'#87CEFA'	,'#00BFFF'	,'#1E90FF'	,'#6495ED'	,'#7B68EE'	,'#4169E1'	,'#0000FF'	,'#0000CD'	,'#00008B'	,'#000080'	,'#191970'	,'#ADFF2F'	,'#7FFF00'	,'#7CFC00'	,'#00FF00','#32CD32'	,'#98FB98'	,'#90EE90'	,'#00FA9A'	,'#00FF7F'	,'#3CB371'	,'#2E8B57'	,'#228B22'	,'#008000'	,'#006400'	,'#9ACD32'	,'#6B8E23'	,'#808000'	,'#556B2F'	,'#66CDAA'	,'#8FBC8F'	,'#20B2AA'	,'#008B8B'	,'#008080'	,'#00FFFF'	,'#E0FFFF'	,'#AFEEEE'	,'#7FFFD4'	,'#40E0D0'	,'#48D1CC'	,'#00CED1'	,'#5F9EA0'	,'#4682B4'	,'#B0C4DE'	,'#B0E0E6'	,'#ADD8E6'	,'#87CEEB'	,'#87CEFA'	,'#00BFFF'	,'#1E90FF'	,'#6495ED'	,'#7B68EE'	,'#4169E1'	,'#0000FF'	,'#0000CD'	,'#00008B'	,'#000080'	,'#191970'	,'#ADFF2F'	,'#7FFF00'	,'#7CFC00'	,'#00FF00','#32CD32'	,'#98FB98'	,'#90EE90'	,'#00FA9A'	,'#00FF7F'	,'#3CB371'	,'#2E8B57'	,'#228B22'	,'#008000'	,'#006400'	,'#9ACD32'	,'#6B8E23'	,'#808000'	,'#556B2F'	,'#66CDAA'	,'#8FBC8F'	,'#20B2AA'	,'#008B8B'	,'#008080'	,'#00FFFF'	,'#E0FFFF'	,'#AFEEEE'	,'#7FFFD4'	,'#40E0D0'	,'#48D1CC'	,'#00CED1'	,'#5F9EA0'	,'#4682B4'	,'#B0C4DE'	,'#B0E0E6'	,'#ADD8E6'	,'#87CEEB'	,'#87CEFA'	,'#00BFFF'	,'#1E90FF'	,'#6495ED'	,'#7B68EE'	,'#4169E1'	,'#0000FF'	,'#0000CD'	,'#00008B'	,'#000080'	,'#191970'	,'#ADFF2F'	,'#7FFF00'	,'#7CFC00'	,'#00FF00','#32CD32'	,'#98FB98'	,'#90EE90'	,'#00FA9A'	,'#00FF7F'	,'#3CB371'	,'#2E8B57'	,'#228B22'	,'#008000'	,'#006400'	,'#9ACD32'	,'#6B8E23'	,'#808000'	,'#556B2F'	,'#66CDAA'	,'#8FBC8F'	,'#20B2AA'	,'#008B8B'	,'#008080'	,'#00FFFF'	,'#E0FFFF'	,'#AFEEEE'	,'#7FFFD4'	,'#40E0D0'	,'#48D1CC'	,'#00CED1'	,'#5F9EA0'	,'#4682B4'	,'#B0C4DE'	,'#B0E0E6'	,'#ADD8E6'	,'#87CEEB'	,'#87CEFA'	,'#00BFFF'	,'#1E90FF'	,'#6495ED'	,'#7B68EE'	,'#4169E1'	,'#0000FF'	,'#0000CD'	,'#00008B'	,'#000080'	,'#191970'	,'#ADFF2F'	,'#7FFF00'	,'#7CFC00'	,'#00FF00','#32CD32'	,'#98FB98'	,'#90EE90'	,'#00FA9A'	,'#00FF7F'	,'#3CB371'	,'#2E8B57'	,'#228B22'	,'#008000'	,'#006400'	,'#9ACD32'	,'#6B8E23'	,'#808000'	,'#556B2F'	,'#66CDAA'	,'#8FBC8F'	,'#20B2AA'	,'#008B8B'	,'#008080'	,'#00FFFF'	,'#E0FFFF'	,'#AFEEEE'	,'#7FFFD4'	,'#40E0D0'	,'#48D1CC'	,'#00CED1'	,'#5F9EA0'	,'#4682B4'	,'#B0C4DE'	,'#B0E0E6'	,'#ADD8E6'	,'#87CEEB'	,'#87CEFA'	,'#00BFFF'	,'#1E90FF'	,'#6495ED'	,'#7B68EE'	,'#4169E1'	,'#0000FF'	,'#0000CD'	,'#00008B'	,'#000080'	,'#191970'	,'#ADFF2F'	,'#7FFF00'	,'#7CFC00'	,'#00FF00','#32CD32'	,'#98FB98'	,'#90EE90'	,'#00FA9A'	,'#00FF7F'	,'#3CB371'	,'#2E8B57'	,'#228B22'	,'#008000'	,'#006400'	,'#9ACD32'	,'#6B8E23'	,'#808000'	,'#556B2F'	,'#66CDAA'	,'#8FBC8F'	,'#20B2AA'	,'#008B8B'	,'#008080'	,'#00FFFF'	,'#E0FFFF'	,'#AFEEEE'	,'#7FFFD4'	,'#40E0D0'	,'#48D1CC'	,'#00CED1'	,'#5F9EA0'	,'#4682B4'	,'#B0C4DE'	,'#B0E0E6'	,'#ADD8E6'	,'#87CEEB'	,'#87CEFA'	,'#00BFFF'	,'#1E90FF'	,'#6495ED'	,'#7B68EE'	,'#4169E1'	,'#0000FF'	,'#0000CD'	,'#00008B'	,'#000080'	,'#191970'	,]
 	interval_plot_list.sort()
 	pprint(interval_plot_list)
 	for interval in interval_plot_list:

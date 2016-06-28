@@ -7,12 +7,9 @@ import sys
 import os
 from pprint import pprint 
 
-#lookup_dir = 'C:/Users/Sarah Hanna/Documents/Data/Forest Fires/2012/SP2-2012/Calibration/'
-#lookup_dir = 'C:/Users/Sarah Hanna/Documents/Data/LEO fitting/LJ-EC-SP2/lookup tables'
-#lookup_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/SP2_2010/BB period 2010/EC_SP2/lookup tables/'
-#lookup_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/SP2_2010/FT periods 2012/lookup tables/'
-#lookup_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/lookup_tables/'
-lookup_dir = 'C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/lookup tables/'
+
+#lookup_dir = 'C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/lookup tables/'
+lookup_dir = 'C:/Users/Sarah Hanna/Documents/Data/Alert Data/lookup_tables/'
 
 os.chdir(lookup_dir)
 
@@ -23,14 +20,19 @@ core_RI = complex(2.26,1.26)  #from Moteki 2010 (and Laborde and Taylor)
 shell_RI = complex(1.5, 0)
 PSL_RI = complex(1.59,0)
 
-scat_cal_limit = 50000
+scat_cal_limit = 500000
 
 def scat_amp(Itotal):
 	#calc_scattering_amplitude = 112*Itotal  #calibration fit is in origin file for LJ-EC_SP2
 	#calc_scattering_amplitude = 3.72*Itotal+9.65  #calibration from Aquadag numbers Jason sent for LJ
 	#calc_scattering_amplitude = 71.32*Itotal  # ECSP2 WHI 2010
 	#calc_scattering_amplitude = 425*Itotal#584*Itotal # UBCSP2 WHI 2012 
-	calc_scattering_amplitude = 446*Itotal  # UBCSP2 POLAR6 2015-spring - 545 from slope of PSL calib plot, 446 from 200nm PSL alone
+	#calc_scattering_amplitude = 545*Itotal  # UBCSP2 POLAR6 2015-spring - 545 from slope of PSL calib plot, 446 from 200nm PSL alone
+	#calc_scattering_amplitude = (545/2.68)*Itotal  # UBCSP2 POLAR6 2015-spring - 545 from slope of PSL calib plot, 446 from 200nm PSL alone, /2.68 to scale to Alert calib scattering
+	calc_scattering_amplitude = (19060)*Itotal  # Alert SP2#44 2012 scattering calib
+	#calc_scattering_amplitude = (10852)*Itotal  # Alert SP2#58 2012 scattering calib
+	#calc_scattering_amplitude = (4062)*Itotal  # Alert SP2#58 2015 scattering calib
+	#calc_scattering_amplitude = 570*Itotal  # UBCSP2 POLAR6 2015-spring - 520=min using uncertainty of scattering calibration, 570 = max
 	
 	return calc_scattering_amplitude
 	
@@ -45,7 +47,7 @@ core_step_size = 0.5 # will give 1nm steps in final diameter
 #set the range of core radii to be used
 core_rad_range = []
 core_radius = 30  #60nm dia
-while core_radius <= 110: #220nm dia
+while core_radius <= 120: #max dia
 	core_rad_range.append(core_radius)
 	core_radius += core_step_size
 
@@ -160,7 +162,7 @@ for core_rad in core_rad_range:
 
 	
 
-file = open('coating_lookup_table_POLAR6_2015_UBCSP2-nc(2p26,1p26)-200nmPSLcalib_used_factor446.lupckl', 'w')
+file = open('coating_lookup_table_Alert_SP244_2012PSLcalib_F19060.lupckl', 'w')
 pickle.dump(lookup_table, file)
 file.close()  
 

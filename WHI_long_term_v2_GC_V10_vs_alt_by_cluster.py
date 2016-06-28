@@ -68,7 +68,7 @@ GEOS_Chem_factor = 10**-9
 start_hour = 3
 end_hour = 15
 
-GC_runs = ['default','wet_scavenging']
+#GC_runs = ['default','wet_scavenging']
 GC_runs = ['default','Vancouver_emission']
 #GC_runs = ['default','all_together']
 
@@ -132,6 +132,7 @@ for GC_run in GC_runs:
 				pressures = hdf_file.select('PEDGE-$::PSURF')
 				hydrophilic_BC = hdf_file.select('IJ-AVG-$::BCPI') #3d conc data in ppbv (molBC/molAIR)
 				hydrophobic_BC = hdf_file.select('IJ-AVG-$::BCPO')
+				GC_SO4 = hdf_file.select('IJ-AVG-$::SO4')
 				i=0
 				
 						
@@ -140,6 +141,7 @@ for GC_run in GC_runs:
 					total_BC_ppbv = hydrophilic_BC[level,lat,lon] + hydrophobic_BC[level,lat,lon]
 					BC_conc_ngm3 = total_BC_ppbv*molar_mass_BC*ng_per_g*GEOS_Chem_factor*(101325/(R*273))  #101325/(R*273) corrects to STP 	
 					CO_ppbv = GC_CO[level,lat,lon]
+					SO4_ppbv = GC_SO4[level,lat,lon]
 							
 					scenario[cluster][level].append([pressure,BC_conc_ngm3,GC_datetime])
 					scenario['all'][level].append([pressure,BC_conc_ngm3,GC_datetime])
@@ -197,7 +199,7 @@ for scenario in scenarios:
 
 #### plotting
 cluster_list = ['all','NPac','SPac','Cont','LRT']
-colors = ['k','c','g','m','b']
+colors = ['k','b','g','r','orange']
 
 SP2_medians = {
 'all':[38.1,6.4],
@@ -227,7 +229,7 @@ for cluster in cluster_list:
 	meas_conc = SP2_medians[cluster][0]
 	meas_uncertainty = SP2_medians[cluster][1]
 	
-	vert_plot_default = axs[i].plot(default_concs, default_pressures,color = colors[i],linewidth=2.0,marker = '*')	
+	vert_plot_default = axs[i].plot(default_concs, default_pressures,color = colors[i],linewidth=2.0,marker = None)	
 	vert_plot_wet_scav = axs[i].plot(wet_scav_concs, wet_scav_pressures, color = colors[i], linestyle='--',linewidth=2.0)	
 	vert_plot_meas = axs[i].errorbar(meas_conc, 781.5, xerr=meas_uncertainty, fmt='o',color = colors[i],linewidth=2.0)
 
@@ -263,7 +265,7 @@ for cluster in cluster_list:
 
 data_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/GOES-Chem/'
 os.chdir(data_dir)
-plt.savefig('GCv10 vertical profile - medians - with SP2 90% RH filter - Van.png',bbox_inches='tight')
+#plt.savefig('GCv10 vertical profile - medians - with SP2 90% RH filter - Van.png',bbox_inches='tight')
 
 
 plt.show()

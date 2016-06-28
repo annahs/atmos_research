@@ -17,8 +17,8 @@ from scipy.optimize import curve_fit
 bin_min = 245
 bin_max = 265
 
-start_time = datetime(2012,7,27,8,0)
-end_time = datetime(2012,7,28,8,0)
+start_time = datetime(2012,7,25,8,0)
+end_time = datetime(2012,7,29,8,0)
 
 print start_time
 print end_time
@@ -55,7 +55,7 @@ while current_time <= end_time:
 	SMPS_number_mean = SMPS_number[0][0] 
 
 	
-	if nonincand_number_mean != None:
+	if nonincand_number_mean != None and nonincand_number_mean != 0:
 		ratio = SMPS_number_mean*1.0/nonincand_number_mean
 	else:
 		ratio = np.nan
@@ -70,8 +70,8 @@ pprint(data)
 ##plotting
 	
 plot_time = [dates.date2num((row[0]-timedelta(hours=8))) for row in data]
-smps = [row[1] for row in data]
-sp2 = [row[2] for row in data]
+smps = [row[2] for row in data]
+sp2 = [row[1] for row in data]
 ratio = [row[3] for row in data]
 hfmt = dates.DateFormatter('%b %d %H:%M')	
 
@@ -91,7 +91,7 @@ ax3 = plt.subplot(3, 1,3)
 ax3.plot(plot_time,ratio,marker = 'o',color='k')
 ax3.xaxis.set_major_formatter(hfmt)
 ax3.set_ylabel('ratio SMPS/SP2')
-
+ax3.set_ylim(2,6)
 
 
 plt.show()	

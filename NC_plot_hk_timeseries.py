@@ -13,7 +13,7 @@ from mpl_toolkits.basemap import Basemap
 import calendar
 
 
-flight = 'Alert calib'
+flight = 'all'
 
 flight_times = {
 'science 1'  : [datetime(2015,4,5,9,0),datetime(2015,4,5,14,0),15.6500, 78.2200]	,	
@@ -30,7 +30,8 @@ flight_times = {
 'science 9'  : [datetime(2015,4,20,21,0),datetime(2015,4,21,2,0),-133.7306, 69.3617] ,
 'science 10' : [datetime(2015,4,21,16,0),datetime(2015,4,21,22,0),-131, 69.55],
 'Alert calib': [datetime(2015,4,9,1,0),datetime(2015,4,9,2,15),-131, 69.55],
-'Jan AD calib':   [datetime(2015,1,28,21,15),datetime(2015,1,29,5,0),-131, 69.55]
+'Jan AD calib':   [datetime(2015,1,28,21,15),datetime(2015,1,29,5,0),-131, 69.55],
+'all':   [datetime(2015,4,5,9,0),datetime(2015,4,21,22,0),-131, 69.55]
 }
 
 
@@ -60,29 +61,29 @@ yag_xtal_temp= [row[5] for row in hk_data]
 #timeseries
 fig = plt.figure()
 
-hfmt = dates.DateFormatter('%H:%M:%S')
-display_minute_interval = 60
+hfmt = dates.DateFormatter('%m-%d')
+display_minute_interval = 1
 
 ax1 = fig.add_subplot(111)
 
-ax1.plot(time_stamp,sample_flow, color = 'b')#,linewidth=1)
-ax1.set_ylabel('sample_flow')
-ax1.set_xlabel('time')
+ax1.scatter(time_stamp,sheath_flow, color = 'b')#,linewidth=1)
+ax1.set_ylabel('sheath_flow')
+ax1.set_xlabel('2015')
 ax1.xaxis.set_major_formatter(hfmt)
-ax1.xaxis.set_major_locator(dates.MinuteLocator(interval = display_minute_interval))
-ax1.set_ylim(0,200)
+ax1.xaxis.set_major_locator(dates.DayLocator(interval = display_minute_interval))
+ax1.set_ylim(500,800)
 
 #ax2 = ax1.twinx()
 #ax2.set_ylabel('yag_power')
 #ax2.plot(time_stamp,yag_power, color='r')
 #ax2.set_ylim(3,6)
 
-ax3 = ax1.twinx()
-ax3.set_ylabel('sheath_flow')
-ax3.plot(time_stamp,sheath_flow, color='g', linewidth=1)
-ax3.axhline(850)
-ax3.axhline(400)
-ax3.set_ylim(300,1020)
+#ax3 = ax1.twinx()
+#ax3.set_ylabel('sheath_flow')
+#ax3.plot(time_stamp,sheath_flow, color='g', linewidth=1)
+#ax3.axhline(850)
+#ax3.axhline(400)
+#ax3.set_ylim(300,1020)
 
 #ax4 = ax1.twinx()
 #ax4.set_ylabel('yag_xtal_temp')

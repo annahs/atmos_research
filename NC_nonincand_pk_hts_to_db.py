@@ -32,6 +32,12 @@ end_analysis_at = 	datetime(2012,7,30)
 num_records_to_analyse ='all'
 show_full_fit = False
 
+#lookup file
+lookup_file = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/lookup files/Nonincand_lookup_table_WHI_2012_UBCSP2-used_factor225.lupckl'
+lookup = open(lookup_file, 'r')
+lookup_table = pickle.load(lookup)
+lookup.close()	
+scat_amps = sorted(lookup_table.keys())
 
 
 #pararmeters used to reject invalid particle records based on scattering peak attributes
@@ -47,8 +53,8 @@ cnx = mysql.connector.connect(user='root', password='Suresh15', host='localhost'
 cursor = cnx.cursor()
 
 add_data = ('INSERT INTO whi_calibration_data'
-            '(sp2b_file, file_index, instrument, instrument_locn, particle_type,UNIX_UTC_ts,actual_scat_amp,FF_scat_amp,FF_peak_posn,FF_gauss_width,actual_zero_x_posn)'
-            'VALUES (%(sp2b_file)s,%(file_index)s,%(instrument)s,%(instrument_locn)s,%(particle_type)s,%(UNIX_UTC_ts)s,%(actual_scat_amp)s,%(FF_scat_amp)s,%(FF_peak_posn)s,%(FF_gauss_width)s,%(zero_crossing_pt)s)')
+            '(sp2b_file, file_index, instrument, instrument_locn, particle_type,UNIX_UTC_ts,actual_scat_amp,FF_scat_amp,FF_peak_posn,FF_gauss_width,actual_zero_x_posn,particle_dia)'
+            'VALUES (%(sp2b_file)s,%(file_index)s,%(instrument)s,%(instrument_locn)s,%(particle_type)s,%(UNIX_UTC_ts)s,%(actual_scat_amp)s,%(FF_scat_amp)s,%(FF_peak_posn)s,%(FF_gauss_width)s,%(zero_crossing_pt)s,%(particle_dia)s)')
 							
 
 #**********parameters dictionary**********
@@ -177,6 +183,11 @@ def gaussFullFit(parameters_dict):
 							plt.show()
 						
 						
+						for scat_amp in scat_amps:
+							if scat_amp >= actual_max_value:
+								AS_diameter = lookup_table[scat_amp]
+								break
+											
 						
 						#cursor.execute(('SELECT FF_scat_amp,UNIX_UTC_ts FROM polar6_calibration_data WHERE sp2b_file = %s and file_index =%s and UNIX_UTC_ts = %s'),(file,record_index,event_time))		
 						#record = cursor.fetchall()
@@ -193,6 +204,7 @@ def gaussFullFit(parameters_dict):
 						'FF_peak_posn':     fit_peak_pos,
 						'FF_gauss_width':   fit_width,
 						'zero_crossing_pt': zero_crossing_pt,
+						'particle_dia': AS_diameter,
 						}
 						#print file,record_index, actual_max_value,fit_scattering_amp
 						try:

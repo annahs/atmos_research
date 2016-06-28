@@ -36,14 +36,23 @@ class ParticleRecord:
 		self.splitMax = np.nan
 		self.splitBaseline = np.nan
 		self.LEOMaxIndex = np.nan
+		
 		self.incandBaseline = np.nan
+		self.incandBaseline_LG = np.nan
 		self.incandMax = np.nan
+		self.incandMax_LG = np.nan
 		self.incandMaxPos = np.nan
+		self.incandMaxPos_LG = np.nan
 		self.incandIsSat = False
+		
 		self.narrowIncandBaseline = np.nan
+		self.narrowIncandBaseline_LG = np.nan
 		self.narrowIncandMax = np.nan
+		self.narrowIncandMax_LG = np.nan
 		self.narrowIncandMaxPos = np.nan
+		self.narrowIncandMaxPos_LG = np.nan
 		self.narrowIncandIsSat = False
+		
 		self.zeroCrossingPos = np.nan
 		self.FF_scattering_amp = np.nan
 		self.FF_peak_pos = np.nan     
@@ -70,7 +79,7 @@ class ParticleRecord:
 		data_length = unpack('>I',record[start_byte:start_byte+4])
 		start_byte += 4
 
-		#get the number of channels used (should be 4 for us)
+		#get the number of channels used (4 or 8)
 		channels = unpack('>I',record[start_byte:start_byte+4])
 		start_byte += 4
 		
@@ -178,6 +187,9 @@ class ParticleRecord:
 		
 	def getScatteringSignal(self):
 		return self.scatData
+	
+	def getLowGainScatteringSignal(self):
+		return self.lowGainScatData
 				
 	def scatteringPeakInfo(self):
 		self.scatteringBaseline = (np.mean(self.scatData[0:10]))
@@ -204,20 +216,29 @@ class ParticleRecord:
 		return self.wideBandIncandData
 	
 	def incandPeakInfo(self):
-	
 		self.incandBaseline = (np.mean(self.wideBandIncandData[0:10]))
-		#self.incandBaselineNoiseThresh = 3*np.std(self.wideBandIncandData[0:10])
 				
 		raw_incand_max = np.amax(self.wideBandIncandData)
 		incand_max = raw_incand_max - self.incandBaseline
-		if raw_incand_max > 2000:
-			self.incandIsSat = True
-		
-		
 		incand_max_index = np.argmax(self.wideBandIncandData)
 		
 		self.incandMax =incand_max
 		self.incandMaxPos = incand_max_index
+		
+		
+	def getWidebandIncandSignalLG(self):
+		return self.lowGainWideBandIncandData
+	
+	def incandPeakInfoLG(self):
+	
+		self.incandBaseline_LG = (np.mean(self.lowGainWideBandIncandData[0:10]))
+				
+		raw_incand_max_LG = np.amax(self.lowGainWideBandIncandData)
+		incand_max_LG = raw_incand_max_LG - self.incandBaseline_LG		
+		incand_max_index_LG = np.argmax(self.lowGainWideBandIncandData)
+		
+		self.incandMax_LG =incand_max_LG
+		self.incandMaxPos_LG = incand_max_index_LG
 		
 		
 	def getNarrowbandIncandSignal(self):
@@ -226,18 +247,27 @@ class ParticleRecord:
 	def narrowIncandPeakInfo(self):
 	
 		self.narrowIncandBaseline = (np.mean(self.narrowBandIncandData[0:10]))
-		#self.narrowIncandBaselineNoiseThresh = 3*np.std(self.narrowBandIncandData[0:10])
 				
 		raw_narrowIncand_max = np.amax(self.narrowBandIncandData)
-		narrowIncand_max = raw_narrowIncand_max - self.narrowIncandBaseline
-		if raw_narrowIncand_max > 2000:
-			self.narrowIncandIsSat = True
-		
-		
+		narrowIncand_max = raw_narrowIncand_max - self.narrowIncandBaseline		
 		narrowIncand_max_index = np.argmax(self.narrowBandIncandData)
 		
 		self.narrowIncandMax =narrowIncand_max
 		self.narrowIncandMaxPos = narrowIncand_max_index    
+		
+	def getNarrowbandIncandSignalLG(self):
+		return self.lowGainNarrowBandIncandData
+		
+	def narrowIncandPeakInfoLG(self):
+	
+		self.narrowIncandBaseline_LG = (np.mean(self.lowGainNarrowBandIncandData[0:10]))
+				
+		raw_narrowIncand_max_LG = np.amax(self.lowGainNarrowBandIncandData)
+		narrowIncand_max_LG = raw_narrowIncand_max_LG - self.narrowIncandBaseline_LG		
+		narrowIncand_max_index_LG = np.argmax(self.lowGainNarrowBandIncandData)
+		
+		self.narrowIncandMax_LG =narrowIncand_max_LG
+		self.narrowIncandMaxPos_LG = narrowIncand_max_index_LG    
 		
 	#Split detector methods
 		
@@ -254,28 +284,28 @@ class ParticleRecord:
 		self.splitMax = split_max
 		self.splitMin = split_min
 	
-	def zeroCrossing(self):
+	def zeroCrossing(self,evap_threshold):
 		self.splitBaseline =(np.mean(self.splitData[0:10]))	
 		split_max_index = np.argmax(self.splitData)
 		split_min_index = np.argmin(self.splitData)
 
 		if split_max_index >= split_min_index:
-			return self.zeroCrossingPosSlope()
+			return self.zeroCrossingPosSlope(evap_threshold)
 		
 		if split_max_index < split_min_index:
-			return self.zeroCrossingNegSlope()
+			return self.zeroCrossingNegSlope(evap_threshold)
 		
 	
 	
 	
-	def zeroCrossingPosSlope(self):
+	def zeroCrossingPosSlope(self, evap_threshold):
 		self.splitBaseline = np.mean(self.splitData[0:10])
 		split_max_index = np.argmax(self.splitData)
-		split_min_index = np.argmin(self.splitData)
-		split_max_value = np.max(self.splitData)
-		split_min_value = np.min(self.splitData)
-	
-		if (self.splitBaseline-split_min_value) >= 150 and (split_max_value-self.splitBaseline) >=150:  #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
+		split_min_index = np.argmin(self.splitData[0:split_max_index])
+		split_max_value = self.splitData[split_max_index]
+		split_min_value = self.splitData[split_min_index]
+
+		if (self.splitBaseline-split_min_value) >= evap_threshold and (split_max_value-self.splitBaseline) >=evap_threshold:  #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
 			try:
 				for index in range(split_min_index, split_max_index+1): #go to max +1 because 'range' function is not inclusive
 					if self.splitData[index] < self.splitBaseline:
@@ -295,15 +325,18 @@ class ParticleRecord:
 		self.zeroCrossingPos = zero_crossing
 		return zero_crossing
 		
-	def zeroCrossingNegSlope(self):
+	def zeroCrossingNegSlope(self, evap_threshold):  # 
 		self.splitBaseline = np.mean(self.splitData[0:10])
-		split_max_index = np.argmax(self.splitData)
-		split_min_index = np.argmin(self.splitData)
-		split_max_value = np.max(self.splitData)
-		split_min_value = np.min(self.splitData)
-		
-		
-		if (self.splitBaseline-split_min_value) >= 150 and (split_max_value-self.splitBaseline) >= 150: #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
+		try:
+			split_min_index = np.argmin(self.splitData)
+			split_max_index = np.argmax(self.splitData[0:split_min_index])
+			split_max_value = self.splitData[split_max_index]
+			split_min_value = self.splitData[split_min_index]
+		except:
+			zero_crossing = -3
+			return zero_crossing
+		#print 'split',	split_min_index, (self.splitBaseline-split_min_value), split_max_index,(split_max_value-self.splitBaseline)
+		if (self.splitBaseline-split_min_value) >= evap_threshold and (split_max_value-self.splitBaseline) >= evap_threshold: #avoid particles evaporating before the notch position can be properly determined (details in Taylor et al. 10.5194/amtd-7-5491-2014)
 			try:
 				for index in range(split_max_index, split_min_index+1):  #go to max +1 because 'range' function is not inclusive
 					if self.splitData[index] > self.splitBaseline:
@@ -361,7 +394,7 @@ class ParticleRecord:
 		self.FF_results = fit_result
 
 		
-	def leoGaussFit(self,zeroX_to_LEO_limit,calib_zeroX_to_peak,calib_gauss_width):
+	def leoGaussFit(self,zeroX_to_LEO_limit,calib_zeroX_to_peak,calib_gauss_width,evap_threshold,zero_crossing_pt_LEO):
 		#run the scatteringPeakInfo method to retrieve various peak attributes 
 		self.scatteringPeakInfo()
 		
@@ -369,7 +402,7 @@ class ParticleRecord:
 		baseline = self.scatteringBaseline
 		
 		#get the zero-crossing for the particle
-		zero_crossing_pt_LEO = self.zeroCrossing()
+		#zero_crossing_pt_LEO = self.zeroCrossing(evap_threshold)
 		
 		if zero_crossing_pt_LEO < 0:  #ie we can't find the zero crossing
 			self.LF_scattering_amp = -2
@@ -389,13 +422,12 @@ class ParticleRecord:
 
 			y_vals_all = self.getScatteringSignal()
 			self.LF_y_vals_to_use = y_vals_all[LEO_min_index:LEO_max_index]
-
+			
 			self.beam_center_pos = zero_crossing_pt_LEO-calib_zeroX_to_peak
 							
 			def LEOGauss(x, a, b):
 				return b+a*np.exp((-(x-self.beam_center_pos)**2)/(2*calib_gauss_width**2)) #Gaussian
 			
-
 			#run the fitting
 			try:
 				popt, pcov = curve_fit(LEOGauss, self.LF_x_vals_to_use, self.LF_y_vals_to_use)
@@ -404,7 +436,7 @@ class ParticleRecord:
 
 			self.LF_scattering_amp = popt[0] 
 			self.LF_baseline = popt[1]
-
+			
 			fit_result = []
 			for x in x_vals_all:
 				fit_result.append(LEOGauss(x,popt[0],popt[1]))
@@ -489,7 +521,7 @@ class ParticleRecord:
 		baseline = self.scatteringBaseline
 		
 		#get the zero-crossing for the particle
-		zero_crossing_pt_LEO = self.zeroCrossing()
+		zero_crossing_pt_LEO = self.zeroCrossing(evap_threshold)
 		
 		if zero_crossing_pt_LEO < 0:  #ie we can't find the zero crossing
 			self.LF_scattering_amp = -2

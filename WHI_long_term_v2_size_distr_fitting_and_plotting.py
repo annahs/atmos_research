@@ -146,7 +146,7 @@ fit = 4
 fit_bins = 5
 
 bins = []
-colors = ['k','grey','magenta','cyan','g','b','r']
+colors = ['k','grey','r','b','g','orange','r']
 ticks = [50,60,70,80,100,120,160,200,300,400,600,800]
 
 
@@ -161,16 +161,16 @@ for distribution, distribution_data in distributions.iteritems():
 #ax1.plot	(distributions['FR'][1]		,distributions['FR'][fit], 		color = colors[0], label = 'FR')
 #ax1.scatter	(distributions['BB'][1]		,distributions['BB'][data],		color = colors[1], )
 #ax1.plot	(distributions['BB'][1]		,distributions['BB'][fit], 		color = colors[1], label = 'BB')
-ax1.plot	(distributions['LRT'][1]	,distributions['LRT'][data],	'sb-', linewidth=0,label = 'W. Pacific/Asia')
+ax1.plot	(distributions['LRT'][1]	,distributions['LRT'][data],	color = 'orange', marker = 's', linewidth=0,label = 'W. Pacific/Asia')
 ax1.plot	(distributions['LRT'][5]	,distributions['LRT'][fit],	 	color = colors[5],   linewidth = 1.5)
 ax1.plot	(distributions['SPac'][1]	,distributions['SPac'][data],	'og-', linewidth=0,label = 'S. Pacific')
 ax1.plot	(distributions['SPac'][5]	,distributions['SPac'][fit],	color = colors[4], linewidth =  1.5)
 
-ax1.plot	(distributions['NPac'][1]	,distributions['NPac'][data],	'*c-', linewidth=0,label = 'N. Pacific')
+ax1.plot	(distributions['NPac'][1]	,distributions['NPac'][data],	'<b-', linewidth=0,label = 'N. Pacific')
 ax1.plot	(distributions['NPac'][5]	,distributions['NPac'][fit],	color = colors[3],  linewidth =  1.5)
-ax1.plot	(distributions['Cont'][1]	,distributions['Cont'][data],	'>m-', linewidth=0,label = 'N. Canada')
+ax1.plot	(distributions['Cont'][1]	,distributions['Cont'][data],	'>r-', linewidth=0,label = 'N. Canada')
 ax1.plot	(distributions['Cont'][5]	,distributions['Cont'][fit],	color = colors[2],  linewidth =  1.5)
-ax1.plot	(distributions['All_FT'][1]	,distributions['All_FT'][data],	'dk-', linewidth=0,label = 'All nighttime data')
+ax1.plot	(distributions['All_FT'][1]	,distributions['All_FT'][data],	'hk-', linewidth=0,label = 'All nighttime data')
 ax1.plot	(distributions['All_FT'][5]	,distributions['All_FT'][fit],	color = colors[0],  linewidth = 1.5)
 
 

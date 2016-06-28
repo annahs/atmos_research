@@ -36,9 +36,9 @@ end_analysis_at = 	datetime(2015,4,6)
 analysis_time_start = 0  #use this to retrict analysis to a particular time of day
 analysis_time_end = 24
 num_records_to_analyse = 500 #'all'
-fit_function = 'Giddings' #Gauss or Giddings
+fit_function = 'Gauss' #Gauss or Giddings
 show_LEO_fit = False
-FF = 0.5#-2.7 #fudge factor for fit_width
+FF = -2.7 #fudge factor for fit_width
 
 #pararmeters used to assess incandescent peak
 min_incand_amp = 20  #for 2015 polar6 flights an incand pk amp of 48 corresponds to a particle with BC mass of 0.25fg, which is ~65nm
