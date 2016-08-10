@@ -23,8 +23,8 @@ import calendar
 
 #setup
 data_dir = 'D:/2012/WHI_UBCSP2/Binary/'
-start_analysis_at = datetime(2012,5,29)
-end_analysis_at = 	datetime(2012,6,1)
+start_analysis_at = datetime(2012,4,29)
+end_analysis_at = 	datetime(2012,5,1)
 SP2_number = 'UBCSP2'
 min_incand_BBHG = 10
 max_incand_BBHG = 3600
@@ -221,7 +221,7 @@ for directory in os.listdir(data_dir):
 			#start the fitting
 			
 			for file in os.listdir('.'):
-				if file.endswith('.sp2b') and (file.endswith('gnd.sp2b')==False):
+				if file.endswith('20120430x005.sp2b') and (file.endswith('gnd.sp2b')==False):
 					print file
 					parameters['file'] = file
 					path = parameters['directory'] + '/' + str(file)

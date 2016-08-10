@@ -10,14 +10,17 @@ from datetime import timedelta
 import calendar
 import math
 import copy
+import mysql.connector
+import calendar
 
-distr_type = 'mass'
-timezone = timedelta(hours = 0) #using zero here b/c most files were written with old PST code, have a correction further down for those (2009 early 2012) run with newer UTC code
+#database connection
+cnx = mysql.connector.connect(user='root', password='Suresh15', host='localhost', database='black_carbon')
+cursor = cnx.cursor()
+
+
 AD_corr = True
 
-
-
-#1. #alter the dates to set limits on data analysis range
+#alter the dates to set limits on data analysis range
 start_analysis_at = datetime.strptime('20090501','%Y%m%d')
 end_analysis_at = datetime.strptime('20120531','%Y%m%d')
 
@@ -86,22 +89,6 @@ fire_time1 = [datetime.strptime('2009/07/27 00:00', '%Y/%m/%d %H:%M'), datetime.
 fire_time2 = [datetime.strptime('2010/07/26 09:00', '%Y/%m/%d %H:%M'), datetime.strptime('2010/07/28 09:30', '%Y/%m/%d %H:%M')] #jason's BC clear report #PST
 
 
-##########open cluslist and read into a python list
-cluslist = []
-#CLUSLIST_file = 'C:/hysplit4/working/WHI/CLUSLIST_10'
-CLUSLIST_file = 'C:/HYSPLIT_argh/WHI_1h_10-day_working/even_hours/CLUSLIST_4'
-'
-with open(CLUSLIST_file,'r') as f:
-	for line in f:
-		newline = line.split()
-		cluster_no = int(newline[0])
-		traj_time = datetime(int(newline[2])+2000,int(newline[3]),int(newline[4]),int(newline[5])) + timezone
-		cluslist.append([traj_time,cluster_no])
-
-# sort cluslist by row_datetime in place		
-cluslist.sort(key=lambda clus_info: clus_info[0])  
-
-
    
 ######this helper method allows cenversion of BC mass from a value arrived at via an old calibration to a value arrived at via a new calibration
 #quad eqytn = ax2 + bx + c
@@ -132,9 +119,15 @@ def PeakHtFromMass(BC_mass,var_C,var_b,var_a):
             return x2         
 
 
-
-			
-			
+def build_distr(distr,BC_VED,BC_mass,sample_factor):
+	for key in distr:
+		key_value = float(key)
+		interval_end = key_value + interval_length
+		if key_value <= BC_VED < interval_end:
+			distr[key][0] = distr[key][0] + (BC_mass*sample_factor)
+			distr[key][1] = distr[key][1] + (1*sample_factor)
+				
+	return distr
 			
 
 #get BC data
@@ -207,8 +200,9 @@ for directory in directory_list:
 								err_count+=1
 								continue
 							non_err_count +=1
-							####left off here
+							
 							#this is to account for me running the first few 2012 days and all of 2009 with the new UTC code (the rest are old PST code)
+							timezone = timedelta(hours = 0) #using zero here b/c most files were written with old PST code, have a correction further down for those (2009 early 2012) run with newer UTC code
 							if datetime.strptime('20120401', '%Y%m%d') <= datetime.utcfromtimestamp(start_time) <= datetime.strptime('20120410', '%Y%m%d'):
 								timezone = timedelta(hours = -8)
 							if datetime.utcfromtimestamp(start_time) <= datetime.strptime('20091231', '%Y%m%d'):
@@ -217,6 +211,22 @@ for directory in directory_list:
 							start_time_obj = datetime.utcfromtimestamp(start_time)+timezone 
 							end_time_obj = datetime.utcfromtimestamp(end_time)+timezone
 
+							#####now have correct UTC times
+							
+							#sample rate changes
+							if end_time_obj < datetime(2012,4,4,19,43,4):
+								sample_factor = 1.0
+							if datetime(2012,4,4,19,43,4) <= end_time_obj < datetime(2012,4,5,13,47,9):
+								sample_factor = 3.0
+							if datetime(2012,4,5,13,47,9) <= end_time_obj < datetime(2012,4,10,3,3,25):
+								sample_factor = 1.0
+							if datetime(2012,4,10,3,3,25) <= end_time_obj < datetime(2012,5,16,6,9,13):
+								sample_factor = 3.0
+							if datetime(2012,5,16,6,9,13) <= end_time_obj < datetime(2012,6,7,18,14,39):
+								sample_factor = 10.0
+							####
+							
+							
 																
 							#ignore annoying neg intervals
 							if end_time_obj < start_time_obj:
@@ -227,124 +237,96 @@ for directory in directory_list:
 							
 							
 							#ignore spike times	
-							if len(spike_times):
-								spike_start = spike_times[0]-timedelta(minutes=5)
-								spike_end = spike_times[0]+timedelta(minutes=5)
-								
-								while end_time_obj >= spike_end:
-									print 'pop spike time', end_time_obj, spike_times[0]
-									spike_times.pop(0)
-									if len(spike_times):
-										spike_start = spike_times[0]-timedelta(minutes=5)
-										spike_end = spike_times[0]+timedelta(minutes=5)
-									if len(spike_times) == 0:
-										print 'no more spike times'
-										break
-										
-								if (start_time_obj < spike_start or start_time_obj < spike_end) and (end_time_obj > spike_start or end_time_obj > spike_end):
-									continue				
+							spike_buffer = 5*60  
+							end_timestamp=calendar.timegm(end_time_obj.utctimetuple())
+							cursor.execute('''(SELECT 
+							    spike_start_UTC,
+								spike_end_UTC
+								FROM whi_spike_times_2009to2012
+								WHERE
+								%s BETWEEN (spike_start_UTC-%s) AND (spike_end_UTC+%s))''',
+								(end_timestamp,spike_buffer,spike_buffer))
 
-							###
+							spike_data = cursor.fetchall()
+							if spike_data != []:
+								continue  
+														
+								
+
 							#if in a BB time, put this data in BB dict
 							if (fire_time1[0] <= end_time_obj <= fire_time1[1]) or (fire_time2[0] <= end_time_obj <= fire_time2[1]):
 								sampling_duration_BB = sampling_duration_BB + end_time - start_time #need duration to calc sampled volume later for concs
-								for key in rBC_BB_24h_data:
-									key_value = float(key)
-									interval_end = key_value + interval_length
-									if BC_VED >= key_value and BC_VED < interval_end:
-										rBC_BB_24h_data[key][0] = rBC_BB_24h_data[key][0] + BC_mass
-										rBC_BB_24h_data[key][1] = rBC_BB_24h_data[key][1] + 1
+								
+								rBC_BB_24h_data = build_distr(rBC_BB_24h_data,BC_VED,BC_mass,sample_factor)
+																
 								continue #do not go on to put this data into a cluster dictionary or the FR dictionary
 							
 							
 
-							#pop off any cluslist times that are in the past
-							cluslist_current_datetime = cluslist[0][0] #in PST
-							while end_time_obj > (cluslist_current_datetime + timedelta(hours=3)):
-								cluslist.pop(0)
-								if len(cluslist):
-									cluslist_current_datetime = cluslist[0][0]
-									continue
-								else:
-									break
+							####### get cluster number					
+							end_timestamp=calendar.timegm(end_time_obj.utctimetuple())
+							cursor.execute('''(SELECT 
+							    cluster_start_time,
+								cluster_number
+								FROM whi_ft_cluster_times_2009to2012
+								WHERE
+								%s BETWEEN cluster_start_time AND cluster_end_time
+								AND 
+								id > %s
+								AND 
+								cluster_number IS NOT NULL)''',
+								(end_timestamp,0))
+
+							cluster = cursor.fetchall()
+							if cluster == []:
+								continue  #if we don't have a cluster number it's not in an FT time!!
+							cluslist_current_cluster_no = cluster[0][0]
+							cluster_start_time = datetime.utcfromtimestamp(cluster[0][1])
+							
 									
-							#get cluster no
-							cluslist_current_cluster_no = cluslist[0][1]
 							
 							#add data to list in cluster dictionaries (1 list per cluster time early night/late night)
-							if ((cluslist_current_datetime-timedelta(hours=3)) <= end_time_obj <= (cluslist_current_datetime+timedelta(hours=3))):
+							if ((cluster_start_time) <= end_time_obj < (cluster_start_time+timedelta(hours=6))):
 
-								if cluslist_current_cluster_no == 9:
-									sampling_duration_GBPS = sampling_duration_GBPS + end_time - start_time #need duration to calc sampled volume later for concs
-									sampling_duration_allFT = sampling_duration_allFT + end_time - start_time 
-									for key in rBC_FT_data_cluster_GBPS:
-										key_value = float(key)
-										interval_end = key_value + interval_length
-										if BC_VED >= key_value and BC_VED < interval_end:
-											rBC_FT_data_cluster_GBPS[key][0] = rBC_FT_data_cluster_GBPS[key][0] + BC_mass
-											rBC_FT_data_cluster_GBPS[key][1] = rBC_FT_data_cluster_GBPS[key][1] + 1
-											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
-											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
-											
-											
+								#if cluslist_current_cluster_no == 9:
+								#	sampling_duration_GBPS = sampling_duration_GBPS + end_time - start_time #need duration to calc sampled volume later for concs
+								#	sampling_duration_allFT = sampling_duration_allFT + end_time - start_time 
+								#	
+								#	rBC_FT_data_cluster_GBPS = build_distr(rBC_FT_data_cluster_GBPS,BC_VED,BC_mass,sample_factor)
+								#	rBC_FT_data_all = build_distr(rBC_FT_data_all,BC_VED,BC_mass,sample_factor)
+		
 												
 								if cluslist_current_cluster_no == 4:
 									sampling_duration_Cont = sampling_duration_Cont + end_time - start_time #need duration to calc sampled volume later for concs
 									sampling_duration_allFT = sampling_duration_allFT + end_time - start_time 
-									for key in rBC_FT_data_cluster_Cont:
-										key_value = float(key)
-										interval_end = key_value + interval_length
-										if BC_VED >= key_value and BC_VED < interval_end:
-											rBC_FT_data_cluster_Cont[key][0] = rBC_FT_data_cluster_Cont[key][0] + BC_mass
-											rBC_FT_data_cluster_Cont[key][1] = rBC_FT_data_cluster_Cont[key][1] + 1
-											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
-											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
-											
-								if cluslist_current_cluster_no in [6,8]:
+									
+									rBC_FT_data_cluster_Cont = build_distr(rBC_FT_data_cluster_Cont,BC_VED,BC_mass,sample_factor)
+									rBC_FT_data_all = build_distr(rBC_FT_data_all,BC_VED,BC_mass,sample_factor)
+									
+																			
+								if cluslist_current_cluster_no in [6,8,9]:
 									sampling_duration_SPac = sampling_duration_SPac + end_time - start_time #need duration to calc sampled volume later for concs
 									sampling_duration_allFT = sampling_duration_allFT + end_time - start_time 
-									for key in rBC_FT_data_cluster_SPac:
-										key_value = float(key)
-										interval_end = key_value + interval_length
-										if BC_VED >= key_value and BC_VED < interval_end:
-											rBC_FT_data_cluster_SPac[key][0] = rBC_FT_data_cluster_SPac[key][0] + BC_mass
-											rBC_FT_data_cluster_SPac[key][1] = rBC_FT_data_cluster_SPac[key][1] + 1
-											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
-											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
+									
+									rBC_FT_data_cluster_SPac = build_distr(rBC_FT_data_cluster_SPac,BC_VED,BC_mass,sample_factor)
+									rBC_FT_data_all = build_distr(rBC_FT_data_all,BC_VED,BC_mass,sample_factor)
 											
 								if cluslist_current_cluster_no in [2,7]:
 									sampling_duration_LRT = sampling_duration_LRT + end_time - start_time #need duration to calc sampled volume later for concs
 									sampling_duration_allFT = sampling_duration_allFT + end_time - start_time 
-									for key in rBC_FT_data_cluster_LRT:
-										key_value = float(key)
-										interval_end = key_value + interval_length
-										if BC_VED >= key_value and BC_VED < interval_end:
-											rBC_FT_data_cluster_LRT[key][0] = rBC_FT_data_cluster_LRT[key][0] + BC_mass
-											rBC_FT_data_cluster_LRT[key][1] = rBC_FT_data_cluster_LRT[key][1] + 1
-											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
-											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
+									
+									rBC_FT_data_cluster_LRT = build_distr(rBC_FT_data_cluster_LRT,BC_VED,BC_mass,sample_factor)
+									rBC_FT_data_all = build_distr(rBC_FT_data_all,BC_VED,BC_mass,sample_factor)
+
 											
 								if cluslist_current_cluster_no in [1,3,5,10]:
 									sampling_duration_NPac = sampling_duration_NPac + end_time - start_time #need duration to calc sampled volume later for concs
 									sampling_duration_allFT = sampling_duration_allFT + end_time - start_time 
-									for key in rBC_FT_data_cluster_NPac:
-										key_value = float(key)
-										interval_end = key_value + interval_length
-										if BC_VED >= key_value and BC_VED < interval_end:
-											rBC_FT_data_cluster_NPac[key][0] = rBC_FT_data_cluster_NPac[key][0] + BC_mass
-											rBC_FT_data_cluster_NPac[key][1] = rBC_FT_data_cluster_NPac[key][1] + 1
-											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
-											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
-											
-							#get all 24hr data  (could make it less FT times if we put this after the FT data extraction code)
-							else:
-								sampling_duration_FR = sampling_duration_FR + end_time - start_time #need duration to calc sampled volume later for concs
-								for key in rBC_24h_data:
-									key_value = float(key)
-									interval_end = key_value + interval_length
-									if BC_VED >= key_value and BC_VED < interval_end:
-										rBC_24h_data[key][0] = rBC_24h_data[key][0] + BC_mass
-										rBC_24h_data[key][1] = rBC_24h_data[key][1] + 1
+
+									rBC_FT_data_cluster_NPac = build_distr(rBC_FT_data_cluster_NPac,BC_VED,BC_mass,sample_factor)
+									rBC_FT_data_all = build_distr(rBC_FT_data_all,BC_VED,BC_mass,sample_factor)
+
+							
 										
 						f.close()
 						
@@ -407,8 +389,8 @@ for line in binned_data_lists:
 	for row in list: 	#normalize
 		row.append(row[1]) #these 2 lines append teh raw mass and number concs
 		row.append(row[2]) 
-		row[1] = row[1]/(math.log(row[0]+interval_length)-math.log(row[0])) #d/dlog(VED)
-		row[2] = row[2]/(math.log(row[0]+interval_length)-math.log(row[0])) #d/dlog(VED)
+		row[1] = row[1]/(math.log(row[0]+interval_length,10)-math.log(row[0],10)) #d/dlog(VED)
+		row[2] = row[2]/(math.log(row[0]+interval_length,10)-math.log(row[0],10)) #d/dlog(VED)
 		row[0] = row[0]+interval_length/2 #correction for our binning code recording bin starts as keys instead of midpoints
 
 
@@ -447,10 +429,10 @@ numb_allFT = [row[2] for row in rBC_FT_data_all_l]
 
 
 #write final list of interval data to file and pickle
-os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/size_distrs')
+os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/size_distrs/from ptxt v2/')
 
 for list in binned_data_lists:
-	file = open('AD_corr - size distr - FT - ' + list[3] + '.txt', 'w')
+	file = open('AD_corr - size distr - FT - ' + list[3] + 'base 10.txt', 'w')
 	file.write('size_bin_midpoint(VEDnm)' + '\t'+ 'dM/dlog(VED)_(ng/cm3)' + '\t'+ 'd#/dlog(VED)_(#/cm3)' +  '\t' + 'dM(VED)_(ng/cm3)' +  '\t'+  'd#(VED)_(#/cm3)' + '\n')
 	file.write('total sampled volume:' + str(list[2]) + 'cc' + '\n')
 	for row in list[1]:

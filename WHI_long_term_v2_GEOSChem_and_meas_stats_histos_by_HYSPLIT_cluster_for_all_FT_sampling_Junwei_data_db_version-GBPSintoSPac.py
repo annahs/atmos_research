@@ -55,14 +55,18 @@ rBC_FT_data_cluster_BB = {}
 
 ##
 #select data (spikes already rmoved) and exclude fire times 
-SP2_data_query = ('SELECT * FROM whi_sp2_rbc_record_2009to2012_spikes_removed WHERE UNIX_GMT_ts NOT BETWEEN %(fire_time1_start)s AND %(fire_time1_end)s AND UNIX_GMT_ts NOT BETWEEN %(fire_time2_start)s AND %(fire_time2_end)s')
+SP2_data_query = ('''SELECT * FROM whi_sp2_rbc_record_2009to2012_spikes_removed 
+						WHERE UNIX_GMT_ts NOT BETWEEN %(fire_time1_start)s AND %(fire_time1_end)s 
+						AND UNIX_GMT_ts NOT BETWEEN %(fire_time2_start)s AND %(fire_time2_end)s
+						AND UNIX_GMT_ts < %(end_time)s''')
 			
 
 query_terms ={
 'fire_time1_start':fire_time1_UNIX_UTC_start,
 'fire_time1_end':fire_time1_UNIX_UTC_end,
 'fire_time2_start':fire_time2_UNIX_UTC_start,
-'fire_time2_end':fire_time2_UNIX_UTC_end
+'fire_time2_end':fire_time2_UNIX_UTC_end,
+'end_time':1293840000
 }		
 
 cursor.execute(SP2_data_query,query_terms)
@@ -296,8 +300,6 @@ for key, value in stats_SP2.iteritems():
 			  
 	
 
-sys.exit()
-
 	
 ###################GEOS-Chem
 
@@ -485,10 +487,10 @@ for period_midtime in GC_data:
 		'GC_allch_err':data_6hrly['all_together'][1],
 		}
 		
-		pprint(BC_6h_data)
-		cursor.execute('DELETE FROM whi_gc_and_sp2_6h_mass_concs WHERE UNIX_UTC_6h_midtime = %s and RH_threshold = %s',(BC_6h_data['UNIX_ts'],BC_6h_data['RH_thresh']))
-		cnx.commit()
-		cursor.execute(add_6h_data, BC_6h_data)
+		#pprint(BC_6h_data)
+		#cursor.execute('DELETE FROM whi_gc_and_sp2_6h_mass_concs WHERE UNIX_UTC_6h_midtime = %s and RH_threshold = %s',(BC_6h_data['UNIX_ts'],BC_6h_data['RH_thresh']))
+		#cnx.commit()
+		#cursor.execute(add_6h_data, BC_6h_data)
 			
 			
 	
@@ -541,6 +543,8 @@ plt.subplots_adjust(hspace=0.07)
 plt.subplots_adjust(wspace=0.07)
 
 #plt.savefig('histograms - GEOS-Chem and measurements - all non-BB FT - 6h - JW_data.png',bbox_inches='tight')
+print len(SP2_6h_all_non_BB_m)
+print len(all_default_concs)
 
 plt.show()
 
@@ -824,7 +828,7 @@ for dataset in data_to_plot:
 	
 	i+=1
 	
-plt.savefig('histograms -clustered GEOS-Chem and measurements - 6h FT - v10-tests - RH ' + str(high_RH_limit) +'%limit-GBPSintoSPac.png',bbox_inches='tight')
+#plt.savefig('histograms -clustered GEOS-Chem and measurements - 6h FT - v10-tests - RH ' + str(high_RH_limit) +'%limit-GBPSintoSPac.png',bbox_inches='tight')
 
 plt.show()
 

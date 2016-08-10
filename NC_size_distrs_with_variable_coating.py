@@ -128,17 +128,7 @@ def assemble_bin_data(retrieved_records):
 		'STP_correction_factor':[],
 		'sample_flow':[],
 		}
-	#parse each row in results
-	for row in retrieved_records:
-		mass = row[0] 
-		coat = row[1]
-		sample_flow = row[2]
-		temperature = row[3] + 273.15 #convert to Kelvin
-		pressure = row[4]
-		VED = (((mass/(10**15*1.8))*6/math.pi)**(1/3.0))*10**7
-		STP_correction_factor = (101325/pressure)*(temperature/273.15)
-			
-		
+
 	#parse each row in results
 	for row in retrieved_records:
 		mass = row[0] 
@@ -151,7 +141,7 @@ def assemble_bin_data(retrieved_records):
 		STP_correction_factor = (101325/pressure)*(temperature/273.15)
 		
 		#succesful LEO fitting	
-		if (0 <= LEO_amp < 45000) and coat != None:  
+		if (0 <= LEO_amp < 45000) and coat != None:  #failed LEO fits give neg LEO amps (e.g -2)
 			#if coat >= 0:	
 			coat_min = coat
 			coat_max = coat
@@ -166,7 +156,8 @@ def assemble_bin_data(retrieved_records):
 		bin_data['coat_max'].append(coat_max)
 		bin_data['STP_correction_factor'].append(STP_correction_factor)
 		bin_data['sample_flow'].append(sample_flow)
-		
+	
+	
 	return bin_data
 
 def calc_bin_values(bin_start, binning_incr, bin_data,binned_data,UNIX_start_time,UNIX_end_time):
@@ -190,7 +181,7 @@ def calc_bin_values(bin_start, binning_incr, bin_data,binned_data,UNIX_start_tim
 		'bin_mean_coat_max':mean_coat_max,
 		'bin_number':bin_numb_conc_norm ,
 		}
-		
+
 	return binned_data	
 
 	
@@ -344,12 +335,12 @@ def plot_distrs(fitted_concs,core_distr_d,min_coat_distr_d,max_coat_distr_d):
 	ticks = [50,60,70,80,100,120,160,200,300,400,600,800]
 	fig = plt.figure(figsize= (12,10))
 	ax1 = fig.add_subplot(111)
-	ax1.plot(core_bin_midpoints,core_number_concs, color = 'k',marker='o', label='cores only')
-	ax1.plot(min_coat_bin_midpoints,min_coat_number_concs, color = 'b',marker='o', label='cores + min coating')
-	ax1.plot(max_coat_bin_midpoints,max_coat_number_concs, color = 'r',marker='o', label='cores + max coating')
+	ax1.plot(core_bin_midpoints,core_number_concs, color = 'k',marker='o', label='rBC cores only')
+	ax1.plot(min_coat_bin_midpoints,min_coat_number_concs, color = 'b',marker='o', label='rBC cores + min coating')
+	ax1.plot(max_coat_bin_midpoints,max_coat_number_concs, color = 'r',marker='o', label='rBC cores + max coating')
 	ax1.plot(fitted_bin_mids,fit_core_number_concs, color = 'k',marker=None, label = 'cores only fit')	
-	ax1.set_xlabel('rBC core VED (nm)')
-	ax1.set_ylabel('d/dlog(VED)')
+	ax1.set_xlabel('VED (nm)')
+	ax1.set_ylabel('dN/dlog(VED)')
 	ax1.set_xscale('log')
 	ax1.xaxis.set_major_formatter(plt.FormatStrFormatter('%d'))
 	ax1.xaxis.set_major_locator(plt.FixedLocator(ticks))
@@ -405,13 +396,13 @@ def plot_distrs_all(core_distr_d,min_coat_distr_d,max_coat_distr_d,UHSAS_distr_d
 	ticks = [50,60,70,80,100,120,160,200,300,400,600,800]
 	fig = plt.figure(figsize= (12,10))
 	ax1 = fig.add_subplot(111)
-	ax1.plot(core_bin_midpoints,core_number_concs, color = 'k',marker='o', label='cores only')
-	ax1.plot(min_coat_bin_midpoints[min_coat_mask],min_coat_number_concs[min_coat_mask], color = 'b',marker='o', label='cores + min coating')
+	ax1.plot(core_bin_midpoints,core_number_concs, color = 'k',marker='o', label='rBC cores only')
+	ax1.plot(min_coat_bin_midpoints[min_coat_mask],min_coat_number_concs[min_coat_mask], color = 'b',marker='o', label='rBC cores + min coating')
 	#ax1.plot(min_coat_bin_midpoints,min_coat_number_concs, color = 'b',marker='o', label='cores + min coating')
-	ax1.plot(max_coat_bin_midpoints[max_coat_mask],max_coat_number_concs[max_coat_mask], color = 'r',marker='o', label='cores + max coating')
+	ax1.plot(max_coat_bin_midpoints[max_coat_mask],max_coat_number_concs[max_coat_mask], color = 'r',marker='o', label='rBC cores + max coating')
 	ax1.plot(max_UHSAS_bin_midpoints,max_UHSAS_number_concs, color = 'g',marker='o', label = 'UHSAS')	
-	ax1.set_xlabel('rBC core VED (nm)')
-	ax1.set_ylabel('d/dlog(VED)')
+	ax1.set_xlabel('VED (nm)')
+	ax1.set_ylabel('dN/dlog(VED)')
 	ax1.set_xscale('log')
 	ax1.set_yscale('log')
 	ax1.xaxis.set_major_formatter(plt.FormatStrFormatter('%d'))
@@ -458,7 +449,24 @@ for flight in flight_times:
 		
 		#calc the overall properties for this bin and add them to the dictionary for this alt
 		binned_data = calc_bin_values(bin,bin_incr,bin_data,binned_data,UNIX_start_time,UNIX_end_time)
+	
+	######
+	
+	file = open('C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/coating data/SP2 data-'+flight+'.txt', 'w')
+	test = []
+	for item in binned_data:
+		test.append([item, binned_data[item]['bin_mean_VED'],binned_data[item]['bin_mean_coat_min'],binned_data[item]['bin_mean_coat_max'],binned_data[item]['bin_number']])
+	test.sort()
 
+	file.write('bin_VED\tbin_mean_VED\tbin_mean_coat_min\tbin_mean_coat_max\tbin_number' + '\n')
+	for row in test:
+		line = '\t'.join(str(x) for x in row)
+		file.write(line + '\n')
+	file.close()
+	
+	sys.exit()
+	#####
+	
 	#for this flight, fit the mass and number distributions
 	distr_fit_results = fit_distrs(binned_data,bin_incr)
 	

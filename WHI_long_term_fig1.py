@@ -128,7 +128,7 @@ for directory in directory_list:
 	os.chdir(directory)
 
 	for file in os.listdir('.'):
-		if file.endswith('.binpckl'):
+		if file.endswith('final_binned_data_20090701_120sbins.binpckl'):
 			print file
 			f = open(file, 'r')
 			single_bc_record = pickle.load(f)
@@ -192,6 +192,8 @@ for directory in directory_list:
 				#determine if bc mass conc is a spike from snow machines etc
 				BC_mass_conc = row[2]
 				
+				print row[0], correction_factor_for_STP, BC_mass_conc,WHI_temp,WHI_pressure
+				
 				if record_date.year == 2012 and BC_mass_conc > 200.:
 					continue
 				
@@ -220,10 +222,10 @@ for directory in directory_list:
 							i=0
 				else:
 					spike_times.append(record_date)
-				
+				print row[2]
 				prev_ts = record_date
 				i+=1
-
+			sys.exit()
 	year+=1          
 
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record')

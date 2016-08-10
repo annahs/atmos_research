@@ -10,21 +10,26 @@ from datetime import timedelta
 import calendar
 import math
 import copy
+import mysql.connector
+import calendar
 
+#database connection
+cnx = mysql.connector.connect(user='root', password='Suresh15', host='localhost', database='black_carbon')
+cursor = cnx.cursor()
 
 
 timezone = timedelta(hours = 0) #using zero here b/c most files were written with old PST code, have a correction further down for those (2009 early 2012) run with newer UTC code
 AD_corr = True
 
 #1. #alter the dates to set limits on data analysis range
-start_analysis_at = datetime.strptime('20120101','%Y%m%d')
+start_analysis_at = datetime(2009,6,28,9,55)
 end_analysis_at = datetime.strptime('20120531','%Y%m%d')
 
 
 ########data dirs
 directory_list = [
-#'D:/2009/WHI_ECSP2/Binary/',
-#'D:/2010/WHI_ECSP2/Binary/',
+'D:/2009/WHI_ECSP2/Binary/',
+'D:/2010/WHI_ECSP2/Binary/',
 'D:/2012/WHI_UBCSP2/Binary/',
 ]
 
@@ -97,7 +102,7 @@ fire_time2 = [datetime.strptime('2010/07/26 09:00', '%Y/%m/%d %H:%M'), datetime.
 cluslist = []
 CLUSLIST_file = 'C:/hysplit4/working/WHI/2hrly_HYSPLIT_files/all_with_sep_GBPS/CLUSLIST_6-mod'
 CLUSLIST_file = 'C:/hysplit4/working/WHI/2hrly_HYSPLIT_files/all_with_sep_GBPS/CLUSLIST_6-mod-precip_added-sig_precip_any_time'
-'
+
 with open(CLUSLIST_file,'r') as f:
 	for line in f:
 		newline = line.split()
@@ -195,6 +200,8 @@ for directory in directory_list:
 							BC_mass = float(newline[4])
 							BC_mass_old = float(newline[4])
 							
+							
+								
 							if AD_corr == True:	
 								if folder_date.year == 2009:
 									pk_ht = BC_mass/old_b
@@ -205,8 +212,9 @@ for directory in directory_list:
 
 							try:
 								BC_VED = (((BC_mass/(10**15*1.8))*6/3.14159)**(1/3.0))*10**7 #VED in nm with 10^15fg/g and 10^7nm/cm
-							except:	
-								#print BC_mass, BC_mass_old, datetime.utcfromtimestamp(end_time), err_count
+							except Exception,e: 
+								print str(e)
+								print 'no VED calculated'
 								err_count+=1
 								continue
 							non_err_count +=1
@@ -220,6 +228,22 @@ for directory in directory_list:
 							start_time_obj = datetime.utcfromtimestamp(start_time)+timezone 
 							end_time_obj = datetime.utcfromtimestamp(end_time)+timezone
 
+							#####now have correct UTC times
+							
+							#sample rate changes
+							if end_time_obj < datetime(2012,4,4,19,43,4):
+								sample_factor = 1.0
+							if datetime(2012,4,4,19,43,4) <= end_time_obj < datetime(2012,4,5,13,47,9):
+								sample_factor = 3.0
+							if datetime(2012,4,5,13,47,9) <= end_time_obj < datetime(2012,4,10,3,3,25):
+								sample_factor = 1.0
+							if datetime(2012,4,10,3,3,25) <= end_time_obj < datetime(2012,5,16,6,9,13):
+								sample_factor = 3.0
+							if datetime(2012,5,16,6,9,13) <= end_time_obj < datetime(2012,6,7,18,14,39):
+								sample_factor = 10.0
+							####
+							
+							
 																
 							#ignore annoying neg intervals
 							if end_time_obj < start_time_obj:
@@ -229,7 +253,7 @@ for directory in directory_list:
 								ok +=1
 							
 							
-							#use spike times to get fresh emissions data
+							####use spike times to get fresh emissions data and then ignore
 							spike_half_interval = 2
 							if len(spike_times):
 								spike_start = spike_times[0]-timedelta(minutes=spike_half_interval)
@@ -251,42 +275,56 @@ for directory in directory_list:
 										key_value = float(key)
 										interval_end = key_value + interval_length
 										if BC_VED >= key_value and BC_VED < interval_end:
-											rBC_FT_data_fresh[key][0] = rBC_FT_data_fresh[key][0] + BC_mass
-											rBC_FT_data_fresh[key][1] = rBC_FT_data_fresh[key][1] + 1
+											rBC_FT_data_fresh[key][0] = rBC_FT_data_fresh[key][0] + (BC_mass*sample_factor)
+											rBC_FT_data_fresh[key][1] = rBC_FT_data_fresh[key][1] + (1*sample_factor)
+									continue
 									
 							###
+							
 							#if in a BB time, ignore
 							if (fire_time1[0] <= end_time_obj <= fire_time1[1]) or (fire_time2[0] <= end_time_obj <= fire_time2[1]):
 								continue #do not go on to put this data into a cluster dictionary or the FR dictionary
 
-							#pop off any cluslist times that are in the past
-							cluslist_current_datetime = cluslist[0][0] #in PST
-							while end_time_obj > (cluslist_current_datetime + timedelta(hours=1)):
-								cluslist.pop(0)
-								if len(cluslist):
-									cluslist_current_datetime = cluslist[0][0]
-								else:
-									break
-									
-							#get cluster no
-							cluslist_current_cluster_no = cluslist[0][1]
-							rain = cluslist[0][2]
 							
+							#######
+							
+							
+							end_timestamp=calendar.timegm(end_time_obj.utctimetuple())
+							cursor.execute('''(SELECT 
+							    cluster_start_time,
+								cluster_number
+								FROM whi_ft_cluster_times_2009to2012
+								WHERE
+								%s BETWEEN cluster_start_time AND cluster_end_time
+								AND 
+								id > %s
+								AND 
+								cluster_number IS NOT NULL)''',
+								(end_timestamp,0))
+
+							cluster = cursor.fetchall()
+							if cluster == []:
+								#print end_time_obj, 'no cluster'
+								continue  #if we don't have a cluster number it's not in an FT time!!
+							cluslist_current_cluster_no = cluster[0][0]
+							cluster_start_time = datetime.utcfromtimestamp(cluster[0][1])
+							
+									
 							
 							#add data to list in cluster dictionaries (1 list per cluster time early night/late night)
-							if ((cluslist_current_datetime-timedelta(hours=3)) <= end_time_obj <= (cluslist_current_datetime+timedelta(hours=3))):
+							if ((cluster_start_time) <= end_time_obj < (cluster_start_time+timedelta(hours=6))):
 
 								if cluslist_current_cluster_no == 7:
 									sampling_duration_GBPS = sampling_duration_GBPS + end_time - start_time #need duration to calc sampled volume later for concs
-									sampling_duration_allFT = sampling_duration_allFT + end_time - start_time 
+									sampling_duration_allFT = sampling_duration_allFT + end_time - start_time 								
 									for key in rBC_FT_data_cluster_GBPS:
 										key_value = float(key)
 										interval_end = key_value + interval_length
 										if BC_VED >= key_value and BC_VED < interval_end:
-											rBC_FT_data_cluster_GBPS[key][0] = rBC_FT_data_cluster_GBPS[key][0] + BC_mass
-											rBC_FT_data_cluster_GBPS[key][1] = rBC_FT_data_cluster_GBPS[key][1] + 1
-											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
-											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
+											rBC_FT_data_cluster_GBPS[key][0] = rBC_FT_data_cluster_GBPS[key][0] + (BC_mass*sample_factor)
+											rBC_FT_data_cluster_GBPS[key][1] = rBC_FT_data_cluster_GBPS[key][1] + (1*sample_factor)
+											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + (BC_mass*sample_factor)
+											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + (1*sample_factor)
 											
 											
 												
@@ -297,10 +335,10 @@ for directory in directory_list:
 										key_value = float(key)
 										interval_end = key_value + interval_length
 										if BC_VED >= key_value and BC_VED < interval_end:
-											rBC_FT_data_cluster_1[key][0] = rBC_FT_data_cluster_1[key][0] + BC_mass
-											rBC_FT_data_cluster_1[key][1] = rBC_FT_data_cluster_1[key][1] + 1
-											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
-											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
+											rBC_FT_data_cluster_1[key][0] = rBC_FT_data_cluster_1[key][0] + (BC_mass*sample_factor)
+											rBC_FT_data_cluster_1[key][1] = rBC_FT_data_cluster_1[key][1] + (1*sample_factor)
+											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + (BC_mass*sample_factor)
+											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + (1*sample_factor)
 											
 								if cluslist_current_cluster_no == 2:
 									sampling_duration_cluster_2 = sampling_duration_cluster_2 + end_time - start_time #need duration to calc sampled volume later for concs
@@ -309,10 +347,10 @@ for directory in directory_list:
 										key_value = float(key)
 										interval_end = key_value + interval_length
 										if BC_VED >= key_value and BC_VED < interval_end:
-											rBC_FT_data_cluster_2[key][0] = rBC_FT_data_cluster_2[key][0] + BC_mass
-											rBC_FT_data_cluster_2[key][1] = rBC_FT_data_cluster_2[key][1] + 1
-											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
-											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
+											rBC_FT_data_cluster_2[key][0] = rBC_FT_data_cluster_2[key][0] + (BC_mass*sample_factor)
+											rBC_FT_data_cluster_2[key][1] = rBC_FT_data_cluster_2[key][1] + (1*sample_factor)
+											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + (BC_mass*sample_factor)
+											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + (1*sample_factor)
 											
 								if cluslist_current_cluster_no == 3:
 									sampling_duration_cluster_3 = sampling_duration_cluster_3 + end_time - start_time #need duration to calc sampled volume later for concs
@@ -321,10 +359,10 @@ for directory in directory_list:
 										key_value = float(key)
 										interval_end = key_value + interval_length
 										if BC_VED >= key_value and BC_VED < interval_end:
-											rBC_FT_data_cluster_3[key][0] = rBC_FT_data_cluster_3[key][0] + BC_mass
-											rBC_FT_data_cluster_3[key][1] = rBC_FT_data_cluster_3[key][1] + 1
-											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
-											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
+											rBC_FT_data_cluster_3[key][0] = rBC_FT_data_cluster_3[key][0] + (BC_mass*sample_factor)
+											rBC_FT_data_cluster_3[key][1] = rBC_FT_data_cluster_3[key][1] + (1*sample_factor)
+											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + (BC_mass*sample_factor)
+											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + (1*sample_factor)
 											
 								if cluslist_current_cluster_no == 4:
 									sampling_duration_cluster_4 = sampling_duration_cluster_4 + end_time - start_time #need duration to calc sampled volume later for concs
@@ -333,10 +371,10 @@ for directory in directory_list:
 										key_value = float(key)
 										interval_end = key_value + interval_length
 										if BC_VED >= key_value and BC_VED < interval_end:
-											rBC_FT_data_cluster_4[key][0] = rBC_FT_data_cluster_4[key][0] + BC_mass
-											rBC_FT_data_cluster_4[key][1] = rBC_FT_data_cluster_4[key][1] + 1
-											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
-											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
+											rBC_FT_data_cluster_4[key][0] = rBC_FT_data_cluster_4[key][0] + (BC_mass*sample_factor)
+											rBC_FT_data_cluster_4[key][1] = rBC_FT_data_cluster_4[key][1] + (1*sample_factor)
+											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + (BC_mass*sample_factor)
+											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + (1*sample_factor)
 								
 								if cluslist_current_cluster_no == 5:
 									sampling_duration_cluster_5 = sampling_duration_cluster_5 + end_time - start_time #need duration to calc sampled volume later for concs
@@ -345,10 +383,10 @@ for directory in directory_list:
 										key_value = float(key)
 										interval_end = key_value + interval_length
 										if BC_VED >= key_value and BC_VED < interval_end:
-											rBC_FT_data_cluster_5[key][0] = rBC_FT_data_cluster_5[key][0] + BC_mass
-											rBC_FT_data_cluster_5[key][1] = rBC_FT_data_cluster_5[key][1] + 1
-											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
-											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
+											rBC_FT_data_cluster_5[key][0] = rBC_FT_data_cluster_5[key][0] + (BC_mass*sample_factor)
+											rBC_FT_data_cluster_5[key][1] = rBC_FT_data_cluster_5[key][1] + (1*sample_factor)
+											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + (BC_mass*sample_factor)
+											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + (1*sample_factor)
 								
 								if cluslist_current_cluster_no == 6:
 									sampling_duration_cluster_6 = sampling_duration_cluster_6 + end_time - start_time #need duration to calc sampled volume later for concs
@@ -357,16 +395,17 @@ for directory in directory_list:
 										key_value = float(key)
 										interval_end = key_value + interval_length
 										if BC_VED >= key_value and BC_VED < interval_end:
-											rBC_FT_data_cluster_6[key][0] = rBC_FT_data_cluster_6[key][0] + BC_mass
-											rBC_FT_data_cluster_6[key][1] = rBC_FT_data_cluster_6[key][1] + 1
-											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + BC_mass
-											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + 1
+											rBC_FT_data_cluster_6[key][0] = rBC_FT_data_cluster_6[key][0] + (BC_mass*sample_factor)
+											rBC_FT_data_cluster_6[key][1] = rBC_FT_data_cluster_6[key][1] + (1*sample_factor)
+											rBC_FT_data_all[key][0] = rBC_FT_data_all[key][0] + (BC_mass*sample_factor)
+											rBC_FT_data_all[key][1] = rBC_FT_data_all[key][1] + (1*sample_factor)
 											
 									
 						f.close()
 						
 			os.chdir(directory)
-			
+
+cnx.close()			
 print 'neg times', argh, ok, argh*100./(argh+ok)
 print err_count, non_err_count, err_count*100./(err_count+non_err_count)
 average_flow = 120
@@ -433,7 +472,7 @@ for line in binned_data_lists:
 
 
 #write final list of interval data to file and pickle
-os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/size_distrs/')
+os.chdir('C:/Users/Sarah Hanna/Documents/Data/WHI long term record/coatings/size_distrs/from ptxt v2/')
 
 for list in binned_data_lists:
 	file = open('AD_corr - size distr - FT - ' + list[3] + '.txt', 'w')

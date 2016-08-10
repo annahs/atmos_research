@@ -12,15 +12,15 @@ import matplotlib.cm as cm
 from matplotlib import dates
 
 
-start = datetime(2009,6,28)  #2009 - 20090628  2010 - 20100610   2012 - 20100405
+start = datetime(2012,5,20,0,2)  #2009 - 20090628  2010 - 20100610   2012 - 20100405
 end =   datetime(2012,6,1)  #2009 - 20090816  2010 - 20100726   2012 - 20100601
-timestep = 1 #hours
+timestep = 1./30 #hours
 sample_min = 117  #117 for all 2009-2012
 sample_max = 123  #123 for all 2009-2012
 yag_min = 3.8  #3.8 for all 2009-2012
 yag_max = 6	 #6  for all 2009-2012
 BC_VED_min = 70
-BC_VED_max = 220
+BC_VED_max = 400
 min_scat_pkht = 20
 mass_min = ((BC_VED_min/(10.**7))**3)*(math.pi/6.)*1.8*(10.**15)
 mass_max = ((BC_VED_max/(10.**7))**3)*(math.pi/6.)*1.8*(10.**15)
@@ -119,9 +119,11 @@ add_data = ('''INSERT INTO whi_sp2_hourly_data
 multiple_records = []
 i=1
 while start <= end:
-	print start
+	
 	UNIX_start = calendar.timegm(start.utctimetuple())
-	UNIX_end = UNIX_start + timestep*3600
+	UNIX_end = UNIX_start + timestep*3600.0
+	print start, UNIX_start+60
+	print datetime.utcfromtimestamp(UNIX_end)
 	st = datetime.now()
 	#filter on hk data here
 	cursor.execute('''(SELECT 
@@ -132,24 +134,22 @@ while start <= end:
 	mn.BB_incand_pk_pos,
 	mn.BB_scat_pk_pos,
 	mn.BB_scat_pkht,
-	hk.sample_flow
+	hk.sample_flow,
+	mn.BB_incand_HG
 	FROM whi_sp2_particle_data mn
 	FORCE INDEX (hourly_binning)
 	JOIN whi_hk_data hk on mn.HK_id = hk.id
 	WHERE
 	mn.UNIX_UTC_ts_int_start >= %s
 	AND mn.UNIX_UTC_ts_int_end < %s
-	AND mn.rBC_mass_fg_BBHG >= %s
-	AND mn.rBC_mass_fg_BBHG <= %s
 	AND hk.sample_flow >= %s
 	AND hk.sample_flow < %s
 	AND hk.yag_power >= %s
 	AND hk.yag_power < %s)''',
-	(UNIX_start,UNIX_end,mass_min,mass_max,sample_min,sample_max,yag_min,yag_max))
+	(UNIX_start,UNIX_end,sample_min,sample_max,yag_min,yag_max))
 	
 	ind_data = cursor.fetchall()
-	print datetime.now()-st
-	print 'records:',len(ind_data)
+
 	data={
 	'rBC_mass_fg':[],
 	'rBC_mass_fg_err':[],
@@ -157,7 +157,7 @@ while start <= end:
 	}
 	
 	total_sample_vol = 0
-	
+	flows = []
 	for row in ind_data:
 		ind_start_time = float(row[0])
 		ind_end_time = float(row[1])
@@ -167,6 +167,7 @@ while start <= end:
 		BB_scat_pk_pos = float(row[5])	
 		BB_scat_pk_ht = float(row[6])	
 		sample_flow = float(row[7])  #in vccm
+		incand_pkht = float(row[7])  #in vccm
 		
 		#filter spike times here 
 		if check_spike_times(ind_start_time,ind_end_time):
@@ -182,17 +183,21 @@ while start <= end:
 		if sample_flow == None:
 			print 'no flow'
 			continue
-		
+		flows.append(sample_flow)
 		
 		sample_vol =  (sample_flow*(ind_end_time-ind_start_time)/60)    #/60 b/c sccm and time in secs  
 		total_sample_vol = total_sample_vol + sample_vol
 		
-		data['rBC_mass_fg'].append(bbhg_mass_corr)  
-		data['rBC_mass_fg_err'].append(bbhg_mass_corr_err)  
-		#only calc lag time if there is a scattering signal
-		if BB_scat_pk_ht > min_scat_pkht:
-			lag_time = (BB_incand_pk_pos-BB_scat_pk_pos)*0.2  #us
-			data['lag_time'].append(lag_time)  
+		#bbhg_mass_corr = 0.24826+ 0.003043*incand_pkht
+		
+		if (mass_min <= bbhg_mass_corr < mass_max):
+			data['rBC_mass_fg'].append(bbhg_mass_corr)  
+			data['rBC_mass_fg_err'].append(bbhg_mass_corr_err)  
+			#only calc lag time if there is a scattering signal
+			if BB_scat_pk_ht > min_scat_pkht:
+				lag_time = (BB_incand_pk_pos-BB_scat_pk_pos)*0.2  #us
+				data['lag_time'].append(lag_time)  
+	
 	
 	tot_rBC_mass_fg =  sum(data['rBC_mass_fg'])
 	tot_rBC_mass_uncer =  sum(data['rBC_mass_fg_err'])
@@ -201,6 +206,7 @@ while start <= end:
 	if np.isnan(mean_lag):
 		mean_lag = None
 	
+	 
 	#get sample factor, hysplit id, met Id, gc_id
 	sample_factor = get_sample_factor(UNIX_start)
 	
@@ -210,10 +216,36 @@ while start <= end:
 	#get sampling conditions id
 	met_id = get_met_id(UNIX_start)
 	
+	cursor.execute('''(SELECT 
+	pressure_Pa,
+	room_temp_C
+	FROM whi_sampling_conditions
+	WHERE
+	id = %s
+	AND id > %s)''',
+	(met_id,0))
+	
+	met_data = cursor.fetchall()
+	pressure = met_data[0][0]
+	temperature = met_data[0][1]+273.15
+		
 	#get hysplit_id
 	gc_id = get_gc_id(UNIX_start)
 	
 	
+	####
+	R = 8.3144621 # in m3*Pa/(K*mol)
+
+	scorr = (101325*temperature)/(273*pressure)
+
+	
+	volume_ambient = (R*temperature)/(pressure)
+	volume_STP = volume_ambient*(pressure/101325)*(273/temperature)
+	correction_factor_for_STP =  volume_ambient/volume_STP
+	
+	mconc = (tot_rBC_mass_fg/total_sample_vol)*correction_factor_for_STP
+	print 'mass-conc', mconc*sample_factor
+	print tot_rBC_mass_fg,total_sample_vol,total_sample_vol/2
 	#add to db
 	single_record = {
 		'UNIX_UTC_start_time'	:UNIX_start,

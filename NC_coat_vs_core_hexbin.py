@@ -275,3 +275,28 @@ plt.savefig('coating vs core hexbin - with LEO fit fraction - cloud-free.png', b
 
 plt.show()
 
+
+#all locations only
+fig = plt.figure(figsize=(12,8))
+ax4  = plt.subplot2grid((1,1), (0,0))        
+		
+coats4 = ax4.hexbin(All_core_size, All_coat_size, cmap=color_map, gridsize = 50,mincnt=m_inct)#, norm= norm) #bins='log', norm=norm
+ax4.set_xlabel('BC_VED')
+ax4.set_ylabel('Coating Thickness (nm)')
+ax4.set_ylim(-30,240)
+ax4.set_xlim(70,220)
+ax4a = ax4.twinx()
+ax4a.scatter(All_bins, All_fractions, color = 'r')
+ax4a.set_ylabel('fraction of detectable notch positions', color = 'r')
+ax4a.set_ylim(0,1)
+ax4a.set_xlim(70,220)
+
+fig.subplots_adjust(right=0.82)
+cbar_ax = fig.add_axes([0.9, 0.10, 0.03, 0.7])
+cb = fig.colorbar(coats4, cax=cbar_ax)
+cb.set_label('counts')
+
+os.chdir('C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/coating data/')
+plt.savefig('coating vs core hexbin - with LEO fit fraction - cloud-free - sc1-7.png', bbox_inches='tight') 
+
+plt.show()

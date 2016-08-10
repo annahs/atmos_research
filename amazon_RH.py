@@ -88,7 +88,7 @@ with open(file, 'r') as f:
 						nighttime_data[date_to_use] = [RHx]
 
 
-		
+file_data = []		
 combined_seasonal_and_station_data = []			
 for stn in stations:
 	if stn in stations_to_use:
@@ -134,7 +134,30 @@ for stn in stations:
 		
 		print 'wet seasons data points', len(wet_season_avgs)
 		print 'dry seasons data points', len(dry_season_avgs)
+		
+		
 
+#save to file
+
+for stn in ['BARCELOS','LABREA','ITAITUBA','MANICORE','MONTE DOURADO','CORONEL FRANCISCO SECADA VIGNE','EDUARDO GOMES INTL', 'TABATINGA']:
+	print stn 
+	wet_season_data = stations[stn][8]
+	dry_season_data = stations[stn][9]
+	
+	file_data.append([stn,'wet_season',np.percentile(wet_season_data,10),np.percentile(wet_season_data,25),np.percentile(wet_season_data,50),np.percentile(wet_season_data,75),np.percentile(wet_season_data,90)])
+	file_data.append([stn,'dry_season',np.percentile(dry_season_data,10),np.percentile(dry_season_data,25),np.percentile(dry_season_data,50),np.percentile(dry_season_data,75),np.percentile(dry_season_data,90)])
+
+file_name = 'Amazon RH'
+file = open('C:/Users/Sarah Hanna/Documents/Data/Amazon RH/' + file_name +'.txt', 'w')
+file.write('Calculated RH from NOAA NCDC database (https://gis.ncdc.noaa.gov/map/viewer/#app=cdo), values are based on 12h averages (1800-0600 local time and 0600-1800 local time) \n')
+file.write('Wet season is Dec, Jan, Feb, Mar.  Dry season is June, July, Aug, Sept.\n')
+file.write('City \t Season \t 10th_percentile_RH \t 25th_percentile_RH \t 50th_percentile_RH \t 75th_percentile_RH \t 90th_percentile_RH \n')
+for row in file_data:
+	line = '\t'.join(str(x) for x in row)
+	file.write(line + '\n')
+file.close()		
+		
+		
 #Plotting
 
 fig1 = plt.figure(figsize=(12,12))
@@ -376,7 +399,7 @@ ax1.set_xlabel('12-hr averaged %RH')
 
 plt.subplots_adjust(hspace=0.05)
 
-plt.savefig('C:/Users/Sarah Hanna/Documents/Data/Amazon RH/Amazon_RH_all_stations - combined seasons - 12hr avgs.png',  bbox_inches='tight') 
+#plt.savefig('C:/Users/Sarah Hanna/Documents/Data/Amazon RH/Amazon_RH_all_stations - combined seasons - 12hr avgs.png',  bbox_inches='tight') 
 
 
 

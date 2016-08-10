@@ -13,7 +13,7 @@ from mpl_toolkits.basemap import Basemap
 import calendar
 
 
-flight = 'all'
+flight = 'science 2'
 
 flight_times = {
 'science 1'  : [datetime(2015,4,5,9,0),datetime(2015,4,5,14,0),15.6500, 78.2200]	,	
@@ -61,7 +61,7 @@ yag_xtal_temp= [row[5] for row in hk_data]
 #timeseries
 fig = plt.figure()
 
-hfmt = dates.DateFormatter('%m-%d')
+hfmt = dates.DateFormatter('%m-%d %H:%M')
 display_minute_interval = 1
 
 ax1 = fig.add_subplot(111)

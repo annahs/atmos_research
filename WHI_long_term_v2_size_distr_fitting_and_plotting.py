@@ -10,10 +10,16 @@ import sys
 import math
 import traceback
 import time
+import mysql.connector
+
 
 
 data_dir = 'C:/Users/Sarah Hanna/Documents/Data/WHI long term record/size_distrs/'
 os.chdir(data_dir)
+
+#database connection
+cnx = mysql.connector.connect(user='root', password='Suresh15', host='localhost', database='black_carbon')
+cursor = cnx.cursor()
 
 
 #fileFR = 'AD_corr - size distr - FRlessFT - FR.sdbinpickl'
@@ -114,9 +120,13 @@ for distribution, distribution_data in distributions.iteritems():
 		norm_1_masses = distribution_data[3]
 		#print mass_bins
 		
-		popt, pcov = curve_fit(lognorm, mass_bins, norm_1_masses)	
-		perr = np.sqrt(np.diag(pcov)) #from docs:  To compute one standard deviation errors on the parameters use perr = np.sqrt(np.diag(pcov))
-		err_variables =  [popt[0]-perr[0], popt[1]-perr[1], popt[2]-perr[2]]
+		try:
+			popt, pcov = curve_fit(lognorm, mass_bins, norm_log_masses)	
+			perr = np.sqrt(np.diag(pcov)) #from docs:  To compute one standard deviation errors on the parameters use perr = np.sqrt(np.diag(pcov))
+			err_variables =  [popt[0]-perr[0], popt[1]-perr[1], popt[2]-perr[2]]
+		except:
+			popt = [np.nan,np.nan,np.nan]
+			err_variables =  [np.nan,np.nan,np.nan]
 		
 		fit_y_vals = []
 		for bin in fit_bins:
@@ -136,12 +146,12 @@ for distribution, distribution_data in distributions.iteritems():
 		percent_of_distr_measured = sum(norm_1_masses)*100./sum(fit_y_vals)
 		print distribution, percent_of_distr_measured,max_percent_of_distr_measured, 2*(max_percent_of_distr_measured-percent_of_distr_measured)
 
-		
+cnx.close()		
 #plotting
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
 
-data = 3
+data = 2
 fit = 4 
 fit_bins = 5
 

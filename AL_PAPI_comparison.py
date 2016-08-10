@@ -9,13 +9,13 @@ from matplotlib import dates
 import matplotlib.pyplot as plt
 import numpy as np
 
-start = datetime(2013,1,1)
-end =  datetime(2014,1,1)
+start = datetime(2012,1,1)
+end =  datetime(2013,1,1)
 sample_factor = 10
 
 ######get data
 #PAPI_list = []
-#data_dir = 'G:/Alert/'+ str(start.year) +'/Reduced/'  #Alert data is in UTC - see email from Dan Veber
+#data_dir = 'F:/Alert/'+ str(start.year) +'/Reduced/'  #Alert data is in UTC - see email from Dan Veber
 #os.chdir(data_dir)
 #for directory in os.listdir(data_dir):
 #	
@@ -65,9 +65,10 @@ os.chdir(data_dir)
 for file in os.listdir('.'):
 			
 	if file.startswith(str(start.year)):
-		print file
+		
 		file_date = datetime.strptime(file[0:8],'%Y%m%d')
 		if start <= file_date < end :
+			print file
 			with open(file, 'r') as f:
 				temp = f.read().splitlines()
 				i = 0
@@ -79,12 +80,14 @@ for file in os.listdir('.'):
 						incand_conc = float(newline[6])
 						incand_mass = float(newline[4])
 						incand_mass_uncer = float(newline[5])
+						vol = float(newline[7])
 						rel_err = incand_mass_uncer*100./incand_mass
-						SP2_list.append([date_time,rel_err,incand_mass])
+						SP2_list.append([date_time,rel_err,incand_mass,vol])
 						
 SP2_dates = [dates.date2num(row[0]) for row in SP2_list]
 print np.nanmean([row[1] for row in SP2_list])
 SP2_mass = [row[2] for row in SP2_list]
+vol = [row[3] for row in SP2_list]
 ratios = []
 i=0
 for row in SP2_mass:
@@ -102,9 +105,10 @@ hfmt  = dates.DateFormatter('%Y%m%d %H:%M')
 fig = plt.figure(figsize=(20,6))
 ax1 = fig.add_subplot(111)
 ax1.xaxis.set_major_formatter(hfmt)
-ax1.plot(PAPI_dates,PAPI_mass_tot,color='b')#,'-bo')
+#ax1.plot(PAPI_dates,PAPI_mass_tot,color='b')#,'-bo')
 ax1.plot(SP2_dates,SP2_mass,color='k')#,'-ro')
-ax1.plot(ratio_dates,ratio_vals,color='r')#,'-ro')
+ax1.plot(SP2_dates,vol,color='r')#,'-ro')
+#ax1.plot(ratio_dates,ratio_vals,color='r')#,'-ro')
 ax1.set_xlim(start,end)
 #ax1.axvline(datetime(2014,9,9))
 

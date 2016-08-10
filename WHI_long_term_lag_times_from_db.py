@@ -10,8 +10,8 @@ import calendar
 import matplotlib.pyplot as plt
 from matplotlib import dates
 
-date1 = datetime(2010,7,1,10)
-date2 = datetime(2010,6,10)
+date1 = datetime(2009,7,1,10)
+date2 = datetime(2010,8,31)
 date3 = datetime(2012,5,1)
 span = 1
 UNIX_UTC_ts1 = calendar.timegm(date1.utctimetuple())
@@ -24,7 +24,32 @@ lags = []
 cnx = mysql.connector.connect(user='root', password='Suresh15', host='localhost', database='black_carbon')
 cursor = cnx.cursor()
 
-cursor.execute(('SELECT BB_incand_pk_pos,BB_scat_pk_pos, sp2b_file, file_index,BB_scat_pkht FROM whi_sp2_particle_data WHERE BB_scat_pkht > %s and UNIX_UTC_ts_int_start >= %s AND UNIX_UTC_ts_int_start < %s'),(20,UNIX_UTC_ts1,(UNIX_UTC_ts1+span*3600)))
+#cursor.execute(('''SELECT pd.BB_incand_pk_pos,pd.BB_scat_pk_pos, pd.sp2b_file, pd.file_index,pd.BB_scat_pkht 
+#	FROM whi_sp2_particle_data pd
+#	JOIN whi_hysplit_hourly_data hy on 
+#	WHERE pd.BB_scat_pkht > %s 
+#	AND pd.UNIX_UTC_ts_int_start >= %s 
+#	AND pd.UNIX_UTC_ts_int_start < %s'''),
+#	(20,UNIX_UTC_ts1,(UNIX_UTC_ts2)))
+
+cursor.execute(('''SELECT 
+    pd.BB_incand_pk_pos,
+    pd.BB_scat_pk_pos,
+    pd.sp2b_file,
+    pd.file_index,
+    pd.BB_scat_pkht,
+    hy.cluster_number_6h
+FROM
+    whi_sp2_particle_data pd,
+    whi_hysplit_hourly_data hy
+WHERE
+    pd.BB_scat_pkht > %s
+		AND pd.instrument_ID = %s 
+        AND (hy.cluster_number_6h = %s OR hy.cluster_number_6h = %s )
+        AND  pd.UNIX_UTC_ts_int_start BETWEEN hy.UNIX_UTC_start_time AND hy.UNIX_UTC_end_time'''),
+		(20,'UBCSP2',2,7))
+		
+
 data = cursor.fetchall()
 print len(data)
 for row in data:

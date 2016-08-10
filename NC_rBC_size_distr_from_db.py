@@ -18,16 +18,16 @@ start_time = datetime(2015,4,5,0,0)
 end_time = datetime(2015,4,14,0,0)
 min_BC_VED = 70
 max_BC_VED = 220
-cloud_droplet_conc = 0.3 #threshold droplet conc from FSSP for in-cloud conditions
+cloud_droplet_conc = 0.5 #threshold droplet conc from FSSP for in-cloud conditions
 
 flight_times = {
-#'science 1'  : [datetime(2015,4,5,9,43),datetime(2015,4,5,13,48),15.6500, 78.2200, 'Longyearbyen (sc1)']	,	   #longyearbyen
+'science 1'  : [datetime(2015,4,5,9,43),datetime(2015,4,5,13,48),15.6500, 78.2200, 'Longyearbyen (sc1)']	,	   #longyearbyen
 #'ferry 1'    : [datetime(2015,4,6,9,0),datetime(2015,4,6,11,0),15.6500, 78.2200]     ,
 #'ferry 2'    : [datetime(2015,4,6,15,0),datetime(2015,4,6,18,0),-16.6667, 81.6000]   ,
-#'science 2'  : [datetime(2015,4,7,16,31),datetime(2015,4,7,20,48),-62.338, 82.5014,'Alert (sc2-5)']    ,  #Alert
-#'science 3'  : [datetime(2015,4,8,13,51),datetime(2015,4,8,16,43),-62.338, 82.5014,'Alert (sc2-5)']    ,  #Alert
-#'science 4'  : [datetime(2015,4,8,17,53),datetime(2015,4,8,21,22),-70.338, 82.5014,'Alert (sc2-5)']   ,   #Alert
-#'science 5'  : [datetime(2015,4,9,13,50),datetime(2015,4,9,17,47),-62.338, 82.0,'Alert (sc2-5)']   ,      #Alert
+'science 2'  : [datetime(2015,4,7,16,31),datetime(2015,4,7,20,48),-62.338, 82.5014,'Alert (sc2-5)']    ,  #Alert
+'science 3'  : [datetime(2015,4,8,13,51),datetime(2015,4,8,16,43),-62.338, 82.5014,'Alert (sc2-5)']    ,  #Alert
+'science 4'  : [datetime(2015,4,8,17,53),datetime(2015,4,8,21,22),-70.338, 82.5014,'Alert (sc2-5)']   ,   #Alert
+'science 5'  : [datetime(2015,4,9,13,50),datetime(2015,4,9,17,47),-62.338, 82.0,'Alert (sc2-5)']   ,      #Alert
 ##'ferry 3'    : [datetime(2015,4,10,14,0),datetime(2015,4,10,17,0),-75.338, 81]  ,
 'science 6'  : [datetime(2015,4,11,15,57),datetime(2015,4,11,21,16),-90.9408, 80.5,'Eureka (sc6-7)'] ,	   #eureka
 'science 7'  : [datetime(2015,4,13,15,14),datetime(2015,4,13,20,52),-95, 80.1,'Eureka (sc6-7)'] ,          #eureka
@@ -173,18 +173,24 @@ print fit_bins[index]
 ####plotting	
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
-ax1.scatter(number_conc_bins,number_concs, color = 'g',marker='o')
+ax1.scatter(number_conc_bins,number_concs, color = 'k',marker='o')
 ax1.scatter(mass_conc_bins,mass_concs, color = 'b',marker='o')
 ax1.plot(fit_bins,fit_y_vals, color = 'b',marker=None, label ='mass')
-ax1.plot(fit_bins,fit_y_vals_n, color = 'g',marker=None, label ='number')
+ax1.plot(fit_bins,fit_y_vals_n, color = 'k',marker=None, label ='number')
 ax1.set_xscale('log')
-ax1.set_ylabel('dM/dlog(VED)')
+ax1.set_ylabel('d/dlog(VED) #/m3')
 ax1.set_xlabel('VED (nm)')
 ax1.set_ylim(0,40)
 ax1.set_xlim(30,1000)
 ax1.set_xticks([30,40,50,60,80,100,150,200,300,400,600,900])
 ax1.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
 plt.legend()
+
+ax2 = ax1.twinx()
+ax2.set_ylim(0,40)
+ax2.set_xlim(30,1000)
+ax2.set_ylabel('dM/dlog(VED) ng/cm3',color='b')
+
 
 os.chdir('C:/Users/Sarah Hanna/Documents/Data/Netcare/Spring 2015/size distrs/')
 #plt.savefig('mass and number distrs -  '+ flight_times[flight][4] +' - cloud-free.png', bbox_inches='tight') 

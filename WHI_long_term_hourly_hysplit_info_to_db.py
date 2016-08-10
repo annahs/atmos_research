@@ -29,6 +29,8 @@ CLUSLIST_file = 'C:/HYSPLIT_argh/WHI_1h_10-day_working/all_hours/CLUSLIST_5'
 
 i=1
 multiple_records = []
+
+
 with open(CLUSLIST_file,'r') as f:
 	for line in f:
 		newline = line.split()

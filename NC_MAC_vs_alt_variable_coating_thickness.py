@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors
 import calendar
 from scipy.optimize import curve_fit
+from mpl_toolkits.axes_grid1 import host_subplot
+import mpl_toolkits.axisartist as AA
 
 cloud_droplet_conc = 0.5
 wavelength = 550  #nm
@@ -20,8 +22,8 @@ savefig = False
 show_distr_plots = True
 #alt parameters
 min_alt = 0
-max_alt =6000
-alt_incr = 1000#800
+max_alt = 6000
+alt_incr = 6000#800
 #distr parameters
 min_BC_VED = 80  
 max_BC_VED = 220  
@@ -322,36 +324,87 @@ for flight in flight_times:
 				LEO_cutoff = min(LEO_pts)
 
 		
-			#plots
+			##plots
+			#fig = plt.figure()
+			#ax1 = fig.add_subplot(111)
+			#ax1.scatter(bin_midpoints,number_concs_norm, color = 'k',marker='o')
+			#ax1.plot(fitted_bin_mids,fit_binned_number_conc_vals, color = 'k',marker=None, label = 'number')	
+			#ax1.scatter(bin_midpoints,mass_concs_norm, color = 'b',marker='o')
+			#ax1.plot(fitted_bin_mids,fit_binned_mass_conc_vals, color = 'b',marker=None, label = 'mass')
+			#ax1.set_xscale('log')
+			#ax1.set_xlabel('rBC core VED (nm)')
+			#ax1.set_ylabel('d/dlog(VED)')
+			#ax1.set_ylim(0,19)
+			#ax1.set_xlim(40,700)
+			#plt.legend()
+			#
+			#ax2 = ax1.twinx()
+			#ax2.scatter(bin_midpoints,LEO_fractions, color = 'r',marker='s')
+			#ax2.set_ylim(0,1)
+			#ax2.set_xlim(40,700)
+			#ax2.set_ylabel('fraction successful LEO fits', color='r')
+			#ax2.axvspan(min_BC_VED, LEO_cutoff, alpha=0.15, color='yellow')
+			#ax2.axvspan(LEO_cutoff, max_BC_VED, alpha=0.15, color='green')
+			#ax2.fill([160,180,180,160],[0,0,1,1], fill=False, hatch='\\',color ='grey')
+			##ax2.fill([130,220,220,130],[0,0,1,1], fill=False, hatch='//',color ='grey')
+			#ax2.axvspan(35, min_BC_VED, alpha=0.15, color='grey')
+			#ax2.axvspan(max_BC_VED, 1000, alpha=0.15, color='grey')
+			#ax2.set_xticks([40,50,60,80,100,150,200,300,400,600])
+			#ax2.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+			#
+			#plt.show()
+
+			##
 			fig = plt.figure()
-			ax1 = fig.add_subplot(111)
-			ax1.scatter(bin_midpoints,number_concs_norm, color = 'k',marker='o')
-			ax1.plot(fitted_bin_mids,fit_binned_number_conc_vals, color = 'k',marker=None, label = 'number')	
-			ax1.scatter(bin_midpoints,mass_concs_norm, color = 'b',marker='o')
-			ax1.plot(fitted_bin_mids,fit_binned_mass_conc_vals, color = 'b',marker=None, label = 'mass')
-			ax1.set_xscale('log')
-			ax1.set_xlabel('rBC core VED (nm)')
-			ax1.set_ylabel('d/dlog(VED)')
-			ax1.set_ylim(0,35)
-			ax1.set_xlim(40,700)
-			plt.legend()
+			host = host_subplot(111, axes_class=AA.Axes)
+			plt.subplots_adjust(right=0.75)
+
+			par1 = host.twinx()
+			par2 = host.twinx()
+
+			offset = 60
+			new_fixed_axis = par2.get_grid_helper().new_fixed_axis
+			par2.axis["right"] = new_fixed_axis(loc="right",
+												axes=par2,
+												offset=(offset, 0))
+
+			par2.axis["right"].toggle(all=True)
+
+			host.set_xlim(40, 700)
+			host.set_ylim(0, 19)
+			host.set_xscale('log')
 			
-			ax2 = ax1.twinx()
-			ax2.scatter(bin_midpoints,LEO_fractions, color = 'r',marker='s')
-			ax2.set_ylim(0,1)
-			ax2.set_xlim(40,700)
-			ax2.set_ylabel('fraction successful LEO fits', color='r')
-			ax2.axvspan(min_BC_VED, LEO_cutoff, alpha=0.15, color='yellow')
-			ax2.axvspan(LEO_cutoff, max_BC_VED, alpha=0.15, color='green')
-			ax2.fill([160,180,180,160],[0,0,1,1], fill=False, hatch='\\',color ='grey')
-			ax2.fill([130,220,220,130],[0,0,1,1], fill=False, hatch='//',color ='grey')
-			ax2.axvspan(35, min_BC_VED, alpha=0.15, color='grey')
-			ax2.axvspan(max_BC_VED, 1000, alpha=0.15, color='grey')
-			ax2.set_xticks([40,50,60,80,100,150,200,300,400,600])
-			ax2.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+			host.set_xlabel('rBC core VED (nm)')
+			host.set_ylabel('dN/dlog(VED) #/m3')
+			par1.set_ylabel('dM/dlog(VED) ng/cm3')
+			par2.set_ylabel('fraction successful LEO fits')
+
+			p1, = host.plot(bin_midpoints,number_concs_norm, color = 'k',marker='o',linestyle='')
+			p1a, = host.plot(fitted_bin_mids,fit_binned_number_conc_vals, color = 'k',marker=None, label = 'number')	
+			p2, = par1.plot(bin_midpoints,mass_concs_norm, color = 'b',marker='o',linestyle='')
+			p2a, = par1.plot(fitted_bin_mids,fit_binned_mass_conc_vals, color = 'b',marker=None, label = 'mass')
+			p3, = par2.plot(bin_midpoints,LEO_fractions, color = 'r',marker='s',linestyle='')
 			
+			
+			par1.set_ylim(0, 19)
+			par1.set_xscale('log')
+			par2.set_ylim(0, 1)
+			par2.set_xscale('log')
+			par2.axvspan(min_BC_VED, LEO_cutoff, alpha=0.15, color='yellow')
+			par2.axvspan(LEO_cutoff, max_BC_VED, alpha=0.15, color='green')
+			par2.fill([160,180,180,160],[0,0,1,1], fill=False, hatch='\\',color ='grey')
+			par2.axvspan(35, min_BC_VED, alpha=0.15, color='grey')
+			par2.axvspan(max_BC_VED, 1000, alpha=0.15, color='grey')
+			
+			host.axis['left'].label.set_color(p1.get_color())
+			par1.axis['right'].label.set_color(p2.get_color())
+			par2.axis['right'].label.set_color(p3.get_color())
+
+			plt.draw()
 			plt.show()
 
+			sys.exit()
+			
 		#################		
 		#add values from outside dectection range to the binned data
 		for row in fitted_data:

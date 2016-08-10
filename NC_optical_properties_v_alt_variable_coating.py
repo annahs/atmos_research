@@ -16,7 +16,7 @@ wavelength = 550  #nm
 rBC_RI = complex(2.26,1.26)
 min_coat = 0  #assumed minimum coating thickness for particles with LEO failure or outside of detection range = 0
 max_coat = 100 #assumed maximum coating thickness for particles with LEO failure or outside of detection range = 100
-savefig = True
+savefig = False
 show_distr_plots = False
 #alt parameters
 min_alt = 0
@@ -30,9 +30,9 @@ bin_incr = 10
 
 
 flight_times = {
-'science 1'  : [datetime(2015,4,5,9,43),datetime(2015,4,5,13,48),15.6500, 78.2200, 'Longyearbyen (sc1)']	,	   #longyearbyen
-##'ferry 1'    : [datetime(2015,4,6,9,0),datetime(2015,4,6,11,0),15.6500, 78.2200]     ,
-##'ferry 2'    : [datetime(2015,4,6,15,0),datetime(2015,4,6,18,0),-16.6667, 81.6000]   ,
+#'science 1'  : [datetime(2015,4,5,9,43),datetime(2015,4,5,13,48),15.6500, 78.2200, 'Longyearbyen (sc1)']	,	   #longyearbyen
+#'ferry 1'    : [datetime(2015,4,6,9,0),datetime(2015,4,6,11,0),15.6500, 78.2200]     ,
+#'ferry 2'    : [datetime(2015,4,6,15,0),datetime(2015,4,6,18,0),-16.6667, 81.6000]   ,
 'science 2'  : [datetime(2015,4,7,16,31),datetime(2015,4,7,20,48),-62.338, 82.5014,'Alert (sc2-5)']    ,  #Alert
 'science 3'  : [datetime(2015,4,8,13,51),datetime(2015,4,8,16,43),-62.338, 82.5014,'Alert (sc2-5)']    ,  #Alert
 'science 4'  : [datetime(2015,4,8,17,53),datetime(2015,4,8,21,22),-70.338, 82.5014,'Alert (sc2-5)']   ,   #Alert
@@ -40,6 +40,8 @@ flight_times = {
 ##'ferry 3'    : [datetime(2015,4,10,14,0),datetime(2015,4,10,17,0),-75.338, 81]  ,
 'science 6'  : [datetime(2015,4,11,15,57),datetime(2015,4,11,21,16),-90.9408, 80.5,'Eureka (sc6-7)'] ,	   #eureka
 'science 7'  : [datetime(2015,4,13,15,14),datetime(2015,4,13,20,52),-95, 80.1,'Eureka (sc6-7)'] ,          #eureka
+
+
 #'science 8'  : [datetime(2015,4,20,15,49),datetime(2015,4,20,19,49),-133.7306, 67.1,'Inuvik (sc8-10)'],     #inuvik
 #'science 9'  : [datetime(2015,4,20,21,46),datetime(2015,4,21,1,36),-133.7306, 69.3617,'Inuvik (sc8-10)'] ,  #inuvik
 #'science 10' : [datetime(2015,4,21,16,07),datetime(2015,4,21,21,24),-131, 69.55,'Inuvik (sc8-10)'],         #inuvik
@@ -49,6 +51,7 @@ flight_times = {
 cnx = mysql.connector.connect(user='root', password='Suresh15', host='localhost', database='black_carbon')
 cursor = cnx.cursor()
 
+#define methods
 def lognorm(x_vals, A, w, xc):
 	return A/(np.sqrt(2*math.pi)*w*x_vals)*np.exp(-(np.log(x_vals/xc))**2/(2*w**2))
 	
@@ -179,17 +182,13 @@ def assemble_bin_data(retrieved_records):
 			LEO_successes += 1
 			if coat >0:
 				optical_properties  = MieCalc(wavelength,VED,coat)
-				abs_xsec_max_coat = optical_properties[0]
-				sca_xsec_max_coat = optical_properties[1]
-				abs_xsec_min_coat = abs_xsec_max_coat
-				sca_xsec_min_coat = sca_xsec_max_coat
 				
 				if 160 <= bin < 180:
 					Dp_Dc = (VED+2*coat)/VED
 				else:
 					Dp_Dc = np.nan
 					
-				opt_results = [Dp_Dc,abs_xsec_max_coat,sca_xsec_max_coat,abs_xsec_min_coat,sca_xsec_min_coat]
+				opt_results = [Dp_Dc,optical_properties[0],optical_properties[1],optical_properties[0],optical_properties[1]] #[Dp_Dc,abs_xsec_max_coat,sca_xsec_max_coat,abs_xsec_min_coat,sca_xsec_min_coat]
 			
 			else:
 				opt_results = assign_min_max_coat(VED)
@@ -229,6 +228,7 @@ def calc_bin_optical_properties(bin_start, binning_incr, bin_data_list,binned_da
 	mean_STP_correction_factor  = np.nanmean(bin_data['STP_correction_factor']) #no units
 	total_samping_time = sampling_time_at_alt(UNIX_start_time,UNIX_end_time,lower_alt,(lower_alt + alt_incr))
 	total_vol = mean_sample_flow*total_samping_time/60 #factor of 60 to convert minutes to secs, result is in cc
+
 	mass_conc = (total_mass/total_vol)*mean_STP_correction_factor #in fg/cm3
 	numb_conc = (len(bin_data['mass'])/total_vol)*mean_STP_correction_factor #in #/cm3
 	bin_mass_conc_norm = mass_conc/(math.log((bin_start+binning_incr))-math.log(bin_start)) #normalize mass
@@ -462,6 +462,9 @@ def calc_opti_params(binned_data_dict,Dg_mass,sigma_mass,plot_data,fraction_meas
 	
 	return plot_data
 	
+	
+##start script
+
 plot_data={}
 for flight in flight_times:
 	print flight
@@ -527,7 +530,7 @@ for flight in flight_times:
 cnx.close()
 print 'next step . . .'
 
-##
+## make plots
 plot_data_list = []
 
 for mean_alt in plot_data:
@@ -581,15 +584,24 @@ p_pos_err_mass_conc = [row[9] for row in plot_data_list]
 
 p_mean_MAC_max = [row[10] for row in plot_data_list]
 p_mean_MAC_min = [row[11] for row in plot_data_list]
+p_mean_MAC_mid =    [(row[10] +(row[11]-row[10])/2) for row in plot_data_list]
+p_mean_MAC_poserr = [(row[10] - (row[10] +(row[11]-row[10])/2)) for row in plot_data_list]
+p_mean_MAC_negerr = [((row[10] +(row[11]-row[10])/2) - row[11]) for row in plot_data_list]
 p_mean_MAC_width = [(row[10] - row[11]) for row in plot_data_list]
 
 p_mean_SSA_max = [row[12] for row in plot_data_list]
 p_mean_SSA_min = [row[13] for row in plot_data_list]
+p_mean_SSA_mid =    [(row[12] +(row[13]-row[12])/2) for row in plot_data_list]
+p_mean_SSA_poserr = [(row[12] - (row[12] +(row[13]-row[12])/2)) for row in plot_data_list]
+p_mean_SSA_negerr = [((row[12] +(row[13]-row[12])/2) - row[13]) for row in plot_data_list]
 p_mean_SSA_width = [(row[12] - row[13]) for row in plot_data_list]
 
 
 p_mean_ae_max = [row[14] for row in plot_data_list] 
 p_mean_ae_min = [row[15] for row in plot_data_list] 
+p_mean_ae_mid =    [(row[14] +(row[15]-row[14])/2) for row in plot_data_list]
+p_mean_ae_poserr = [(row[14] - (row[14] +(row[15]-row[14])/2)) for row in plot_data_list]
+p_mean_ae_negerr = [((row[14] +(row[15]-row[14])/2) - row[15]) for row in plot_data_list]
 p_mean_ae_width = [(row[14] - row[15]) for row in plot_data_list]
 
 
@@ -614,8 +626,8 @@ ax1  = plt.subplot2grid((2,2), (0,0), colspan=1)
 ax2  = plt.subplot2grid((2,2), (0,1), colspan=1)					
 ax3  = plt.subplot2grid((2,2), (1,0), colspan=1)					
 			
-
-ax1.barh(altitudes_bar,p_mean_MAC_width,height=bar_height, left=p_mean_MAC_min,alpha = 0.5,edgecolor = None, color = 'grey')		
+ax1.errorbar(p_mean_MAC_mid,altitudes,xerr=[p_mean_MAC_negerr,p_mean_MAC_poserr],linestyle='', color = 'grey', elinewidth=2, capsize=8,capthick = 2)
+#ax1.barh(altitudes_bar,p_mean_MAC_width,height=bar_height, left=p_mean_MAC_min,alpha = 0.5,edgecolor = None, color = 'grey')		
 #ax1.plot(p_mean_MAC_max,altitudes,marker='o',linestyle='-', color = 'b', label = 'coated rBC')
 #ax1.plot(p_mean_MAC_min,altitudes,marker='o',linestyle='--', color = 'b',alpha = 0.5, label = 'bare rBC')
 ax1.set_ylabel('altitude (m)')
@@ -626,7 +638,8 @@ ax1.text(0.06,0.93,'A)', transform=ax1.transAxes)
 
 
 #ax2.fill_betweenx(altitudes, p_mean_SSA_min, p_mean_SSA_max,alpha = 0.5, color = 'grey')
-ax2.barh(altitudes_bar,p_mean_SSA_width,height=bar_height, left=p_mean_SSA_min,alpha = 0.5, color = 'grey')		
+ax2.errorbar(p_mean_SSA_mid,altitudes,xerr=[p_mean_SSA_negerr,p_mean_SSA_poserr],linestyle='', color = 'b', elinewidth=2, capsize=8,capthick = 2)
+#ax2.barh(altitudes_bar,p_mean_SSA_width,height=bar_height, left=p_mean_SSA_min,alpha = 0.5, color = 'grey')		
 #ax2.plot(p_mean_SSA_max,altitudes,marker='o',linestyle='-', color = 'grey')
 #ax2.plot(p_mean_SSA_min,altitudes,marker='o',linestyle='-', color = 'grey')
 ax2.set_xlabel('SSA')
@@ -635,8 +648,8 @@ ax2.set_xlim(0.4,0.8)
 ax2.set_ylim(0,max_alt)
 ax2.text(0.06,0.93,'B)', transform=ax2.transAxes)
 
-
-ax3.barh(altitudes_bar,p_mean_ae_width,height=bar_height, left=p_mean_ae_min,alpha = 0.5, color = 'grey')		
+ax3.errorbar(p_mean_ae_mid,altitudes,xerr=[p_mean_ae_negerr,p_mean_ae_poserr],linestyle='', color = 'g', elinewidth=2, capsize=8,capthick = 2)
+#ax3.barh(altitudes_bar,p_mean_ae_width,height=bar_height, left=p_mean_ae_min,alpha = 0.5, color = 'grey')		
 #ax3.plot(p_mean_ae_max,altitudes,marker='o',linestyle='-', color = 'b')
 #ax3.plot(p_mean_ae_min,altitudes,marker='o',linestyle='--', color = 'b',alpha = 0.5)
 ax3.set_xlabel('Abs enhancement')
@@ -674,7 +687,6 @@ fig = plt.figure(figsize=(10,10))
 ax1  = plt.subplot2grid((2,2), (0,0), colspan=1)
 ax2  = plt.subplot2grid((2,2), (0,1), colspan=1)					
 ax3  = plt.subplot2grid((2,2), (1,0), colspan=1)
-ax4  = plt.subplot2grid((2,2), (1,1), colspan=1)
 
 ax1.errorbar(p_mean_Dg,altitudes,xerr = [p_neg_err_Dg,p_pos_err_Dg],fmt='o',linestyle='-', color = 'b')
 ax1.set_ylabel('altitude (m)')
@@ -700,12 +712,6 @@ ax3.set_ylim(0,max_alt)
 ax3.text(0.06,0.93,'C)', transform=ax3.transAxes)
 
 
-ax4.errorbar(p_BC_frac_mean,altitudes,xerr = [p_neg_err_BC_frac_mean,p_pos_err_BC_frac_mean],fmt='o',linestyle='-', color = 'b')
-ax4.set_xlabel('Fraction of all particles which contain rBC')
-ax4.set_ylabel('altitude (m)')
-ax4.set_xlim(0,0.1)
-ax4.set_ylim(0,max_alt)
-ax4.text(0.06,0.93,'D)', transform=ax4.transAxes)
 
 
 if savefig == True:
@@ -714,3 +720,20 @@ if savefig == True:
 
 plt.show()
 
+
+####
+
+fig = plt.figure()
+ax4  = plt.subplot2grid((1,1), (0,0), colspan=1)                  
+ax4.errorbar(p_BC_frac_mean,altitudes,xerr = [p_neg_err_BC_frac_mean,p_pos_err_BC_frac_mean],fmt='o',linestyle='-', color = 'b')
+ax4.set_xlabel('Fraction of all particles which contain rBC')
+ax4.set_ylabel('altitude (m)')
+ax4.set_xlim(0,0.1)
+ax4.set_ylim(0,max_alt)
+#ax4.text(0.06,0.93,'D)', transform=ax4.transAxes)
+
+
+if savefig == True:
+	plt.savefig(dir + 'fraction particles conatining rBC - Sc 1-7.png', bbox_inches='tight') 
+
+plt.show()

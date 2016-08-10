@@ -137,9 +137,27 @@ print '\n'
 print 'median all: ', np.median(combined_seasonal_and_station_data)
 print '10th and 90th ptile: ', np.percentile(combined_seasonal_and_station_data, 10), np.percentile(combined_seasonal_and_station_data, 90)
 
+#save to file
+file_data = []
+for stn in ['BARCELOS','LABREA','ITAITUBA','MANICORE','MONTE DOURADO','CORONEL FRANCISCO SECADA VIGNE','EDUARDO GOMES INTL', 'TABATINGA']:
+	print stn 
+	wet_season_data = stations[stn][8]
+	dry_season_data = stations[stn][9]
+	
+	file_data.append([stn,'wet_season',np.percentile(wet_season_data,10),np.percentile(wet_season_data,25),np.percentile(wet_season_data,50),np.percentile(wet_season_data,75),np.percentile(wet_season_data,90)])
+	file_data.append([stn,'dry_season',np.percentile(dry_season_data,10),np.percentile(dry_season_data,25),np.percentile(dry_season_data,50),np.percentile(dry_season_data,75),np.percentile(dry_season_data,90)])
 
+file_name = 'Amazon temperature'
+file = open('C:/Users/Sarah Hanna/Documents/Data/Amazon RH/' + file_name +'.txt', 'w')
+file.write('Calculated temperature (deg C) from NOAA NCDC database (https://gis.ncdc.noaa.gov/map/viewer/#app=cdo), values are based on 12h averages (1800-0600 local time and 0600-1800 local time) \n')
+file.write('Wet season is Dec, Jan, Feb, Mar.  Dry season is June, July, Aug, Sept.\n')
+file.write('Station \t Season \t 10th_percentile_T \t 25th_percentile_T \t 50th_percentile_T \t 75th_percentile_T \t 90th_percentile_T\n')
+for row in file_data:
+	line = '\t'.join(str(x) for x in row)
+	file.write(line + '\n')
+file.close()
 		
-		
+	
 #Plotting
 
 fig1 = plt.figure(figsize=(12,12))
